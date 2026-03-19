@@ -15,38 +15,38 @@
 module cim_axi_lite_slave
   import cim_pkg::*;
 #(
-  parameter int AXI_ADDR_W = 12,
-  parameter int AXI_DATA_W = 32
+    parameter int AXI_ADDR_W = 12,
+    parameter int AXI_DATA_W = 32
 ) (
-  // AXI4-Lite Slave Interface
-  input  logic                       S_AXI_ACLK,
-  input  logic                       S_AXI_ARESETN,
+    // AXI4-Lite Slave Interface
+    input logic S_AXI_ACLK,
+    input logic S_AXI_ARESETN,
 
-  input  logic [AXI_ADDR_W-1:0]     S_AXI_AWADDR,
-  input  logic [2:0]                 S_AXI_AWPROT,
-  input  logic                       S_AXI_AWVALID,
-  output logic                       S_AXI_AWREADY,
+    input  logic [AXI_ADDR_W-1:0] S_AXI_AWADDR,
+    input  logic [           2:0] S_AXI_AWPROT,
+    input  logic                  S_AXI_AWVALID,
+    output logic                  S_AXI_AWREADY,
 
-  input  logic [AXI_DATA_W-1:0]     S_AXI_WDATA,
-  input  logic [AXI_DATA_W/8-1:0]   S_AXI_WSTRB,
-  input  logic                       S_AXI_WVALID,
-  output logic                       S_AXI_WREADY,
+    input  logic [  AXI_DATA_W-1:0] S_AXI_WDATA,
+    input  logic [AXI_DATA_W/8-1:0] S_AXI_WSTRB,
+    input  logic                    S_AXI_WVALID,
+    output logic                    S_AXI_WREADY,
 
-  output logic [1:0]                 S_AXI_BRESP,
-  output logic                       S_AXI_BVALID,
-  input  logic                       S_AXI_BREADY,
+    output logic [1:0] S_AXI_BRESP,
+    output logic       S_AXI_BVALID,
+    input  logic       S_AXI_BREADY,
 
-  input  logic [AXI_ADDR_W-1:0]     S_AXI_ARADDR,
-  input  logic [2:0]                 S_AXI_ARPROT,
-  input  logic                       S_AXI_ARVALID,
-  output logic                       S_AXI_ARREADY,
+    input  logic [AXI_ADDR_W-1:0] S_AXI_ARADDR,
+    input  logic [           2:0] S_AXI_ARPROT,
+    input  logic                  S_AXI_ARVALID,
+    output logic                  S_AXI_ARREADY,
 
-  output logic [AXI_DATA_W-1:0]     S_AXI_RDATA,
-  output logic [1:0]                 S_AXI_RRESP,
-  output logic                       S_AXI_RVALID,
-  input  logic                       S_AXI_RREADY,
+    output logic [AXI_DATA_W-1:0] S_AXI_RDATA,
+    output logic [           1:0] S_AXI_RRESP,
+    output logic                  S_AXI_RVALID,
+    input  logic                  S_AXI_RREADY,
 
-  output logic                       irq_done
+    output logic irq_done
 );
 
   logic clk, rst_n;
@@ -63,7 +63,7 @@ module cim_axi_lite_slave
   logic b_valid_r;
 
   assign S_AXI_AWREADY = !aw_received && !b_valid_r;
-  assign S_AXI_WREADY  = !w_received  && !b_valid_r;
+  assign S_AXI_WREADY  = !w_received && !b_valid_r;
   assign S_AXI_BRESP   = 2'b00;
   assign S_AXI_BVALID  = b_valid_r;
 
@@ -85,8 +85,8 @@ module cim_axi_lite_slave
       end
       // Accept W independently
       if (S_AXI_WVALID && S_AXI_WREADY) begin
-        w_data_r    <= S_AXI_WDATA;
-        w_received  <= 1'b1;
+        w_data_r   <= S_AXI_WDATA;
+        w_received <= 1'b1;
       end
       // Both received → issue write response
       if (aw_received && w_received && !b_valid_r) begin
@@ -150,28 +150,30 @@ module cim_axi_lite_slave
   // ============================================================
   // CSR Registers
   // ============================================================
-  logic [15:0]    reg_in_dim;
-  logic [15:0]    reg_out_dim;
-  logic [15:0]    reg_n_ib;
-  logic [15:0]    reg_n_ob;
-  logic [31:0]    reg_requant_mult;
-  logic [31:0]    reg_requant_shift;
+  logic        [15:0] reg_in_dim;
+  logic        [15:0] reg_out_dim;
+  logic        [15:0] reg_n_ib;
+  logic        [15:0] reg_n_ob;
+  logic        [31:0] reg_requant_mult;
+  logic        [31:0] reg_requant_shift;
   logic signed [31:0] reg_input_zp;
-  act_mode_t      reg_act_mode;
-  logic           reg_irq_en;
+  act_mode_t          reg_act_mode;
+  logic               reg_irq_en;
 
   // DMA-style weight write registers
-  logic [15:0]    reg_wdma_addr;
-  logic [31:0]    reg_wdma_data;
-  logic [3:0]     reg_wdma_chunk;
-  logic           reg_wdma_wr;
+  logic        [15:0] reg_wdma_addr;
+  logic        [31:0] reg_wdma_data;
+  // FIX: chunk index needs clog2(TILE_ROWS * TILE_COLS / (32/WEIGHT_W)) = clog2(64) = 6 bits
+  localparam int CHUNK_IDX_W = clog2_safe(TILE_ROWS * TILE_COLS / (32 / WEIGHT_W));  // 6
+  logic [CHUNK_IDX_W-1:0] reg_wdma_chunk;
+  logic                   reg_wdma_wr;
   // FIX3: burst mode — auto-increment chunk/tile
-  logic           reg_wdma_burst;
+  logic                   reg_wdma_burst;
 
   // Start/clear signals
-  logic start_pulse;
-  logic soft_rst_pulse;
-  logic done_irq_clear;
+  logic                   start_pulse;
+  logic                   soft_rst_pulse;
+  logic                   done_irq_clear;
 
   // ============================================================
   // Accelerator Core
@@ -182,98 +184,106 @@ module cim_axi_lite_slave
   logic [63:0] perf_cycles, perf_macs;
 
   // Memory interfaces
-  logic [clog2_safe(WSRAM_DEPTH)-1:0]      w_rd_tile_idx;
-  logic signed [WEIGHT_W-1:0]              w_rd_tile [TILE_ROWS][TILE_COLS];
-  logic [clog2_safe(BSRAM_DEPTH)-1:0]      b_rd_addr;
-  logic signed [BIAS_W-1:0]                b_rd_data;
-  logic [clog2_safe(MAX_IN_DIM/TILE_COLS)-1:0] ibuf_rd_tile_idx;
-  logic [X_EFF_W-1:0]                      ibuf_x_eff [TILE_COLS];
-  logic                                    obuf_wr_en;
-  logic [clog2_safe(MAX_OUT_DIM)-1:0]      obuf_wr_addr;
-  logic signed [OUTPUT_W-1:0]              obuf_wr_data;
+  logic        [         clog2_safe(WSRAM_DEPTH)-1:0] w_rd_tile_idx;
+  logic signed [                        WEIGHT_W-1:0] w_rd_tile        [TILE_ROWS] [TILE_COLS];
+  logic        [         clog2_safe(BSRAM_DEPTH)-1:0] b_rd_addr;
+  logic signed [                          BIAS_W-1:0] b_rd_data;
+  logic        [clog2_safe(MAX_IN_DIM/TILE_COLS)-1:0] ibuf_rd_tile_idx;
+  logic        [                         X_EFF_W-1:0] ibuf_x_eff       [TILE_COLS];
+  logic                                               obuf_wr_en;
+  logic        [         clog2_safe(MAX_OUT_DIM)-1:0] obuf_wr_addr;
+  logic signed [                        OUTPUT_W-1:0] obuf_wr_data;
 
-  logic [clog2_safe(MAX_OUT_DIM)-1:0]      obuf_rd_addr;
-  logic signed [OUTPUT_W-1:0]              obuf_rd_data;
-  logic [clog2_safe(MAX_OUT_DIM)-1:0]      pred_class;
+  logic        [         clog2_safe(MAX_OUT_DIM)-1:0] obuf_rd_addr;
+  logic signed [                        OUTPUT_W-1:0] obuf_rd_data;
+  logic        [         clog2_safe(MAX_OUT_DIM)-1:0] pred_class;
 
-  logic signed [INPUT_W-1:0]               ibuf_x_tile [TILE_COLS];
+  logic signed [                         INPUT_W-1:0] ibuf_x_tile      [TILE_COLS];
 
   cim_accel_core u_core (
-    .clk              (clk),
-    .rst_n            (rst_n),
-    .start            (start_pulse),
-    .soft_rst         (soft_rst_pulse),
-    .busy             (accel_busy),
-    .done             (accel_done),
-    .dbg_state        (accel_state),
-    .cfg_in_dim       (reg_in_dim),
-    .cfg_out_dim      (reg_out_dim),
-    .cfg_n_ib         (reg_n_ib),
-    .cfg_n_ob         (reg_n_ob),
-    .cfg_input_zp     (reg_input_zp),
-    .cfg_requant_mult (reg_requant_mult),
-    .cfg_requant_shift(reg_requant_shift),
-    .cfg_act_mode     (reg_act_mode),
-    .w_rd_tile_idx    (w_rd_tile_idx),
-    .w_rd_tile        (w_rd_tile),
-    .b_rd_addr        (b_rd_addr),
-    .b_rd_data        (b_rd_data),
-    .ibuf_rd_tile_idx (ibuf_rd_tile_idx),
-    .ibuf_x_eff       (ibuf_x_eff),
-    .obuf_wr_en       (obuf_wr_en),
-    .obuf_wr_addr     (obuf_wr_addr),
-    .obuf_wr_data     (obuf_wr_data),
-    .perf_cycles      (perf_cycles),
-    .perf_macs        (perf_macs)
+      .clk              (clk),
+      .rst_n            (rst_n),
+      .start            (start_pulse),
+      .soft_rst         (soft_rst_pulse),
+      .busy             (accel_busy),
+      .done             (accel_done),
+      .dbg_state        (accel_state),
+      .cfg_in_dim       (reg_in_dim),
+      .cfg_out_dim      (reg_out_dim),
+      .cfg_n_ib         (reg_n_ib),
+      .cfg_n_ob         (reg_n_ob),
+      .cfg_input_zp     (reg_input_zp),
+      .cfg_requant_mult (reg_requant_mult),
+      .cfg_requant_shift(reg_requant_shift),
+      .cfg_act_mode     (reg_act_mode),
+      .w_rd_tile_idx    (w_rd_tile_idx),
+      .w_rd_tile        (w_rd_tile),
+      .b_rd_addr        (b_rd_addr),
+      .b_rd_data        (b_rd_data),
+      .ibuf_rd_tile_idx (ibuf_rd_tile_idx),
+      .ibuf_x_eff       (ibuf_x_eff),
+      .obuf_wr_en       (obuf_wr_en),
+      .obuf_wr_addr     (obuf_wr_addr),
+      .obuf_wr_data     (obuf_wr_data),
+      .perf_cycles      (perf_cycles),
+      .perf_macs        (perf_macs)
   );
 
   // ============================================================
   // Memory Blocks
   // ============================================================
-  weight_sram #(.DEPTH(WSRAM_DEPTH)) u_wsram (
-    .clk          (clk),
-    .wr_en        (reg_wdma_wr),
-    .wr_tile_idx  (reg_wdma_addr[clog2_safe(WSRAM_DEPTH)-1:0]),
-    .wr_chunk_idx (reg_wdma_chunk[clog2_safe(WSRAM_WORD_W/32)-1:0]),
-    .wr_data      (reg_wdma_data),
-    .rd_tile_idx  (w_rd_tile_idx),
-    .rd_tile      (w_rd_tile)
+  weight_sram #(
+      .DEPTH(WSRAM_DEPTH)
+  ) u_wsram (
+      .clk         (clk),
+      .wr_en       (reg_wdma_wr),
+      .wr_tile_idx (reg_wdma_addr[clog2_safe(WSRAM_DEPTH)-1:0]),
+      .wr_chunk_idx(reg_wdma_chunk[clog2_safe(WSRAM_WORD_W/32)-1:0]),
+      .wr_data     (reg_wdma_data),
+      .rd_tile_idx (w_rd_tile_idx),
+      .rd_tile     (w_rd_tile)
   );
 
   // Bias/Input/Output write enable signals from AXI write path
-  wire bias_wr_hit  = wr_fire && (aw_addr_r >= MEM_BIAS_BASE)  && (aw_addr_r < 12'hC00);
+  wire bias_wr_hit = wr_fire && (aw_addr_r >= MEM_BIAS_BASE) && (aw_addr_r < 12'hC00);
   wire input_wr_hit = wr_fire && (aw_addr_r >= MEM_INPUT_BASE) && (aw_addr_r < 12'h800);
 
-  bias_sram #(.DEPTH(BSRAM_DEPTH)) u_bsram (
-    .clk     (clk),
-    .wr_en   (bias_wr_hit),
-    .wr_addr ((aw_addr_r - MEM_BIAS_BASE) >> 2),
-    .wr_data (w_data_r),
-    .rd_addr (b_rd_addr),
-    .rd_data (b_rd_data)
+  bias_sram #(
+      .DEPTH(BSRAM_DEPTH)
+  ) u_bsram (
+      .clk    (clk),
+      .wr_en  (bias_wr_hit),
+      .wr_addr((aw_addr_r - MEM_BIAS_BASE) >> 2),
+      .wr_data(w_data_r),
+      .rd_addr(b_rd_addr),
+      .rd_data(b_rd_data)
   );
 
-  input_buffer #(.MAX_LEN(MAX_IN_DIM)) u_ibuf (
-    .clk          (clk),
-    .wr_en        (input_wr_hit),
-    .wr_addr      ((aw_addr_r - MEM_INPUT_BASE) >> 2),
-    .wr_data      (w_data_r[INPUT_W-1:0]),
-    .rd_tile_idx  (ibuf_rd_tile_idx),
-    .input_zp     (reg_input_zp),
-    .x_tile       (ibuf_x_tile),
-    .x_eff        (ibuf_x_eff)
+  input_buffer #(
+      .MAX_LEN(MAX_IN_DIM)
+  ) u_ibuf (
+      .clk        (clk),
+      .wr_en      (input_wr_hit),
+      .wr_addr    ((aw_addr_r - MEM_INPUT_BASE) >> 2),
+      .wr_data    (w_data_r[INPUT_W-1:0]),
+      .rd_tile_idx(ibuf_rd_tile_idx),
+      .input_zp   (reg_input_zp),
+      .x_tile     (ibuf_x_tile),
+      .x_eff      (ibuf_x_eff)
   );
 
-  output_buffer #(.MAX_LEN(MAX_OUT_DIM)) u_obuf (
-    .clk        (clk),
-    .rst_n      (rst_n),
-    .wr_en      (obuf_wr_en),
-    .wr_addr    (obuf_wr_addr),
-    .wr_data    (obuf_wr_data),
-    .rd_addr    (obuf_rd_addr),
-    .rd_data    (obuf_rd_data),
-    .out_dim    (reg_out_dim[clog2_safe(MAX_OUT_DIM)-1:0]),
-    .pred_class (pred_class)
+  output_buffer #(
+      .MAX_LEN(MAX_OUT_DIM)
+  ) u_obuf (
+      .clk       (clk),
+      .rst_n     (rst_n),
+      .wr_en     (obuf_wr_en),
+      .wr_addr   (obuf_wr_addr),
+      .wr_data   (obuf_wr_data),
+      .rd_addr   (obuf_rd_addr),
+      .rd_data   (obuf_rd_data),
+      .out_dim   (reg_out_dim[clog2_safe(MAX_OUT_DIM)-1:0]),
+      .pred_class(pred_class)
   );
 
   // FIX5: Output buffer read address — set one cycle early (RD_IDLE or RD_WAIT)
@@ -282,10 +292,8 @@ module cim_axi_lite_slave
   always_comb begin
     if (rd_state == RD_IDLE && S_AXI_ARVALID && S_AXI_ARADDR >= CSR_LOGIT_BASE)
       obuf_rd_addr = (S_AXI_ARADDR - CSR_LOGIT_BASE) >> 2;
-    else if (ar_addr_r >= CSR_LOGIT_BASE)
-      obuf_rd_addr = (ar_addr_r - CSR_LOGIT_BASE) >> 2;
-    else
-      obuf_rd_addr = '0;
+    else if (ar_addr_r >= CSR_LOGIT_BASE) obuf_rd_addr = (ar_addr_r - CSR_LOGIT_BASE) >> 2;
+    else obuf_rd_addr = '0;
   end
 
   // ============================================================
@@ -320,40 +328,40 @@ module cim_axi_lite_slave
       if (wr_fire) begin
         case (aw_addr_r)
           CSR_CTRL: begin
-            if (w_data_r[0]) start_pulse    <= 1'b1;
+            if (w_data_r[0]) start_pulse <= 1'b1;
             if (w_data_r[1]) done_irq_clear <= 1'b1;
             if (w_data_r[2]) soft_rst_pulse <= 1'b1;
           end
-          CSR_IRQ_EN:        reg_irq_en        <= w_data_r[0];
-          CSR_IN_DIM:        reg_in_dim        <= w_data_r[15:0];
-          CSR_OUT_DIM:       reg_out_dim       <= w_data_r[15:0];
-          CSR_N_IB:          reg_n_ib          <= w_data_r[15:0];
-          CSR_N_OB:          reg_n_ob          <= w_data_r[15:0];
-          CSR_REQUANT_MULT:  reg_requant_mult  <= w_data_r;
+          CSR_IRQ_EN:        reg_irq_en <= w_data_r[0];
+          CSR_IN_DIM:        reg_in_dim <= w_data_r[15:0];
+          CSR_OUT_DIM:       reg_out_dim <= w_data_r[15:0];
+          CSR_N_IB:          reg_n_ib <= w_data_r[15:0];
+          CSR_N_OB:          reg_n_ob <= w_data_r[15:0];
+          CSR_REQUANT_MULT:  reg_requant_mult <= w_data_r;
           CSR_REQUANT_SHIFT: reg_requant_shift <= w_data_r;
-          CSR_INPUT_ZP:      reg_input_zp      <= $signed(w_data_r);
-          CSR_ACT_MODE:      reg_act_mode      <= act_mode_t'(w_data_r[1:0]);
-          CSR_WDMA_ADDR:     reg_wdma_addr     <= w_data_r[15:0];
+          CSR_INPUT_ZP:      reg_input_zp <= $signed(w_data_r);
+          CSR_ACT_MODE:      reg_act_mode <= act_mode_t'(w_data_r[1:0]);
+          CSR_WDMA_ADDR:     reg_wdma_addr <= w_data_r[15:0];
           CSR_WDMA_DATA: begin
             reg_wdma_data <= w_data_r;
             // FIX3: In burst mode, auto-fire write + auto-increment
             if (reg_wdma_burst) begin
               reg_wdma_wr <= 1'b1;
               // Auto-increment chunk, wrap to next tile
-              if (reg_wdma_chunk == (TILE_ROWS * TILE_COLS / (32/WEIGHT_W)) - 1) begin
+              if (reg_wdma_chunk == (TILE_ROWS * TILE_COLS / (32 / WEIGHT_W)) - 1) begin
                 reg_wdma_chunk <= '0;
                 reg_wdma_addr  <= reg_wdma_addr + 16'd1;
               end else begin
-                reg_wdma_chunk <= reg_wdma_chunk + 4'd1;
+                reg_wdma_chunk <= reg_wdma_chunk + CHUNK_IDX_W'(1);
               end
             end
           end
           CSR_WDMA_CTRL: begin
-            reg_wdma_wr    <= w_data_r[0];
+            reg_wdma_wr <= w_data_r[0];
             reg_wdma_burst <= w_data_r[1];  // FIX3: bit[1] = burst enable
-            reg_wdma_chunk <= w_data_r[7:4];
+            reg_wdma_chunk <= w_data_r[CHUNK_IDX_W+1:2];  // FIX: was [7:4] for 4-bit, now [7:2] for 6-bit
           end
-          default: ;  // input/bias windows handled by memory blocks
+          default:           ;  // input/bias windows handled by memory blocks
         endcase
       end
     end
@@ -366,10 +374,8 @@ module cim_axi_lite_slave
     if (!rst_n) begin
       done_sticky <= 1'b0;
     end else begin
-      if (done_irq_clear || soft_rst_pulse)
-        done_sticky <= 1'b0;
-      else if (accel_done)
-        done_sticky <= 1'b1;
+      if (done_irq_clear || soft_rst_pulse) done_sticky <= 1'b0;
+      else if (accel_done) done_sticky <= 1'b1;
     end
   end
 
@@ -401,9 +407,8 @@ module cim_axi_lite_slave
       CSR_PRED_CLASS:    return {22'd0, pred_class};
       default: begin
         if (addr >= CSR_LOGIT_BASE && addr < MEM_INPUT_BASE)
-          return {{(32-OUTPUT_W){obuf_rd_data[OUTPUT_W-1]}}, obuf_rd_data};
-        else
-          return 32'hDEAD_BEEF;
+          return {{(32 - OUTPUT_W) {obuf_rd_data[OUTPUT_W-1]}}, obuf_rd_data};
+        else return 32'hDEAD_BEEF;
       end
     endcase
   endfunction

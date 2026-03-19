@@ -110,3 +110,9 @@ step 1中，之前将`cim_pkg.sv: MAX_IN_DIM, MAX_OUT_DIM`设置为1024，触发
 这里有两个方向，第一个是缩小MAX维度，可以简单的在BRAM中放下。PYNQ-Z2有140个36kb BRAM，大约630kB，修改之前一个weight SRAM就要128x4096x16bis=1MB是放不下的；但是修改之后大约是128x392x16bits，大约是98kB，就可以放下，这里决定先按照这个作为master继续进行项目，如有必要则建立一个分支，用于实现缩小MAX维度的版本。
 
 但是，我们可能真的在后续需要支持1024x1024，可能就需要建立一个新分支`full-MAXdimension`。
+
+## BRAM
+
+要综合出BRAM，只对时钟拍是不够的，还需要整word操作，bit-select 部分写入，Vivado 不支持对这种写法推断 BRAM，会退化为纯寄存器。需要 read-modify-write 模式——先读出整个 128-bit word，在寄存器中合并 32-bit chunk，再整 word 写回。同时保留 generate 拆分，每个 bank 独立一个 BRAM。
+
+同时axi也要匹配chunk操作。
