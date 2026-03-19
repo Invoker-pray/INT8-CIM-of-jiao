@@ -42,17 +42,19 @@ module output_buffer
   end
 
   // Argmax — combinational over buf_mem[0..out_dim-1]
-  always_comb begin
-    automatic logic signed [OUTPUT_W-1:0] max_val = buf_mem[0];
-    automatic logic [clog2_safe(MAX_LEN)-1:0] max_idx = '0;
+  logic signed [OUTPUT_W-1:0]        argmax_val;
+  logic [clog2_safe(MAX_LEN)-1:0]    argmax_idx;
 
+  always_comb begin
+    argmax_val = buf_mem[0];
+    argmax_idx = '0;
     for (int i = 1; i < MAX_LEN; i++) begin
-      if (i < int'(out_dim) && buf_mem[i] > max_val) begin
-        max_val = buf_mem[i];
-        max_idx = i[clog2_safe(MAX_LEN)-1:0];
+      if (i < int'(out_dim) && buf_mem[i] > argmax_val) begin
+        argmax_val = buf_mem[i];
+        argmax_idx = clog2_safe(MAX_LEN)'(i);
       end
     end
-    pred_class = max_idx;
+    pred_class = argmax_idx;
   end
 
 endmodule

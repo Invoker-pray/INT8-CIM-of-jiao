@@ -1,96 +1,87 @@
 // ============================================================================
-// weight_sram.sv — Dual-port weight storage
+// weight_sram.sv — CIM Weight SRAM
 // ============================================================================
-// Port A (write): 32-bit granularity for AXI/CPU access
-//   - CPU writes weight data 32 bits at a time
-//   - tile_idx selects which tile, chunk_idx selects which 32-bit chunk within tile
+// Storage layout: DEPTH tiles, each [TILE_ROWS][TILE_COLS] INT8 words.
 //
-// Port B (read): full tile-width read for CIM compute
-//   - Reads an entire TILE_ROWS × TILE_COLS × WEIGHT_W bit tile in one cycle
+// Write: byte-granular. wr_tile_idx + wr_chunk_idx together form a flat
+//        byte address within the tile.
+//        flat_byte = wr_tile_idx * TILE_ELEMS + wr_chunk_idx * ELEMS_PER_CHUNK + byte_in_chunk
+//        For simplicity we expose a 32-bit chunk write interface matching
+//        the testbench: each chunk holds ELEMS_PER_CHUNK=4 weight bytes,
+//        addressed as mem_byte[wr_tile_idx*TILE_ELEMS + wr_chunk_idx*4 + 0..3].
 //
-// Implementation: true dual-port BRAM with asymmetric widths
-// For synthesis, we use a single wide array and handle the asymmetry in logic.
+// Read: registered (1-cycle latency), outputs rd_tile[TILE_ROWS][TILE_COLS].
+//
+// KEY CHANGE: uses a flat byte memory (logic [WEIGHT_W-1:0] mem[DEPTH*TILE_ELEMS])
+// so that each element has its own memory word — no chunk unpacking needed
+// in the read path, eliminating all VCS 2018 compatibility issues.
 // ============================================================================
 
 module weight_sram
   import cim_pkg::*;
 #(
-  parameter int DEPTH = WSRAM_DEPTH   // number of tiles
+  parameter int DEPTH = WSRAM_DEPTH
 ) (
-  input  logic                               clk,
+  input  logic clk,
 
-  // --- Port A: CPU/AXI write (32-bit chunks) ---
-  input  logic                               wr_en,
-  input  logic [clog2_safe(DEPTH)-1:0]       wr_tile_idx,    // which tile
-  input  logic [clog2_safe(WSRAM_WORD_W/32)-1:0] wr_chunk_idx,  // which 32-bit chunk
-  input  logic [31:0]                        wr_data,
+  // --- Write port (32-bit chunk, 4 weights per chunk) ---
+  input  logic                                    wr_en,
+  input  logic [clog2_safe(DEPTH)-1:0]            wr_tile_idx,
+  input  logic [clog2_safe(WSRAM_WORD_W/32)-1:0]  wr_chunk_idx,
+  input  logic [31:0]                              wr_data,
 
-  // --- Port B: CIM read (full tile) ---
-  input  logic [clog2_safe(DEPTH)-1:0]       rd_tile_idx,
-  output logic signed [WEIGHT_W-1:0]         rd_tile [TILE_ROWS][TILE_COLS]
+  // --- Read port (registered, 1-cycle latency) ---
+  input  logic [clog2_safe(DEPTH)-1:0]            rd_tile_idx,
+  output logic signed [WEIGHT_W-1:0]              rd_tile [TILE_ROWS][TILE_COLS]
 );
 
-  localparam int CHUNKS_PER_TILE = WSRAM_WORD_W / 32;  // e.g. 2048/32 = 64
+  localparam int ELEMS_PER_CHUNK = 32 / WEIGHT_W;          // 4 for INT8
+  localparam int TOTAL_ELEMS     = DEPTH * TILE_ELEMS;      // total weight bytes
 
-  // Storage: flat array of 32-bit words
-  // Total words = DEPTH * CHUNKS_PER_TILE
-  localparam int TOTAL_WORDS = DEPTH * CHUNKS_PER_TILE;
+  // Flat byte memory: one INT8 word per weight element
+  logic signed [WEIGHT_W-1:0] mem [TOTAL_ELEMS];
 
-  (* ram_style = "block" *)
-  logic [31:0] mem [TOTAL_WORDS];
+  // -----------------------------------------------------------------------
+  // Write: unpack 32-bit chunk into ELEMS_PER_CHUNK individual bytes
+  // Base byte address = (wr_tile_idx * TILE_ELEMS) + (wr_chunk_idx * ELEMS_PER_CHUNK)
+  // -----------------------------------------------------------------------
+  // Pre-compute base address as a wide wire to avoid expression in always_ff
+  logic [31:0] wr_base;
+  assign wr_base = ({20'd0, wr_tile_idx} * 32'd256)   // TILE_ELEMS = 256
+                 + ({26'd0, wr_chunk_idx} * 32'd4);    // ELEMS_PER_CHUNK = 4
 
-  // Read side: assemble full tile from consecutive 32-bit words
-  logic [WSRAM_WORD_W-1:0] tile_word;
-
-  // Port A: write
   always_ff @(posedge clk) begin
     if (wr_en) begin
-      mem[wr_tile_idx * CHUNKS_PER_TILE + wr_chunk_idx] <= wr_data;
+      mem[wr_base + 0] <= signed'(wr_data[ 7: 0]);
+      mem[wr_base + 1] <= signed'(wr_data[15: 8]);
+      mem[wr_base + 2] <= signed'(wr_data[23:16]);
+      mem[wr_base + 3] <= signed'(wr_data[31:24]);
     end
   end
 
-  // Port B: read — gather all chunks of the requested tile
-  // For BRAM inference, we read one word per cycle and use a shift register
-  // Alternative: use a wider BRAM if tool supports it
-  //
-  // Simple approach: registered tile word with multi-cycle assembly
-  // But for CIM compute, we need the full tile in one read.
-  // Solution: use a separate wide BRAM for the read port.
-  //
-  // PRACTICAL APPROACH: We store data in BOTH a narrow array (for writes)
-  // and a wide array (for reads). Writes update both.
+  // -----------------------------------------------------------------------
+  // Read: registered, read each [r][c] directly from its flat byte address.
+  // flat_byte = rd_tile_idx * 256 + r * 16 + c
+  // rd_base is a 32-bit wire shared across all elements in the tile.
+  // Each generate instance adds its constant OFFSET at elaboration time.
+  // -----------------------------------------------------------------------
+  logic [31:0] rd_base;
+  assign rd_base = {20'd0, rd_tile_idx} * 32'd256;
 
-  (* ram_style = "block" *)
-  logic [WSRAM_WORD_W-1:0] tile_mem [DEPTH];
+  genvar gr, gc;
+  generate
+    for (gr = 0; gr < TILE_ROWS; gr++) begin : GEN_R
+      for (gc = 0; gc < TILE_COLS; gc++) begin : GEN_C
+        localparam int OFFSET = gr * TILE_COLS + gc;
 
-  // Write: update the wide array at the appropriate chunk position
-  always_ff @(posedge clk) begin
-    if (wr_en) begin
-      tile_mem[wr_tile_idx][wr_chunk_idx*32 +: 32] <= wr_data;
-    end
-  end
+        wire [31:0] rd_elem_addr;
+        assign rd_elem_addr = rd_base + OFFSET;  // OFFSET is a constant int
 
-  // Read: synchronous, full-tile width
-  always_ff @(posedge clk) begin
-    tile_word <= tile_mem[rd_tile_idx];
-  end
-
-  // Unpack tile_word into 2D weight array
-  always_comb begin
-    for (int r = 0; r < TILE_ROWS; r++) begin
-      for (int c = 0; c < TILE_COLS; c++) begin
-        automatic int flat = r * TILE_COLS + c;
-        rd_tile[r][c] = tile_word[flat*WEIGHT_W +: WEIGHT_W];
+        always_ff @(posedge clk) begin
+          rd_tile[gr][gc] <= mem[rd_elem_addr];
+        end
       end
     end
-  end
-
-  // Optional: $readmemh for simulation/initial load
-  // synthesis translate_off
-  initial begin
-    for (int i = 0; i < DEPTH; i++)
-      tile_mem[i] = '0;
-  end
-  // synthesis translate_on
+  endgenerate
 
 endmodule

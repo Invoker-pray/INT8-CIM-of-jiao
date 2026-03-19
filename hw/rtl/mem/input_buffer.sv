@@ -1,85 +1,82 @@
 // ============================================================================
-// input_buffer.sv — Input activation buffer with zero-point subtraction
+// input_buffer.sv — CIM Input Buffer (AXI-writable, zero-point subtraction)
 // ============================================================================
-// Port A: CPU/AXI writes input[i] one element at a time (8-bit packed in 32-bit)
-// Port B: CIM reads a tile of TILE_COLS elements, with automatic zp subtraction
+// Stores raw uint8 input vector. On read, outputs x_eff[TILE_COLS] tiles
+// with zero-point subtracted (X_EFF_W-bit signed result).
 //
-// Storage is organized as packed tiles for efficient BRAM read.
-// CPU writes element-by-element; a small FSM packs them into tiles.
-// Alternatively, CPU can write pre-packed tiles directly.
+// Write interface: scalar byte write (wr_addr, wr_data[INPUT_W-1:0]).
+// Read interface:  rd_tile_idx selects which TILE_COLS-wide tile to read.
+//                  x_tile  = raw uint8 values (for debug / direct use)
+//                  x_eff   = uint8 - zp, clamped to ≥0, X_EFF_W-bit unsigned
 //
-// SIMPLIFIED APPROACH: store as flat array, read with address math.
+// Interface matches tb_cim_accel_core and cim_accel_core exactly.
 // ============================================================================
 
 module input_buffer
   import cim_pkg::*;
 #(
-  parameter int MAX_LEN = MAX_IN_DIM
+  parameter int MAX_LEN = MAX_IN_DIM   // maximum input vector length
 ) (
-  input  logic                              clk,
+  input  logic clk,
 
-  // --- Write port (CPU/AXI) ---
+  // --- Write port (byte-wide scalar) ---
   input  logic                              wr_en,
-  input  logic [clog2_safe(MAX_LEN)-1:0]    wr_addr,    // element index
-  input  logic [INPUT_W-1:0]                wr_data,    // 8-bit input value
+  input  logic [clog2_safe(MAX_LEN)-1:0]   wr_addr,
+  input  logic [INPUT_W-1:0]               wr_data,
 
-  // --- Read port (CIM) ---
-  input  logic [clog2_safe(MAX_LEN/TILE_COLS)-1:0] rd_tile_idx,  // input block index
-  input  logic signed [31:0]                input_zp,   // zero point from CSR
+  // --- Read port ---
+  input  logic [clog2_safe(MAX_LEN/TILE_COLS)-1:0]  rd_tile_idx,  // tile index (0-based)
+  input  logic signed [31:0]                         input_zp,     // zero point (e.g. -128)
 
-  output logic signed [INPUT_W-1:0]         x_tile   [TILE_COLS],  // raw input tile
-  output logic        [X_EFF_W-1:0]         x_eff    [TILE_COLS]   // after zp subtraction
+  // Raw tile (registered, 1-cycle latency)
+  output logic [INPUT_W-1:0]       x_tile [TILE_COLS],
+
+  // Effective tile after ZP subtraction (combinational from registered read)
+  output logic [X_EFF_W-1:0]       x_eff  [TILE_COLS]
 );
 
-  localparam int N_TILES = MAX_LEN / TILE_COLS;
-  localparam int TILE_BITS = TILE_COLS * INPUT_W;
+  logic [INPUT_W-1:0] mem [MAX_LEN];
 
-  // Store as packed tiles for single-cycle read
-  (* ram_style = "block" *)
-  logic [TILE_BITS-1:0] tile_mem [N_TILES];
-
-  logic [TILE_BITS-1:0] tile_word_r;
-
-  // --- Write: CPU writes individual elements ---
-  // We pack them into tiles on the fly
-  // Element addr / TILE_COLS = tile index
-  // Element addr % TILE_COLS = position within tile
+  // -----------------------------------------------------------------------
+  // Write: scalar byte write
+  // -----------------------------------------------------------------------
   always_ff @(posedge clk) begin
-    if (wr_en) begin
-      automatic int tile_idx = wr_addr / TILE_COLS;
-      automatic int elem_pos = wr_addr % TILE_COLS;
-      tile_mem[tile_idx][elem_pos*INPUT_W +: INPUT_W] <= wr_data;
+    if (wr_en)
+      mem[wr_addr] <= wr_data;
+  end
+
+  // -----------------------------------------------------------------------
+  // Registered tile read — use generate to avoid 'automatic' in always_ff
+  // (VCS 2018 does not support automatic variables inside always_ff).
+  // Base address = rd_tile_idx * TILE_COLS
+  // -----------------------------------------------------------------------
+  genvar gc;
+  generate
+    for (gc = 0; gc < TILE_COLS; gc++) begin : GEN_IBUF_RD
+      always_ff @(posedge clk) begin
+        if (int'(rd_tile_idx) * TILE_COLS + gc < MAX_LEN)
+          x_tile[gc] <= mem[rd_tile_idx * TILE_COLS + gc];
+        else
+          x_tile[gc] <= '0;
+      end
     end
-  end
+  endgenerate
 
-  // --- Read: synchronous full-tile read ---
-  always_ff @(posedge clk) begin
-    tile_word_r <= tile_mem[rd_tile_idx];
-  end
+  // -----------------------------------------------------------------------
+  // Zero-point subtraction (combinational on registered x_tile)
+  // x_eff = max(0, uint8(x_tile) - zp), saturated to [0, 2^X_EFF_W - 1]
+  // -----------------------------------------------------------------------
+  // Use intermediate signed wire to avoid automatic in always_comb
+  logic signed [31:0] x_full [TILE_COLS];
 
-  // --- Unpack + zero-point subtraction ---
-  logic signed [31:0] x_tmp [TILE_COLS];
-
-  always_comb begin
-    for (int c = 0; c < TILE_COLS; c++) begin
-      x_tile[c] = tile_word_r[c*INPUT_W +: INPUT_W];
-
-      // x_eff = x_raw - zp, clamped to unsigned [0, 2^X_EFF_W - 1]
-      x_tmp[c] = $signed(x_tile[c]) - input_zp;
-
-      if (x_tmp[c] < 0)
-        x_eff[c] = '0;
-      else if (x_tmp[c] > ((1 << X_EFF_W) - 1))
-        x_eff[c] = {X_EFF_W{1'b1}};
-      else
-        x_eff[c] = x_tmp[c][X_EFF_W-1:0];
+  genvar gx;
+  generate
+    for (gx = 0; gx < TILE_COLS; gx++) begin : GEN_XEFF
+      assign x_full[gx] = $signed({1'b0, x_tile[gx]}) - input_zp;
+      assign x_eff[gx]  = (x_full[gx] < 0)                ? {X_EFF_W{1'b0}} :
+                          (x_full[gx] > (2**X_EFF_W - 1))  ? {X_EFF_W{1'b1}} :
+                                                              x_full[gx][X_EFF_W-1:0];
     end
-  end
-
-  // synthesis translate_off
-  initial begin
-    for (int i = 0; i < N_TILES; i++) tile_mem[i] = '0;
-  end
-  // synthesis translate_on
+  endgenerate
 
 endmodule
