@@ -1,9 +1,21 @@
-# CIM SoC — 存算一体 AI 芯片 FPGA 验证系统
+# CIM SoC — 存算一体 AI 芯片 FPGA 验证系统（施工ing）
 
 ## 项目概述
 
-基于 PYNQ-Z2 (Zynq-7020) 的存算一体 (CIM) SoC 验证平台。
-支持 INT8 量化推理，可运行 MLP/CNN 神经网络。
+~预计是~基于 PYNQ-Z2 (Zynq-7020)/kria kv260 的存算一体 (CIM) SoC 验证平台。
+支持 INT8 量化推理，可运行 MLP/CNN 神经网络（以后还可能再扩展）。
+
+和之前的项目设计题目*[MNIST-CIM-FPGA](https://github.com/Invoker-pray/MNIST-CIM-FPGA)*有相似之处。有一些进步如下：
+
+- 这次完成了在`cim_pkg.sv`中实现所有参数的集中管理。
+
+- AXI4_Lite接口完成，可以实现DMA式的weight写入，还有IRQ支持，performance counter.
+
+- 统一的engine设计，在之前`MNIST-CIM-FPGA`中是比较机械的FC1/FC2各使用一套硬逻辑，本次在`cim_accel_core`中用一个FSM处理任意层。
+
+- 之前`FPGA_A`中有推理乱飘的问题，是在`psum_accum`中没有进行修复导致的。
+
+- 本次Golden model和tb更加成熟一点。
 
 ## 目录结构
 
@@ -46,52 +58,45 @@ cim_soc/
 └── README.md                       # 本文件
 ```
 
-## 快速开始
-
-### 1. Lint 检查
-
-```bash
-verilator --lint-only --sv -Wall \
-  -Wno-UNUSED -Wno-UNDRIVEN -Wno-DECLFILENAME \
-  -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC -Wno-SELRANGE \
-  -Wno-UNSIGNED -Wno-CASEINCOMPLETE -Wno-LATCH -Wno-BLKANDNBLK \
-  hw/rtl/pkg/cim_pkg.sv hw/rtl/core/*.sv hw/rtl/mem/*.sv hw/rtl/axi/*.sv \
-  --top-module cim_axi_lite_slave
-```
-
-### 2. 运行 Golden Model
-
-```bash
-cd sw && python3 golden_model.py
-```
-
-### 3. VCS 仿真
-
-```bash
-cd hw && bash scripts/run_tb_cim_tile.sh
-cd hw && bash scripts/run_tb_cim_accel_core.sh
-```
-
-### 4. Vivado 综合上板
-
-详见 `docs/vivado_block_design_guide.md`
-
-## LaTeX 论文编译
-
-```bash
-cd paper && xelatex paper.tex && biber paper && xelatex paper.tex && xelatex paper.tex
-```
-
 ## 开发路线
+
+### [] step 1: 逻辑设计 + 仿真
 
 - [x] Phase 0: 参数体系 + CSR 地址映射
 - [x] Phase 1: CIM 核心重写 (lint clean)
 - [x] Phase 1: AXI4-Lite slave wrapper
 - [x] Phase 1: Golden model + Testbench
-- [ ] Phase 2: Vivado Block Design 实际搭建
+- [] Phase 2: 完成MNIST端到端testbench
+- [] Phase 2.5 : 实现对CNN支持
+- [] Phase 3: `cim_pkg`中增加Conv层im2col映射支持
+- [] Phase 4: 完成边界测试
+- [] Phase 5: 完成所有testbench和regression脚本自动化。
+
+### [] step 2: PYNQ-Z2 + ZYNQ PS部署
+
+- [ ] Phase 1: Vivado Block Design 实际搭建
 - [ ] Phase 2: PYNQ 上板验证 MNIST
 - [ ] Phase 3: 多层网络调度 (FC1→FC2 软件循环)
-- [ ] Phase 3: im2col Conv 支持
-- [ ] Phase 4: Bit-plane CIM (论文创新点)
-- [ ] Phase 5: PicoRV32 RISC-V 近存控制器 (可选)
-- [ ] Phase 5: KV260 移植 (可选)
+- [ ] Phase 3: im2col Conv 上板验证支持
+
+### [] step 3: extensions
+
+- [ ] Phase 1: 实现多层自动化推理(python driver做layer-by-layer循环)
+- [ ] Phase 2: im2col展开Conv层：python侧做im2col变换后喂给MVM引擎
+- [ ] Phase 3: 尝试映射一个Conv网络(比如LeNet-5)
+- [] Phase 4: 尝试讨论bit-plane
+
+### [] step 4: PicoRV32替换ARM控制
+
+- [] Phase 1: 集成PicoRV32开源RISC-V软核到PL
+- [] Phase 2: 写 Wishbone→CSR bridge（或直接用 PicoRV32 native memory interface 映射到 CSR 地址空间）
+- [] Phase 3: RISC-V 固件（C）完成：weight DMA 加载、层配置、推理触发、结果读取
+- [] Phase 4: 用 riscv64-unknown-elf-gcc 交叉编译，固件存 BRAM
+- [] Phase 5: 仿真 + 上板验证功能等价
+
+### [] step 5: Kria KV 260移植
+
+- [] Phase 1: 更换 board file（xck26-sfvc784），重新搭建 Block Design
+- [] Phase 1:测试更大并行度
+- [] Phase 2: Zynq UltraScale+ 的 PS 是 Cortex-A53（AXI 接口兼容，驱动几乎不改），综合 + 时序收敛 + 上板验证
+- [] Phase 3: 性能对比报告：PYNQ-Z2 vs KV260（资源、频率、吞吐）

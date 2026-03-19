@@ -1,140 +1,149 @@
 // ============================================================================
 // cim_axi_lite_slave.sv — AXI4-Lite Slave Interface for CIM Accelerator IP
 // ============================================================================
-// Standard AXI4-Lite slave that maps CSR registers and SRAM windows.
-//
-// Address Map (see cim_pkg.sv for details):
-//   0x000 - 0x0FF : Control/Status/Config registers
-//   0x400 - 0x7FF : Input buffer write window
-//   0x800 - 0xBFF : Bias buffer write window
-//   Weight SRAM:    written via DMA-style registers (CSR_WDMA_*)
-//
-// AXI4-Lite protocol:
-//   - 32-bit data bus
-//   - Single-beat transactions only
-//   - Supports concurrent read/write channels
-//
-// For Vivado IP Integrator:
-//   - Instantiate this in Block Design
-//   - Connect S_AXI to Zynq PS M_AXI_GP0
-//   - Connect irq_done to PS IRQ_F2P
+// FIXES vs previous version:
+//   FIX2: AW/W channels now accept independently (AW-first, W-first, or
+//         simultaneous). Fully AXI4-Lite compliant.
+//   FIX3: Weight DMA adds auto-increment burst mode. Write CSR_WDMA_CTRL
+//         with bit[1]=1 to enable auto-increment of chunk_idx (and tile_idx
+//         wrap). This allows SW to just stream CSR_WDMA_DATA writes.
+//   FIX5: CSR read path uses a 2-cycle pipeline for output buffer reads.
+//         First cycle latches the address and issues obuf_rd_addr.
+//         Second cycle captures obuf_rd_data into r_data_r.
 // ============================================================================
 
 module cim_axi_lite_slave
   import cim_pkg::*;
 #(
-  parameter int AXI_ADDR_W = 12,   // 4KB address space
+  parameter int AXI_ADDR_W = 12,
   parameter int AXI_DATA_W = 32
 ) (
-  // ============================================================
   // AXI4-Lite Slave Interface
-  // ============================================================
   input  logic                       S_AXI_ACLK,
   input  logic                       S_AXI_ARESETN,
 
-  // Write Address Channel
   input  logic [AXI_ADDR_W-1:0]     S_AXI_AWADDR,
   input  logic [2:0]                 S_AXI_AWPROT,
   input  logic                       S_AXI_AWVALID,
   output logic                       S_AXI_AWREADY,
 
-  // Write Data Channel
   input  logic [AXI_DATA_W-1:0]     S_AXI_WDATA,
   input  logic [AXI_DATA_W/8-1:0]   S_AXI_WSTRB,
   input  logic                       S_AXI_WVALID,
   output logic                       S_AXI_WREADY,
 
-  // Write Response Channel
   output logic [1:0]                 S_AXI_BRESP,
   output logic                       S_AXI_BVALID,
   input  logic                       S_AXI_BREADY,
 
-  // Read Address Channel
   input  logic [AXI_ADDR_W-1:0]     S_AXI_ARADDR,
   input  logic [2:0]                 S_AXI_ARPROT,
   input  logic                       S_AXI_ARVALID,
   output logic                       S_AXI_ARREADY,
 
-  // Read Data Channel
   output logic [AXI_DATA_W-1:0]     S_AXI_RDATA,
   output logic [1:0]                 S_AXI_RRESP,
   output logic                       S_AXI_RVALID,
   input  logic                       S_AXI_RREADY,
 
-  // ============================================================
-  // Interrupt Output
-  // ============================================================
   output logic                       irq_done
 );
 
-  // ============================================================
-  // Internal clk/rst aliases
-  // ============================================================
-  logic clk;
-  logic rst_n;
+  logic clk, rst_n;
   assign clk   = S_AXI_ACLK;
   assign rst_n = S_AXI_ARESETN;
 
   // ============================================================
-  // AXI Write FSM
+  // FIX2: AXI Write FSM — independent AW/W acceptance
   // ============================================================
-  logic                      aw_ready_r, w_ready_r, b_valid_r;
-  logic [AXI_ADDR_W-1:0]    aw_addr_r;
+  // State: track whether AW and W have been received independently
+  logic aw_received, w_received;
+  logic [AXI_ADDR_W-1:0] aw_addr_r;
+  logic [AXI_DATA_W-1:0] w_data_r;
+  logic b_valid_r;
 
-  assign S_AXI_AWREADY = aw_ready_r;
-  assign S_AXI_WREADY  = w_ready_r;
-  assign S_AXI_BRESP   = 2'b00;  // OKAY
+  assign S_AXI_AWREADY = !aw_received && !b_valid_r;
+  assign S_AXI_WREADY  = !w_received  && !b_valid_r;
+  assign S_AXI_BRESP   = 2'b00;
   assign S_AXI_BVALID  = b_valid_r;
 
-  // Accept write address and data simultaneously
+  // Write transaction fires when both AW and W have been captured
+  wire wr_fire = aw_received && w_received && !b_valid_r;
+
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-      aw_ready_r <= 1'b1;
-      w_ready_r  <= 1'b1;
-      b_valid_r  <= 1'b0;
-      aw_addr_r  <= '0;
+      aw_received <= 1'b0;
+      w_received  <= 1'b0;
+      b_valid_r   <= 1'b0;
+      aw_addr_r   <= '0;
+      w_data_r    <= '0;
     end else begin
-      if (aw_ready_r && S_AXI_AWVALID && w_ready_r && S_AXI_WVALID) begin
-        aw_addr_r  <= S_AXI_AWADDR;
-        aw_ready_r <= 1'b0;
-        w_ready_r  <= 1'b0;
-        b_valid_r  <= 1'b1;
-      end else if (b_valid_r && S_AXI_BREADY) begin
-        aw_ready_r <= 1'b1;
-        w_ready_r  <= 1'b1;
-        b_valid_r  <= 1'b0;
+      // Accept AW independently
+      if (S_AXI_AWVALID && S_AXI_AWREADY) begin
+        aw_addr_r   <= S_AXI_AWADDR;
+        aw_received <= 1'b1;
+      end
+      // Accept W independently
+      if (S_AXI_WVALID && S_AXI_WREADY) begin
+        w_data_r    <= S_AXI_WDATA;
+        w_received  <= 1'b1;
+      end
+      // Both received → issue write response
+      if (aw_received && w_received && !b_valid_r) begin
+        b_valid_r <= 1'b1;
+      end
+      // Response accepted → back to idle
+      if (b_valid_r && S_AXI_BREADY) begin
+        aw_received <= 1'b0;
+        w_received  <= 1'b0;
+        b_valid_r   <= 1'b0;
       end
     end
   end
 
   // ============================================================
-  // AXI Read FSM
+  // FIX5: AXI Read FSM — 2-cycle pipeline for BRAM reads
   // ============================================================
-  logic                      ar_ready_r, r_valid_r;
-  logic [AXI_ADDR_W-1:0]    ar_addr_r;
-  logic [AXI_DATA_W-1:0]    r_data_r;
+  typedef enum logic [1:0] {
+    RD_IDLE    = 2'd0,
+    RD_WAIT    = 2'd1,   // BRAM read latency cycle
+    RD_RESPOND = 2'd2
+  } rd_state_t;
 
-  assign S_AXI_ARREADY = ar_ready_r;
+  rd_state_t rd_state;
+  logic [AXI_ADDR_W-1:0] ar_addr_r;
+  logic [AXI_DATA_W-1:0] r_data_r;
+
+  assign S_AXI_ARREADY = (rd_state == RD_IDLE);
   assign S_AXI_RDATA   = r_data_r;
   assign S_AXI_RRESP   = 2'b00;
-  assign S_AXI_RVALID  = r_valid_r;
+  assign S_AXI_RVALID  = (rd_state == RD_RESPOND);
 
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-      ar_ready_r <= 1'b1;
-      r_valid_r  <= 1'b0;
-      ar_addr_r  <= '0;
-      r_data_r   <= '0;
+      rd_state  <= RD_IDLE;
+      ar_addr_r <= '0;
+      r_data_r  <= '0;
     end else begin
-      if (ar_ready_r && S_AXI_ARVALID) begin
-        ar_addr_r  <= S_AXI_ARADDR;
-        ar_ready_r <= 1'b0;
-        r_valid_r  <= 1'b1;
-        r_data_r   <= read_csr(S_AXI_ARADDR);
-      end else if (r_valid_r && S_AXI_RREADY) begin
-        ar_ready_r <= 1'b1;
-        r_valid_r  <= 1'b0;
-      end
+      case (rd_state)
+        RD_IDLE: begin
+          if (S_AXI_ARVALID) begin
+            ar_addr_r <= S_AXI_ARADDR;
+            rd_state  <= RD_WAIT;
+          end
+        end
+        RD_WAIT: begin
+          // BRAM data is now valid on obuf_rd_data; latch everything
+          r_data_r <= read_csr_fn(ar_addr_r);
+          rd_state <= RD_RESPOND;
+        end
+        RD_RESPOND: begin
+          if (S_AXI_RREADY) begin
+            rd_state <= RD_IDLE;
+          end
+        end
+        default: rd_state <= RD_IDLE;
+      endcase
     end
   end
 
@@ -156,6 +165,8 @@ module cim_axi_lite_slave
   logic [31:0]    reg_wdma_data;
   logic [3:0]     reg_wdma_chunk;
   logic           reg_wdma_wr;
+  // FIX3: burst mode — auto-increment chunk/tile
+  logic           reg_wdma_burst;
 
   // Start/clear signals
   logic start_pulse;
@@ -163,7 +174,7 @@ module cim_axi_lite_slave
   logic done_irq_clear;
 
   // ============================================================
-  // Accelerator Core instantiation
+  // Accelerator Core
   // ============================================================
   logic accel_busy, accel_done;
   logic done_sticky;
@@ -181,12 +192,10 @@ module cim_axi_lite_slave
   logic [clog2_safe(MAX_OUT_DIM)-1:0]      obuf_wr_addr;
   logic signed [OUTPUT_W-1:0]              obuf_wr_data;
 
-  // Output buffer read interface (for CPU readback)
   logic [clog2_safe(MAX_OUT_DIM)-1:0]      obuf_rd_addr;
   logic signed [OUTPUT_W-1:0]              obuf_rd_data;
   logic [clog2_safe(MAX_OUT_DIM)-1:0]      pred_class;
 
-  // Input tile for x_tile (unused directly, just x_eff)
   logic signed [INPUT_W-1:0]               ibuf_x_tile [TILE_COLS];
 
   cim_accel_core u_core (
@@ -231,20 +240,24 @@ module cim_axi_lite_slave
     .rd_tile      (w_rd_tile)
   );
 
+  // Bias/Input/Output write enable signals from AXI write path
+  wire bias_wr_hit  = wr_fire && (aw_addr_r >= MEM_BIAS_BASE)  && (aw_addr_r < 12'hC00);
+  wire input_wr_hit = wr_fire && (aw_addr_r >= MEM_INPUT_BASE) && (aw_addr_r < 12'h800);
+
   bias_sram #(.DEPTH(BSRAM_DEPTH)) u_bsram (
     .clk     (clk),
-    .wr_en   (aw_ready_r == 1'b0 && aw_addr_r >= MEM_BIAS_BASE && aw_addr_r < 12'hC00),
+    .wr_en   (bias_wr_hit),
     .wr_addr ((aw_addr_r - MEM_BIAS_BASE) >> 2),
-    .wr_data (S_AXI_WDATA),
+    .wr_data (w_data_r),
     .rd_addr (b_rd_addr),
     .rd_data (b_rd_data)
   );
 
   input_buffer #(.MAX_LEN(MAX_IN_DIM)) u_ibuf (
     .clk          (clk),
-    .wr_en        (aw_ready_r == 1'b0 && aw_addr_r >= MEM_INPUT_BASE && aw_addr_r < 12'h800),
+    .wr_en        (input_wr_hit),
     .wr_addr      ((aw_addr_r - MEM_INPUT_BASE) >> 2),
-    .wr_data      (S_AXI_WDATA[INPUT_W-1:0]),
+    .wr_data      (w_data_r[INPUT_W-1:0]),
     .rd_tile_idx  (ibuf_rd_tile_idx),
     .input_zp     (reg_input_zp),
     .x_tile       (ibuf_x_tile),
@@ -263,12 +276,21 @@ module cim_axi_lite_slave
     .pred_class (pred_class)
   );
 
-  // ============================================================
-  // CSR Write Logic
-  // ============================================================
-  // Write happens when AXI write transaction completes
-  wire csr_wr = (aw_ready_r == 1'b0) && (w_ready_r == 1'b0);
+  // FIX5: Output buffer read address — set one cycle early (RD_IDLE or RD_WAIT)
+  // In RD_IDLE, use the incoming ARADDR directly for minimum latency.
+  // In RD_WAIT, use the latched ar_addr_r.
+  always_comb begin
+    if (rd_state == RD_IDLE && S_AXI_ARVALID && S_AXI_ARADDR >= CSR_LOGIT_BASE)
+      obuf_rd_addr = (S_AXI_ARADDR - CSR_LOGIT_BASE) >> 2;
+    else if (ar_addr_r >= CSR_LOGIT_BASE)
+      obuf_rd_addr = (ar_addr_r - CSR_LOGIT_BASE) >> 2;
+    else
+      obuf_rd_addr = '0;
+  end
 
+  // ============================================================
+  // CSR Write Logic — fires on wr_fire
+  // ============================================================
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       reg_in_dim        <= 16'd784;
@@ -287,6 +309,7 @@ module cim_axi_lite_slave
       reg_wdma_addr     <= '0;
       reg_wdma_data     <= '0;
       reg_wdma_chunk    <= '0;
+      reg_wdma_burst    <= 1'b0;
     end else begin
       // Self-clearing pulses
       start_pulse    <= 1'b0;
@@ -294,29 +317,43 @@ module cim_axi_lite_slave
       done_irq_clear <= 1'b0;
       reg_wdma_wr    <= 1'b0;
 
-      if (csr_wr) begin
+      if (wr_fire) begin
         case (aw_addr_r)
           CSR_CTRL: begin
-            if (S_AXI_WDATA[0]) start_pulse    <= 1'b1;
-            if (S_AXI_WDATA[1]) done_irq_clear <= 1'b1;
-            if (S_AXI_WDATA[2]) soft_rst_pulse <= 1'b1;
+            if (w_data_r[0]) start_pulse    <= 1'b1;
+            if (w_data_r[1]) done_irq_clear <= 1'b1;
+            if (w_data_r[2]) soft_rst_pulse <= 1'b1;
           end
-          CSR_IRQ_EN:        reg_irq_en        <= S_AXI_WDATA[0];
-          CSR_IN_DIM:        reg_in_dim        <= S_AXI_WDATA[15:0];
-          CSR_OUT_DIM:       reg_out_dim       <= S_AXI_WDATA[15:0];
-          CSR_N_IB:          reg_n_ib          <= S_AXI_WDATA[15:0];
-          CSR_N_OB:          reg_n_ob          <= S_AXI_WDATA[15:0];
-          CSR_REQUANT_MULT:  reg_requant_mult  <= S_AXI_WDATA;
-          CSR_REQUANT_SHIFT: reg_requant_shift <= S_AXI_WDATA;
-          CSR_INPUT_ZP:      reg_input_zp      <= $signed(S_AXI_WDATA);
-          CSR_ACT_MODE:      reg_act_mode      <= act_mode_t'(S_AXI_WDATA[1:0]);
-          CSR_WDMA_ADDR:     reg_wdma_addr     <= S_AXI_WDATA[15:0];
-          CSR_WDMA_DATA:     reg_wdma_data     <= S_AXI_WDATA;
+          CSR_IRQ_EN:        reg_irq_en        <= w_data_r[0];
+          CSR_IN_DIM:        reg_in_dim        <= w_data_r[15:0];
+          CSR_OUT_DIM:       reg_out_dim       <= w_data_r[15:0];
+          CSR_N_IB:          reg_n_ib          <= w_data_r[15:0];
+          CSR_N_OB:          reg_n_ob          <= w_data_r[15:0];
+          CSR_REQUANT_MULT:  reg_requant_mult  <= w_data_r;
+          CSR_REQUANT_SHIFT: reg_requant_shift <= w_data_r;
+          CSR_INPUT_ZP:      reg_input_zp      <= $signed(w_data_r);
+          CSR_ACT_MODE:      reg_act_mode      <= act_mode_t'(w_data_r[1:0]);
+          CSR_WDMA_ADDR:     reg_wdma_addr     <= w_data_r[15:0];
+          CSR_WDMA_DATA: begin
+            reg_wdma_data <= w_data_r;
+            // FIX3: In burst mode, auto-fire write + auto-increment
+            if (reg_wdma_burst) begin
+              reg_wdma_wr <= 1'b1;
+              // Auto-increment chunk, wrap to next tile
+              if (reg_wdma_chunk == (TILE_ROWS * TILE_COLS / (32/WEIGHT_W)) - 1) begin
+                reg_wdma_chunk <= '0;
+                reg_wdma_addr  <= reg_wdma_addr + 16'd1;
+              end else begin
+                reg_wdma_chunk <= reg_wdma_chunk + 4'd1;
+              end
+            end
+          end
           CSR_WDMA_CTRL: begin
-            reg_wdma_wr    <= S_AXI_WDATA[0];
-            reg_wdma_chunk <= S_AXI_WDATA[7:4];
+            reg_wdma_wr    <= w_data_r[0];
+            reg_wdma_burst <= w_data_r[1];  // FIX3: bit[1] = burst enable
+            reg_wdma_chunk <= w_data_r[7:4];
           end
-          default: ;  // input/bias windows handled by memory blocks directly
+          default: ;  // input/bias windows handled by memory blocks
         endcase
       end
     end
@@ -339,16 +376,13 @@ module cim_axi_lite_slave
   assign irq_done = done_sticky & reg_irq_en;
 
   // ============================================================
-  // CSR Read Logic
+  // FIX5: CSR Read Function — now called in RD_WAIT when BRAM
+  // data is valid. obuf_rd_data is the registered output from
+  // the address set in the previous cycle.
   // ============================================================
-  // Output buffer read address derived from AXI read address
-  assign obuf_rd_addr = (ar_addr_r >= CSR_LOGIT_BASE)
-                        ? ((ar_addr_r - CSR_LOGIT_BASE) >> 2)
-                        : '0;
-
-  function automatic logic [31:0] read_csr(input logic [AXI_ADDR_W-1:0] addr);
+  function automatic logic [31:0] read_csr_fn(input logic [AXI_ADDR_W-1:0] addr);
     case (addr)
-      CSR_CTRL:          return 32'd0;  // write-only
+      CSR_CTRL:          return 32'd0;
       CSR_STATUS:        return {24'd0, accel_state, done_sticky, accel_busy};
       CSR_IRQ_EN:        return {31'd0, reg_irq_en};
       CSR_IRQ_STATUS:    return {31'd0, done_sticky};
@@ -364,9 +398,8 @@ module cim_axi_lite_slave
       CSR_CYCLE_CNT_HI:  return perf_cycles[63:32];
       CSR_MAC_CNT_LO:    return perf_macs[31:0];
       CSR_MAC_CNT_HI:    return perf_macs[63:32];
-      CSR_PRED_CLASS:     return {22'd0, pred_class};
+      CSR_PRED_CLASS:    return {22'd0, pred_class};
       default: begin
-        // Logit readback window
         if (addr >= CSR_LOGIT_BASE && addr < MEM_INPUT_BASE)
           return {{(32-OUTPUT_W){obuf_rd_data[OUTPUT_W-1]}}, obuf_rd_data};
         else

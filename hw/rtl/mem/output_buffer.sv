@@ -1,9 +1,13 @@
 // ============================================================================
-// output_buffer.sv — Output activation storage
+// output_buffer.sv — Output activation storage (FIX4: registered argmax)
 // ============================================================================
-// CIM writes computed output neurons (INT8 after requantize)
-// CPU reads results via AXI
-// Also provides argmax output for classification tasks
+// FIX4 vs previous version:
+//   Old: Combinational argmax across ALL MAX_LEN entries every cycle.
+//        With MAX_LEN=1024, this is a 1024-way comparison chain → huge
+//        critical path and may fail timing at 100MHz.
+//   New: Incremental argmax updated on each write. A clear signal resets
+//        the tracker when a new inference starts. The argmax register is
+//        always up-to-date after the last write of each inference.
 // ============================================================================
 
 module output_buffer
@@ -23,11 +27,14 @@ module output_buffer
   input  logic [clog2_safe(MAX_LEN)-1:0]   rd_addr,
   output logic signed [OUTPUT_W-1:0]       rd_data,
 
-  // --- Argmax (continuously computed over valid range) ---
-  input  logic [clog2_safe(MAX_LEN)-1:0]   out_dim,    // actual output dimension
+  // --- Argmax ---
+  input  logic [clog2_safe(MAX_LEN)-1:0]   out_dim,
   output logic [clog2_safe(MAX_LEN)-1:0]   pred_class
 );
 
+  localparam int ADDR_W = clog2_safe(MAX_LEN);
+
+  (* ram_style = "block" *)
   logic signed [OUTPUT_W-1:0] buf_mem [MAX_LEN];
 
   // Write
@@ -41,20 +48,36 @@ module output_buffer
     rd_data <= buf_mem[rd_addr];
   end
 
-  // Argmax — combinational over buf_mem[0..out_dim-1]
-  logic signed [OUTPUT_W-1:0]        argmax_val;
-  logic [clog2_safe(MAX_LEN)-1:0]    argmax_idx;
+  // -----------------------------------------------------------------------
+  // FIX4: Incremental argmax — update on each write
+  // -----------------------------------------------------------------------
+  // When wr_addr == 0 and wr_en: this is the first output neuron of a new
+  // ob_group or a new inference. Reset the tracker.
+  // For subsequent writes: compare incoming value against current max.
+  //
+  // Note: cim_accel_core writes outputs sequentially from addr 0 upward
+  // within each inference pass, so addr==0 is a reliable reset trigger.
+  // -----------------------------------------------------------------------
+  logic signed [OUTPUT_W-1:0]  argmax_val_r;
+  logic [ADDR_W-1:0]           argmax_idx_r;
 
-  always_comb begin
-    argmax_val = buf_mem[0];
-    argmax_idx = '0;
-    for (int i = 1; i < MAX_LEN; i++) begin
-      if (i < int'(out_dim) && buf_mem[i] > argmax_val) begin
-        argmax_val = buf_mem[i];
-        argmax_idx = clog2_safe(MAX_LEN)'(i);
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      argmax_val_r <= {OUTPUT_W{1'b1}};  // most negative value
+      argmax_idx_r <= '0;
+    end else if (wr_en) begin
+      if (wr_addr == '0) begin
+        // First element: unconditionally becomes the current max
+        argmax_val_r <= wr_data;
+        argmax_idx_r <= '0;
+      end else if (wr_data > argmax_val_r) begin
+        // New maximum found
+        argmax_val_r <= wr_data;
+        argmax_idx_r <= wr_addr;
       end
     end
-    pred_class = argmax_idx;
   end
+
+  assign pred_class = argmax_idx_r;
 
 endmodule
