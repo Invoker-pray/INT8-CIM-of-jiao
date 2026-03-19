@@ -2,7 +2,7 @@
 
 ## 概览
 
-本文档指导你在 Vivado 中搭建 Zynq PS + CIM 加速器 IP 的完整 SoC 系统。
+这里是一个在 Vivado 中搭建 Zynq PS + CIM 加速器 IP 的完整 SoC 系统的指南。
 
 最终的 Block Design 架构如下：
 
@@ -33,9 +33,18 @@
 
 ## 前置条件
 
-1. **Vivado 2022.2+**（免费 Standard Edition 支持 xc7z020）
+1. **Vivado 2024.2+**（免费 Standard Edition 支持 xc7z020）
 2. **PYNQ-Z2 board file**（从 [TUL 网站](https://www.tulembedded.com/fpga/ProductsPYNQ-Z2.html) 下载）
 3. **本项目 RTL 文件**（hw/rtl/ 下全部 .sv）
+
+4. 装好PYNQ-Z2 board file.
+   没有装的话会有`apply_bd_automation`失败，因为PS的DDR/MIO配置不会自动填。
+
+5. 装法：把board file文件夹放到`<Vivado_install_path>/data/boards/board_files/pynq-z2/`下。
+
+## 运行文件
+
+直接在项目根目录下运行`bash hw/scripts/vivado_build.sh`.
 
 ## 步骤 1：创建工程
 
@@ -228,7 +237,7 @@ def wait_done():
         status = read_csr(CSR_STATUS)
         if status & 0x2:  # done bit
             return status
-        
+
 def configure_layer(in_dim, out_dim, zp=-128, mult=1, shift=0, act=1):
     """Configure CIM for a layer."""
     n_ib = (in_dim + 15) // 16
@@ -320,7 +329,7 @@ def mnist_demo():
     # b2 = np.load("fc2_bias.npy")    # shape (10,), int32
     # quant_params = np.load("quant.npz")  # mult, shift for each layer
     # test_image = np.load("test_img.npy")  # shape (784,), uint8
-    
+
     # --- Layer 1: 784 → 128 ---
     print("=== Layer 1: FC 784→128 (ReLU) ===")
     # load_weights(w1)
@@ -340,7 +349,7 @@ def mnist_demo():
     #                 shift=quant_params['fc2_shift'], act=0)
     # pred = run_inference()
     # logits = read_output(10)
-    
+
     # print(f"\\nLogits: {logits}")
     # print(f"Prediction: {pred}")
     pass
