@@ -1,0 +1,53 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+build/
+dist/
+wheels/
+
+# Test / lint caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ---- Rye / venv ----
+.venv/
+
+# ---- Notebooks ----
+.ipynb_checkpoints/
+
+# ---- Environment ----
+.env
+.env.*
+!.env.example
+
+# ---- Editor / OS ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# ---- Logs ----
+*.log
+
+# ---- Generated ML / vector artifacts (avoid uploading) ----
+*.npy
+*.npz
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.h5
+*.hdf5
+*.bin
+
+sw/data/
+sw/datasets/
+sw/outputs/
+sw/artifacts/
+sw/runs/
