@@ -105,7 +105,7 @@ cim_soc/
 
 step 1中，之前将`cim_pkg.sv: MAX_IN_DIM, MAX_OUT_DIM`设置为1024，触发了vivado综合器单个变量1e6bit的限制，这样计算出来WSRAM_DEPTH = (1024/16) x (1024/16) = 4096太大，vivado拒绝处理。
 
-这里有两个方向，第一个是缩小MAX维度，可以简单的在BRAM中放下。PYNQ-Z2有140个36kb BRAM，大约630kB，修改之前一个weight SRAM就要128x4096x16bis=1MB是放不下的；但是修改之后大约是128x392x16bits，大约是98kB，就可以放下，这里决定建立一个分支，`pynq-z2-7020-tiny-MAXdimension-io`，用于实现缩小MAX维度的版本。
+这里有两个方向，第一个是缩小MAX维度，可以简单的在BRAM中放下。PYNQ-Z2有140个36kb BRAM，大约630kB，修改之前一个weight SRAM就要128x4096x16bis=1MB是放不下的；但是修改之后大约是128x392x16bits，大约是98kB，就可以放下，这里决定先按照这个作为master继续进行项目，如有必要则建立一个分支，`pynq-z2-7020-tiny-MAXdimension-io`，用于实现缩小MAX维度的版本。
 
 但是，我们可能真的在后续需要支持1024x1024，可以把二维数组拆成16个独立的一维数组，让vivado逐个推断BRAM绕开单变量大小的限制。这时，我们需要改写`weight_sram.sv`，
 
