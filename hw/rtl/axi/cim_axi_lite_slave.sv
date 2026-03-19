@@ -198,7 +198,7 @@ module cim_axi_lite_slave
   logic signed [                        OUTPUT_W-1:0] obuf_rd_data;
   logic        [         clog2_safe(MAX_OUT_DIM)-1:0] pred_class;
 
-  logic signed [                         INPUT_W-1:0] ibuf_x_tile      [TILE_COLS];
+  logic        [                         INPUT_W-1:0] ibuf_x_tile      [TILE_COLS];
 
   cim_accel_core u_core (
       .clk              (clk),
