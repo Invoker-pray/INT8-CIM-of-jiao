@@ -58,3 +58,5 @@ sim/**
 sim/
 sim
 
+vivado_proj/
+vivado_proj/**

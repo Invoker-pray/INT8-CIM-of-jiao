@@ -50,6 +50,7 @@ set rtl_files [list \
     ${HW_DIR}/rtl/mem/output_buffer.sv \
     ${HW_DIR}/rtl/core/cim_accel_core.sv \
     ${HW_DIR}/rtl/axi/cim_axi_lite_slave.sv \
+    ${HW_DIR}/rtl/axi/cim_axi_lite_slave_wrapper.v \
 ]
 
 add_files -norecurse ${rtl_files}
@@ -84,7 +85,8 @@ set_property -dict [list \
 ] [get_bd_cells ps7]
 
 # --- 3b. CIM Accelerator IP ---
-create_bd_cell -type module -reference cim_axi_lite_slave cim_0
+#create_bd_cell -type module -reference cim_axi_lite_slave cim_0
+create_bd_cell -type module -reference cim_axi_lite_slave_wrapper cim_0
 
 # --- 3c. AXI Connection Automation ---
 apply_bd_automation -rule xilinx.com:bd_rule:axi4 \
