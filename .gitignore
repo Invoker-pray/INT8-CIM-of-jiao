@@ -51,3 +51,10 @@ sw/datasets/
 sw/outputs/
 sw/artifacts/
 sw/runs/
+
+data_golden/
+
+sim/**
+sim/
+sim
+

@@ -57,10 +57,10 @@ module tb_cim_accel_core;
   logic [63:0] perf_cycles, perf_macs;
 
   // ---------- Test parameters ----------
-  localparam int TEST_IN  = 32;   // input dim (2 input blocks)
-  localparam int TEST_OUT = 16;   // output dim (1 output block)
-  localparam int TEST_NIB = TEST_IN  / TILE_COLS;  // 2
-  localparam int TEST_NOB = TEST_OUT / TILE_ROWS;   // 1
+  localparam int TEST_IN  = 32;                     // input dim (2 input blocks @ TILE_COLS=16)
+  localparam int TEST_OUT = PAR_OB * TILE_ROWS;     // output dim = exactly one ob_group (PAR_OB tiles)
+  localparam int TEST_NIB = TEST_IN  / TILE_COLS;   // 2
+  localparam int TEST_NOB = TEST_OUT / TILE_ROWS;   // == PAR_OB
   localparam int TEST_ZP  = -128;
   localparam int TEST_MULT  = 1073741824;  // 2^30
   localparam int TEST_SHIFT = 30;
@@ -171,9 +171,11 @@ module tb_cim_accel_core;
     for (int o = 0; o < TEST_OUT; o++) begin
       golden_acc[o] = golden_b[o];
       for (int i = 0; i < TEST_IN; i++) begin
-        // x_eff = uint8(x) - zp, clamped to [0, 511]
-        automatic int x_eff_val = $signed(golden_x[i]) - TEST_ZP;
-        if (x_eff_val < 0) x_eff_val = 0;
+        // x_eff = uint8(x) - zp (UNSIGNED zero-extension, matches RTL {1'b0, x_tile})
+        // int'() preserves the unsigned value [0..255]; do NOT use $signed() here
+        // as that would reinterpret x>=128 as negative, diverging from RTL.
+        automatic int x_eff_val = int'(golden_x[i]) - TEST_ZP;  // = x + 128, range [128,383]
+        if (x_eff_val < 0)   x_eff_val = 0;
         if (x_eff_val > 511) x_eff_val = 511;
         golden_acc[o] = golden_acc[o] + x_eff_val * golden_w[o][i];
       end
@@ -292,6 +294,7 @@ module tb_cim_accel_core;
     wait (done);
     $display("Computation done! Cycles=%0d, MACs=%0d", perf_cycles, perf_macs);
     repeat (3) @(posedge clk);
+    dump_psum();
 
     // ---- Read and compare results ----
     $display("Comparing results...");
@@ -320,6 +323,22 @@ module tb_cim_accel_core;
     #100;
     $finish;
   end
+
+  // ---- Debug monitor: trace every obuf write ----
+  always @(posedge clk) begin
+    if (obuf_wr_en)
+      $display("DBG_WR: obuf[%0d] <= %0d  (bias_val=%0d)",
+               obuf_wr_addr, obuf_wr_data, dut.bias_val_r);
+  end
+
+  // ---- Print golden accumulator values for failed outputs ----
+  task dump_psum;
+    $display("DBG: golden_acc (bias+MAC, before ReLU/requant):");
+    for (int o = 0; o < TEST_OUT; o++) begin
+      if (golden_out[o] === 8'sd0)
+        $display("  golden[%2d]: acc=%0d  out=%0d  (zero/neg)", o, golden_acc[o], golden_out[o]);
+    end
+  endtask
 
   // Timeout
   initial begin
