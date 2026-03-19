@@ -101,31 +101,12 @@ cim_soc/
 - [] Phase 2: Zynq UltraScale+ 的 PS 是 Cortex-A53（AXI 接口兼容，驱动几乎不改），综合 + 时序收敛 + 上板验证
 - [] Phase 3: 性能对比报告：PYNQ-Z2 vs KV260（资源、频率、吞吐）
 
-# branchs
+# 坑
+
+## vivado综合器限制
 
 step 1中，之前将`cim_pkg.sv: MAX_IN_DIM, MAX_OUT_DIM`设置为1024，触发了vivado综合器单个变量1e6bit的限制，这样计算出来WSRAM_DEPTH = (1024/16) x (1024/16) = 4096太大，vivado拒绝处理。
 
-这里有两个方向，第一个是缩小MAX维度，可以简单的在BRAM中放下。PYNQ-Z2有140个36kb BRAM，大约630kB，修改之前一个weight SRAM就要128x4096x16bis=1MB是放不下的；但是修改之后大约是128x392x16bits，大约是98kB，就可以放下，这里决定先按照这个作为master继续进行项目，如有必要则建立一个分支，`pynq-z2-7020-tiny-MAXdimension-io`，用于实现缩小MAX维度的版本。
+这里有两个方向，第一个是缩小MAX维度，可以简单的在BRAM中放下。PYNQ-Z2有140个36kb BRAM，大约630kB，修改之前一个weight SRAM就要128x4096x16bis=1MB是放不下的；但是修改之后大约是128x392x16bits，大约是98kB，就可以放下，这里决定先按照这个作为master继续进行项目，如有必要则建立一个分支，用于实现缩小MAX维度的版本。
 
-但是，我们可能真的在后续需要支持1024x1024，可以把二维数组拆成16个独立的一维数组，让vivado逐个推断BRAM绕开单变量大小的限制。这时，我们需要改写`weight_sram.sv`，
-
-```systemverilog
-genvar gi;
-generate
-  for (gi = 0; gi < TILE_ROWS; gi++) begin : GEN_BANK
-    (* ram_style = "block" *)
-    logic [ROW_W-1:0] bank_mem [DEPTH];
-
-    always_ff @(posedge clk) begin
-      if (wr_en && wr_row == gi[ROW_BITS-1:0])
-        bank_mem[wr_tile_idx][wr_col_group * 32 +: 32] <= wr_data;
-    end
-
-    always_ff @(posedge clk) begin
-      rd_row_data[gi] <= bank_mem[rd_tile_idx];
-    end
-  end
-endgenerate
-```
-
-每个 bank_mem 只有 128 × 4096 = 524,288 bits < 1,000,000. 不过 1024×1024 总共需要 ~1MB BRAM，xc7z020 放不下，所以如果要在PYNQ-Z2 7020上板，最终还是要回到方案 A 缩减维度，这里保留这个拆分数组的写法是为了之后可能会上资源更多的板子，保存为`full-MAXdimension`。
+但是，我们可能真的在后续需要支持1024x1024，可能就需要建立一个新分支`full-MAXdimension`。
