@@ -1,20 +1,20 @@
 // ============================================================================
-// weight_sram.sv — CIM Weight SRAM
+// weight_sram.sv — CIM Weight SRAM (BRAM-friendly rewrite)
 // ============================================================================
-// Storage layout: DEPTH tiles, each [TILE_ROWS][TILE_COLS] INT8 words.
+// FIX vs previous version:
+//   Old: flat byte array mem[TOTAL_ELEMS] with variable index → synthesizes
+//        as massive MUX tree or register file, NOT BRAM.
+//   New: TILE_ROWS parallel BRAM banks. Each bank stores one row of every
+//        tile. Read returns a full tile in one cycle via parallel bank reads.
 //
-// Write: byte-granular. wr_tile_idx + wr_chunk_idx together form a flat
-//        byte address within the tile.
-//        flat_byte = wr_tile_idx * TILE_ELEMS + wr_chunk_idx * ELEMS_PER_CHUNK + byte_in_chunk
-//        For simplicity we expose a 32-bit chunk write interface matching
-//        the testbench: each chunk holds ELEMS_PER_CHUNK=4 weight bytes,
-//        addressed as mem_byte[wr_tile_idx*TILE_ELEMS + wr_chunk_idx*4 + 0..3].
+// Storage layout:
+//   bank[r][tile_idx] = packed {w[r][TILE_COLS-1], ..., w[r][0]}
+//   Each bank: DEPTH words × (TILE_COLS * WEIGHT_W) bits per word
 //
-// Read: registered (1-cycle latency), outputs rd_tile[TILE_ROWS][TILE_COLS].
+// Write: 32-bit chunk interface (same as before for SW compatibility).
+//   chunk_idx → (row, col_group) mapping, partial-word write to bank.
 //
-// KEY CHANGE: uses a flat byte memory (logic [WEIGHT_W-1:0] mem[DEPTH*TILE_ELEMS])
-// so that each element has its own memory word — no chunk unpacking needed
-// in the read path, eliminating all VCS 2018 compatibility issues.
+// Read: rd_tile_idx → 1-cycle latency → rd_tile[TILE_ROWS][TILE_COLS]
 // ============================================================================
 
 module weight_sram
@@ -35,51 +35,55 @@ module weight_sram
   output logic signed [WEIGHT_W-1:0]              rd_tile [TILE_ROWS][TILE_COLS]
 );
 
-  localparam int ELEMS_PER_CHUNK = 32 / WEIGHT_W;          // 4 for INT8
-  localparam int TOTAL_ELEMS     = DEPTH * TILE_ELEMS;      // total weight bytes
-
-  // Flat byte memory: one INT8 word per weight element
-  logic signed [WEIGHT_W-1:0] mem [TOTAL_ELEMS];
+  localparam int ELEMS_PER_CHUNK = 32 / WEIGHT_W;                         // 4
+  localparam int CHUNKS_PER_ROW  = TILE_COLS / ELEMS_PER_CHUNK;           // 4
+  localparam int ROW_W           = TILE_COLS * WEIGHT_W;                  // 128 bits
 
   // -----------------------------------------------------------------------
-  // Write: unpack 32-bit chunk into ELEMS_PER_CHUNK individual bytes
-  // Base byte address = (wr_tile_idx * TILE_ELEMS) + (wr_chunk_idx * ELEMS_PER_CHUNK)
+  // BRAM banks — one per tile row, Vivado infers Block RAM
   // -----------------------------------------------------------------------
-  // Pre-compute base address as a wide wire to avoid expression in always_ff
-  logic [31:0] wr_base;
-  assign wr_base = ({20'd0, wr_tile_idx} * 32'd256)   // TILE_ELEMS = 256
-                 + ({26'd0, wr_chunk_idx} * 32'd4);    // ELEMS_PER_CHUNK = 4
+  (* ram_style = "block" *)
+  logic [ROW_W-1:0] bank [TILE_ROWS][DEPTH];
+
+  // -----------------------------------------------------------------------
+  // Write address decode
+  // chunk_idx layout: [row_bits : col_group_bits]
+  //   row       = chunk_idx / CHUNKS_PER_ROW
+  //   col_group = chunk_idx % CHUNKS_PER_ROW
+  // -----------------------------------------------------------------------
+  localparam int CG_BITS = $clog2(CHUNKS_PER_ROW);   // 2
+  localparam int ROW_BITS = $clog2(TILE_ROWS);         // 4
+
+  wire [ROW_BITS-1:0] wr_row       = wr_chunk_idx[CG_BITS +: ROW_BITS];
+  wire [CG_BITS-1:0]  wr_col_group = wr_chunk_idx[CG_BITS-1:0];
 
   always_ff @(posedge clk) begin
     if (wr_en) begin
-      mem[wr_base + 0] <= signed'(wr_data[ 7: 0]);
-      mem[wr_base + 1] <= signed'(wr_data[15: 8]);
-      mem[wr_base + 2] <= signed'(wr_data[23:16]);
-      mem[wr_base + 3] <= signed'(wr_data[31:24]);
+      // Partial-word write: 32 bits into the correct column group
+      // bit_offset = col_group * 32
+      bank[wr_row][wr_tile_idx][wr_col_group * 32 +: 32] <= wr_data;
     end
   end
 
   // -----------------------------------------------------------------------
-  // Read: registered, read each [r][c] directly from its flat byte address.
-  // flat_byte = rd_tile_idx * 256 + r * 16 + c
-  // rd_base is a 32-bit wire shared across all elements in the tile.
-  // Each generate instance adds its constant OFFSET at elaboration time.
+  // Read: all TILE_ROWS banks in parallel, registered output
   // -----------------------------------------------------------------------
-  logic [31:0] rd_base;
-  assign rd_base = {20'd0, rd_tile_idx} * 32'd256;
+  logic [ROW_W-1:0] rd_row_data [TILE_ROWS];
 
   genvar gr, gc;
   generate
-    for (gr = 0; gr < TILE_ROWS; gr++) begin : GEN_R
-      for (gc = 0; gc < TILE_COLS; gc++) begin : GEN_C
-        localparam int OFFSET = gr * TILE_COLS + gc;
+    for (gr = 0; gr < TILE_ROWS; gr++) begin : GEN_RD_BANK
+      always_ff @(posedge clk) begin
+        rd_row_data[gr] <= bank[gr][rd_tile_idx];
+      end
+    end
+  endgenerate
 
-        wire [31:0] rd_elem_addr;
-        assign rd_elem_addr = rd_base + OFFSET;  // OFFSET is a constant int
-
-        always_ff @(posedge clk) begin
-          rd_tile[gr][gc] <= mem[rd_elem_addr];
-        end
+  // Unpack packed row → individual signed INT8 elements
+  generate
+    for (gr = 0; gr < TILE_ROWS; gr++) begin : GEN_UNPACK_R
+      for (gc = 0; gc < TILE_COLS; gc++) begin : GEN_UNPACK_C
+        assign rd_tile[gr][gc] = signed'(rd_row_data[gr][gc*WEIGHT_W +: WEIGHT_W]);
       end
     end
   endgenerate
