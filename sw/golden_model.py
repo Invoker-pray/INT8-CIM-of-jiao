@@ -226,12 +226,47 @@ def generate_mnist_e2e(output_dir, seed=42):
     w2 = np.random.randint(-128, 127, (10, 128), dtype=np.int8)
     b2 = np.random.randint(-5000, 5000, 10, dtype=np.int32)
 
-    # Quantization: scale ≈ 1.0 (mult=2^30, shift=30)
-    fc1_mult, fc1_shift = 1073741824, 30
-    fc2_mult, fc2_shift = 1073741824, 30
-
     # ---- Test image (random) ----
     img = np.random.randint(0, 255, 784, dtype=np.uint8)
+
+    # ---- Calibrate quantization parameters from actual data ----
+    # Run a "calibration" pass to find accumulator ranges,
+    # then compute mult/shift that map the range to [-128, 127].
+    # This is what real PTQ (post-training quantization) does.
+    def calibrate_requant(acc_values, shift=16):
+        """Compute (mult, shift) that maps max(abs(acc)) → 127."""
+        max_abs = max(abs(int(acc_values.max())), abs(int(acc_values.min())), 1)
+        scale = 127.0 / max_abs
+        mult = int(round(scale * (1 << shift)))
+        mult = max(1, mult)  # at least 1
+        return mult, shift
+
+    # Calibrate FC1
+    x_eff_cal = np.clip(img.astype(np.int32) - (-128), 0, 511).astype(np.int32)
+    acc1_cal = w1.astype(np.int32) @ x_eff_cal + b1.astype(np.int32)
+    relu1_cal = np.maximum(acc1_cal, 0)
+    fc1_mult, fc1_shift = calibrate_requant(relu1_cal, shift=16)
+
+    # Run FC1 with calibrated params to get FC1 output for FC2 calibration
+    fc1_out_cal = np.zeros(128, dtype=np.int8)
+    for i in range(128):
+        v = int(relu1_cal[i])
+        prod = v * fc1_mult
+        shifted = (
+            (prod + (1 << (fc1_shift - 1))) >> fc1_shift if fc1_shift > 0 else prod
+        )
+        fc1_out_cal[i] = np.int8(max(-128, min(127, shifted)))
+
+    # Calibrate FC2
+    fc2_in_cal = fc1_out_cal.view(np.uint8)
+    x_eff2_cal = np.clip(fc2_in_cal.astype(np.int32) - 0, 0, 511).astype(np.int32)
+    acc2_cal = w2.astype(np.int32) @ x_eff2_cal + b2.astype(np.int32)
+    fc2_mult, fc2_shift = calibrate_requant(acc2_cal, shift=16)
+
+    print(f"  Calibrated FC1: mult={fc1_mult}, shift={fc1_shift}")
+    print(f"    acc range: [{acc1_cal.min()}, {acc1_cal.max()}]")
+    print(f"  Calibrated FC2: mult={fc2_mult}, shift={fc2_shift}")
+    print(f"    acc range: [{acc2_cal.min()}, {acc2_cal.max()}]")
 
     # ---- Run inference ----
     mlp_result = infer_mlp(
