@@ -101,7 +101,7 @@ print("\n=== AXI connectivity test done ===")
 
 以上内容如果正确，说明PS<-->PL通路正常，接下来可以跑完整推理。
 
-### full_test
+### full_cim_test
 
 然后可以进行完整推理。首先在PC生成数据：
 
@@ -121,7 +121,7 @@ Usage:
   2. 把 mnist_data/ 目录、cim_soc.bit、cim_soc.hwh、本文件 一起传到 PYNQ Jupyter
   3. Jupyter 里 Run All，或者串口终端: python3 cim_mnist_test.py
 
-脚本会:
+本脚本会:
   - 加载 bitstream
   - 从 hex 文件读取权重/偏置/输入/期望输出/量化参数
   - 跑 FC1 (784→128 ReLU) + FC2 (128→10 None) 两层推理
@@ -244,7 +244,10 @@ def configure_layer(in_dim, out_dim, zp, mult, shift, act):
     mmio.write(ACT_MODE,      act)
 
 def load_weights_burst(chunks):
-    """用 burst 模式加载权重 (自动递增 chunk/tile)"""
+    """用 burst 模式加载权重.
+    AXI slave 内部用 staging register 攒满一行 (4 chunks = 128 bits) 后自动提交到 BRAM.
+    chunk 必须按顺序写: tile0-chunk0, tile0-chunk1, ..., tile0-chunk63, tile1-chunk0, ...
+    """
     mmio.write(WDMA_ADDR, 0)
     mmio.write(WDMA_CTRL, 0x02)          # bit[1] = burst enable
     for c in chunks:
@@ -256,7 +259,14 @@ def load_bias(bias_list):
         mmio.write(MEM_BIAS + 4*i, int(b) & 0xFFFFFFFF)
 
 def load_input(data_u8):
-    for i, x in enumerate(data_u8):
+    """写入输入数据. 必须按顺序写 0,1,2,...,15,16,17,...
+    AXI slave 内部每攒满 16 字节自动提交一个 128-bit tile 到 BRAM.
+    最后一个 tile 如果不满 16 字节, 需要补零到 16 的倍数."""
+    # Pad to multiple of 16
+    padded = list(data_u8)
+    while len(padded) % 16 != 0:
+        padded.append(0)
+    for i, x in enumerate(padded):
         mmio.write(MEM_INPUT + 4*i, int(x) & 0xFF)
 
 def run_inference():
