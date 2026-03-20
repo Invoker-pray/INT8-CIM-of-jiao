@@ -65,7 +65,7 @@ _如果是路由器连接，直接ip a找到板子ip就好了。如果ip a找不
 
 新建一个ipynb(cim_basic_test.ipynb)，进行基本测试。
 
-````python
+```python
 from pynq import Overlay, MMIO
 import numpy as np
 
@@ -96,8 +96,8 @@ mmio.write(CTRL, 0x4)
 status = mmio.read(STATUS)
 print(f"After soft_rst: STATUS = 0x{status:08x}")
 
-print("\n=== AXI connectivity test done ===")```
-````
+print("\n=== AXI connectivity test done ===")
+```
 
 以上内容如果正确，说明PS<-->PL通路正常，接下来可以跑完整推理。
 
