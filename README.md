@@ -69,12 +69,12 @@ cim_soc/
 - [x] Phase 2: 完成MNIST端到端testbench
 - [] Phase 2.5 : 实现对CNN支持
 - [x] Phase 3: 增加Conv层im2col映射支持
-- [] Phase 4: 完成边界测试
-- [] Phase 5: 完成所有testbench和regression脚本自动化。
+- [x] Phase 4: 完成边界测试
+- [x] Phase 5: 完成所有testbench和regression脚本自动化。
 
 ### [] step 2: PYNQ-Z2 + ZYNQ PS部署
 
-- [ ] Phase 1: Vivado Block Design 实际搭建
+- [x] Phase 1: Vivado Block Design 实际搭建
 - [ ] Phase 2: PYNQ 上板验证 MNIST
 - [ ] Phase 3: 多层网络调度 (FC1→FC2 软件循环)
 - [ ] Phase 3: im2col Conv 上板验证支持
