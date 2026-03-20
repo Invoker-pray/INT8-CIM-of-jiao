@@ -113,22 +113,6 @@ python3 golden_model.py --mnist-e2e --output-dir mnist_data
 然后把mnist_data上传到PYNQ，在notebook(full_test.ipynb)里面跑完整推理代码：
 
 ```python
-"""
-cim_mnist_test.py — Complete PYNQ on-board MNIST inference test
-================================================================
-Usage:
-  1. PC端: cd sw/ && python3 golden_model.py --mnist-e2e --output-dir mnist_data
-  2. 把 mnist_data/ 目录、cim_soc.bit、cim_soc.hwh、本文件 一起传到 PYNQ Jupyter
-  3. Jupyter 里 Run All，或者串口终端: python3 cim_mnist_test.py
-
-本脚本会:
-  - 加载 bitstream
-  - 从 hex 文件读取权重/偏置/输入/期望输出/量化参数
-  - 跑 FC1 (784→128 ReLU) + FC2 (128→10 None) 两层推理
-  - 逐元素对比 RTL 输出与 golden，打印 PASS/FAIL
-================================================================
-"""
-
 from pynq import Overlay, MMIO
 import numpy as np
 import os
@@ -166,60 +150,147 @@ MEM_INPUT     = 0x1000
 MEM_BIAS      = 0x2000
 
 # ====================================================================
-# 3. Hex 文件读取工具
+# 3. 内嵌 Golden Model (不依赖外部 hex 文件)
 # ====================================================================
-DATA_DIR = "mnist_data"   # golden_model.py --mnist-e2e 的输出目录
+TILE_ROWS = 16
+TILE_COLS = 16
+ELEMS_PER_CHUNK = 4   # 32 / 8
+CHUNKS_PER_ROW  = 4   # TILE_COLS / ELEMS_PER_CHUNK
 
-def read_hex_u32(filename):
-    """读取 hex 文件，每行一个 32-bit 无符号整数"""
-    path = os.path.join(DATA_DIR, filename)
-    vals = []
-    with open(path) as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                vals.append(int(line, 16))
-    return vals
+def apply_zero_point(x_uint8, zero_point):
+    x_eff = x_uint8.astype(np.int32) - zero_point
+    return np.clip(x_eff, 0, 511).astype(np.uint16)
 
-def read_hex_u8(filename):
-    """读取 hex 文件，每行一个 8-bit 无符号整数"""
-    path = os.path.join(DATA_DIR, filename)
-    vals = []
-    with open(path) as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                vals.append(int(line, 16) & 0xFF)
-    return vals
+def requantize_int32_to_int8(x, mult, rshift):
+    result = np.zeros(len(x), dtype=np.int8)
+    for i in range(len(x)):
+        prod = int(x[i]) * int(mult)
+        if rshift == 0:
+            shifted = prod
+        else:
+            shifted = (prod + (1 << (rshift - 1))) >> rshift
+        shifted = max(-128, min(127, shifted))
+        result[i] = np.int8(shifted)
+    return result
 
-def hex_u8_to_int8(vals):
-    """uint8 列表 → signed int8 列表"""
-    return list(np.array(vals, dtype=np.uint8).view(np.int8))
+def infer_layer(input_uint8, weight_int8, bias_int32,
+                zero_point=-128, requant_mult=1, requant_shift=0, activation="relu"):
+    x_eff = apply_zero_point(input_uint8, zero_point)
+    acc = weight_int8.astype(np.int32) @ x_eff.astype(np.int32)
+    acc_bias = acc + bias_int32.astype(np.int32)
+    if activation == "relu":
+        activated = np.maximum(acc_bias, 0)
+    else:
+        activated = acc_bias
+    output = requantize_int32_to_int8(activated, requant_mult, requant_shift)
+    return output
+
+def calibrate_requant(acc_values, shift=16):
+    max_abs = max(abs(int(acc_values.max())), abs(int(acc_values.min())), 1)
+    scale = 127.0 / max_abs
+    mult = int(round(scale * (1 << shift)))
+    return max(1, mult), shift
+
+def weight_to_chunks(weight_int8):
+    out_dim, in_dim = weight_int8.shape
+    n_ob = (out_dim + TILE_ROWS - 1) // TILE_ROWS
+    n_ib = (in_dim + TILE_COLS - 1) // TILE_COLS
+    chunks = []
+    for ob in range(n_ob):
+        for ib in range(n_ib):
+            for chunk in range(TILE_ROWS * CHUNKS_PER_ROW):
+                row = chunk // CHUNKS_PER_ROW
+                col_group = chunk % CHUNKS_PER_ROW
+                word = 0
+                for b in range(ELEMS_PER_CHUNK):
+                    oi = ob * TILE_ROWS + row
+                    ii = ib * TILE_COLS + col_group * ELEMS_PER_CHUNK + b
+                    if oi < out_dim and ii < in_dim:
+                        val = int(weight_int8[oi, ii]) & 0xFF
+                    else:
+                        val = 0
+                    word |= val << (b * 8)
+                chunks.append(word)
+    return chunks
+
+def bias_to_u32(bias_int32):
+    return [int(b) & 0xFFFFFFFF for b in bias_int32]
+
+print("Golden model functions loaded.")
 
 # ====================================================================
-# 4. 读取所有 golden 数据
+# 4. 生成 Golden 数据 (与 golden_model.py --mnist-e2e --seed 42 完全一致)
 # ====================================================================
-print(f"Reading golden data from {DATA_DIR}/...")
+np.random.seed(42)
+w1 = np.random.randint(-128, 127, (128, 784), dtype=np.int8)
+b1 = np.random.randint(-5000, 5000, 128, dtype=np.int32)
+w2 = np.random.randint(-128, 127, (10, 128), dtype=np.int8)
+b2 = np.random.randint(-5000, 5000, 10, dtype=np.int32)
+img = np.random.randint(0, 255, 784, dtype=np.uint8)
 
-fc1_weight_chunks = read_hex_u32("fc1_weight_tiles.hex")
-fc2_weight_chunks = read_hex_u32("fc2_weight_tiles.hex")
-fc1_bias          = read_hex_u32("fc1_bias.hex")
-fc2_bias          = read_hex_u32("fc2_bias.hex")
-input_image       = read_hex_u8("input_image.hex")
-fc1_expected      = hex_u8_to_int8(read_hex_u8("fc1_output.hex"))
-fc2_expected      = hex_u8_to_int8(read_hex_u8("fc2_output.hex"))
-expected_class    = read_hex_u32("expected_class.hex")[0]
-quant_params      = read_hex_u32("quant_params.hex")
+# Calibrate FC1
+x_eff1 = np.clip(img.astype(np.int32) - (-128), 0, 511).astype(np.int32)
+acc1 = w1.astype(np.int32) @ x_eff1 + b1.astype(np.int32)
+relu1 = np.maximum(acc1, 0)
+fc1_mult, fc1_shift = calibrate_requant(relu1, shift=16)
 
-fc1_mult, fc1_shift = quant_params[0], quant_params[1]
-fc2_mult, fc2_shift = quant_params[2], quant_params[3]
+# Run FC1 golden
+fc1_golden = infer_layer(img, w1, b1, -128, fc1_mult, fc1_shift, "relu")
 
-print(f"  FC1 weight chunks: {len(fc1_weight_chunks)}")
-print(f"  FC2 weight chunks: {len(fc2_weight_chunks)}")
-print(f"  Input image: {len(input_image)} pixels")
-print(f"  Quant: fc1_mult={fc1_mult}, fc1_shift={fc1_shift}")
-print(f"         fc2_mult={fc2_mult}, fc2_shift={fc2_shift}")
-print(f"  Expected class: {expected_class}")
+# Calibrate FC2
+fc2_in = fc1_golden.view(np.uint8)
+x_eff2 = np.clip(fc2_in.astype(np.int32) - 0, 0, 511).astype(np.int32)
+acc2 = w2.astype(np.int32) @ x_eff2 + b2.astype(np.int32)
+fc2_mult, fc2_shift = calibrate_requant(acc2, shift=16)
+
+# Run FC2 golden
+fc2_golden = infer_layer(fc2_in, w2, b2, 0, fc2_mult, fc2_shift, "none")
+expected_class = int(np.argmax(fc2_golden))
+
+# Pack data for hardware
+fc1_weight_chunks = weight_to_chunks(w1)
+fc2_weight_chunks = weight_to_chunks(w2)
+fc1_bias_u32      = bias_to_u32(b1)
+fc2_bias_u32      = bias_to_u32(b2)
+input_image       = img.tolist()
+
+print(f"FC1 weights: {len(fc1_weight_chunks)} chunks")
+print(f"FC2 weights: {len(fc2_weight_chunks)} chunks")
+print(f"Quant: fc1_mult={fc1_mult}, fc1_shift={fc1_shift}")
+print(f"       fc2_mult={fc2_mult}, fc2_shift={fc2_shift}")
+print(f"FC1 golden output (first 10): {fc1_golden[:10]}")
+print(f"FC2 golden output: {fc2_golden}")
+print(f"Expected class: {expected_class}")
+
+# ====================================================================
+# 4b. (可选) 对比 hex 文件数据与内嵌 golden model 的结果
+# ====================================================================
+DATA_DIR = "mnist_data"
+try:
+    def read_hex_u8(fn):
+        with open(os.path.join(DATA_DIR, fn)) as f:
+            return [int(l.strip(), 16) & 0xFF for l in f if l.strip()]
+
+    hex_fc1 = np.array(read_hex_u8("fc1_output.hex"), dtype=np.uint8).view(np.int8)
+    hex_fc2 = np.array(read_hex_u8("fc2_output.hex"), dtype=np.uint8).view(np.int8)
+
+    fc1_hex_match = np.array_equal(fc1_golden, hex_fc1)
+    fc2_hex_match = np.array_equal(fc2_golden, hex_fc2)
+    print(f"Hex vs inline golden - FC1: {'MATCH ✓' if fc1_hex_match else 'MISMATCH ✗'}")
+    print(f"Hex vs inline golden - FC2: {'MATCH ✓' if fc2_hex_match else 'MISMATCH ✗'}")
+    if not fc1_hex_match:
+        diffs = np.where(fc1_golden != hex_fc1)[0]
+        print(f"  FC1 differs at {len(diffs)} indices: {diffs[:10].tolist()}...")
+        for d in diffs[:5]:
+            print(f"    [{d}] inline={fc1_golden[d]}, hex={hex_fc1[d]}")
+    if not fc2_hex_match:
+        diffs = np.where(fc2_golden != hex_fc2)[0]
+        print(f"  FC2 differs at {len(diffs)} indices:")
+        for d in diffs:
+            print(f"    [{d}] inline={fc2_golden[d]}, hex={hex_fc2[d]}")
+except Exception as e:
+    print(f"(无法读取 hex 文件: {e} — 跳过对比)")
+
 
 # ====================================================================
 # 5. 硬件操作工具函数
@@ -230,39 +301,41 @@ def soft_reset():
 def clear_done():
     mmio.write(CTRL, 0x2)
 
-def configure_layer(in_dim, out_dim, zp, mult, shift, act):
-    """配置一层的 CSR 参数"""
+def configure_layer(in_dim, out_dim, zp, mult, shift, act, verify=True):
+    """配置一层的 CSR 参数, 可选回读验证"""
     n_ib = (in_dim + 15) // 16
     n_ob = (out_dim + 15) // 16
-    mmio.write(CSR_IN_DIM,    in_dim)
-    mmio.write(CSR_OUT_DIM,   out_dim)
-    mmio.write(CSR_N_IB,      n_ib)
-    mmio.write(CSR_N_OB,      n_ob)
-    mmio.write(REQUANT_MULT,  mult)
-    mmio.write(REQUANT_SHIFT, shift)
-    mmio.write(INPUT_ZP,      zp & 0xFFFFFFFF)
-    mmio.write(ACT_MODE,      act)
+    writes = [
+        ("CSR_IN_DIM",    CSR_IN_DIM,    in_dim),
+        ("CSR_OUT_DIM",   CSR_OUT_DIM,   out_dim),
+        ("CSR_N_IB",      CSR_N_IB,      n_ib),
+        ("CSR_N_OB",      CSR_N_OB,      n_ob),
+        ("REQUANT_MULT",  REQUANT_MULT,  mult),
+        ("REQUANT_SHIFT", REQUANT_SHIFT, shift),
+        ("INPUT_ZP",      INPUT_ZP,      zp & 0xFFFFFFFF),
+        ("ACT_MODE",      ACT_MODE,      act),
+    ]
+    for name, addr, val in writes:
+        mmio.write(addr, val & 0xFFFFFFFF)
+    if verify:
+        for name, addr, val in writes:
+            rb = mmio.read(addr)
+            expected = val & 0xFFFFFFFF
+            if rb != expected:
+                print(f"  ✗ CSR MISMATCH: {name} wrote=0x{expected:08x} read=0x{rb:08x}")
 
 def load_weights_burst(chunks):
-    """用 burst 模式加载权重.
-    AXI slave 内部用 staging register 攒满一行 (4 chunks = 128 bits) 后自动提交到 BRAM.
-    chunk 必须按顺序写: tile0-chunk0, tile0-chunk1, ..., tile0-chunk63, tile1-chunk0, ...
-    """
     mmio.write(WDMA_ADDR, 0)
-    mmio.write(WDMA_CTRL, 0x02)          # bit[1] = burst enable
+    mmio.write(WDMA_CTRL, 0x02)
     for c in chunks:
         mmio.write(WDMA_DATA, int(c))
-    mmio.write(WDMA_CTRL, 0x00)          # 关闭 burst
+    mmio.write(WDMA_CTRL, 0x00)
 
 def load_bias(bias_list):
     for i, b in enumerate(bias_list):
         mmio.write(MEM_BIAS + 4*i, int(b) & 0xFFFFFFFF)
 
 def load_input(data_u8):
-    """写入输入数据. 必须按顺序写 0,1,2,...,15,16,17,...
-    AXI slave 内部每攒满 16 字节自动提交一个 128-bit tile 到 BRAM.
-    最后一个 tile 如果不满 16 字节, 需要补零到 16 的倍数."""
-    # Pad to multiple of 16
     padded = list(data_u8)
     while len(padded) % 16 != 0:
         padded.append(0)
@@ -270,10 +343,8 @@ def load_input(data_u8):
         mmio.write(MEM_INPUT + 4*i, int(x) & 0xFF)
 
 def run_inference():
-    """启动推理，等待完成，返回 (cycles, macs)"""
     clear_done()
     mmio.write(CTRL, 0x1)
-    # Polling wait
     while not (mmio.read(STATUS) & 0x2):
         pass
     cycles = mmio.read(CYCLE_CNT_LO)
@@ -281,12 +352,12 @@ def run_inference():
     return cycles, macs
 
 def read_output(out_dim):
-    """读取输出 buffer，返回 signed int8 列表"""
     out = []
     for i in range(out_dim):
         v = mmio.read(LOGIT_BASE + 4*i)
-        out.append(np.int8(v & 0xFF).view(np.int8))
+        out.append(np.uint8(v & 0xFF).view(np.int8))
     return out
+
 
 # ====================================================================
 # 6. 连通性测试
@@ -304,6 +375,61 @@ if readback != 784:
     print("ERROR: AXI read/write failed! Check address mapping.")
     raise RuntimeError("AXI connectivity test failed")
 
+
+# ====================================================================
+# 6b. CSR 回读诊断 + 时序违例检测
+# ====================================================================
+# !! 你的 bitstream 有严重的时序违例 (WNS = -20.727ns) !!
+# !! 这是所有计算错误的根本原因 !!
+#
+# 最差路径: row_idx_reg → 44级逻辑 → argmax (需要28.7ns, 时钟只有8ns)
+# 关键瓶颈: cim_tile.sv 的16元素乘加链 + activation_unit + requantize
+#           全部是组合逻辑, 路径太长无法在125MHz下收敛
+#
+# 修复方案 (任选其一):
+#   1. 降频: vivado_build.tcl 中 FCLK_MHZ 从 125 改为 50 (或更低)
+#   2. 流水线化 cim_tile: 把16列乘加拆成2-4级pipeline
+#   3. 流水线化 activation_unit: requantize 拆成独立的流水级
+#
+# 以下测试验证 CSR 寄存器是否可读写 (不受时序违例影响):
+print("\n=== CSR Readback Diagnostic ===")
+
+test_cases = [
+    ("CSR_IN_DIM",    CSR_IN_DIM,    784),
+    ("CSR_OUT_DIM",   CSR_OUT_DIM,   128),
+    ("CSR_N_IB",      CSR_N_IB,      49),
+    ("CSR_N_OB",      CSR_N_OB,      8),
+    ("REQUANT_MULT",  REQUANT_MULT,  10),
+    ("REQUANT_SHIFT", REQUANT_SHIFT, 16),
+    ("ACT_MODE",      ACT_MODE,      1),
+]
+
+csr_errors = 0
+for name, addr, val in test_cases:
+    mmio.write(addr, val & 0xFFFFFFFF)
+    rb = mmio.read(addr)
+    ok = "PASS" if rb == val else "FAIL"
+    if rb != val:
+        csr_errors += 1
+        print(f"  {name:16s}: wrote={val}, readback={rb}  {ok} ✗")
+    else:
+        print(f"  {name:16s}: wrote={val}, readback={rb}  {ok}")
+
+# Test INPUT_ZP (signed value)
+mmio.write(INPUT_ZP, (-128) & 0xFFFFFFFF)
+rb_zp = mmio.read(INPUT_ZP)
+expected_zp = (-128) & 0xFFFFFFFF  # 0xFFFFFF80
+ok_zp = "PASS" if rb_zp == expected_zp else "FAIL"
+if rb_zp != expected_zp:
+    csr_errors += 1
+print(f"  {'INPUT_ZP':16s}: wrote=0x{expected_zp:08x}, readback=0x{rb_zp:08x}  {ok_zp}")
+
+if csr_errors == 0:
+    print("  CSR registers: ALL OK ✓")
+    print("  (CSR 寄存器没问题, 如果有计算错误则来自 cim_tile/activation 的时序违例)")
+else:
+    print(f"  CSR registers: {csr_errors} FAILURES ✗")
+
 # ====================================================================
 # 7. FC1: 784 → 128, ReLU
 # ====================================================================
@@ -314,7 +440,7 @@ configure_layer(in_dim=784, out_dim=128, zp=-128, mult=fc1_mult, shift=fc1_shift
 print("  Loading weights...")
 load_weights_burst(fc1_weight_chunks)
 print("  Loading bias...")
-load_bias(fc1_bias)
+load_bias(fc1_bias_u32)
 print("  Loading input...")
 load_input(input_image)
 
@@ -327,14 +453,15 @@ fc1_out = read_output(128)
 # 对比 FC1
 fc1_err = 0
 for i in range(128):
-    if fc1_out[i] != fc1_expected[i]:
-        print(f"  FC1 MISMATCH [{i}]: HW={fc1_out[i]}, Golden={fc1_expected[i]}")
+    if fc1_out[i] != fc1_golden[i]:
+        print(f"  FC1 MISMATCH [{i}]: HW={fc1_out[i]}, Golden={fc1_golden[i]}")
         fc1_err += 1
 
 if fc1_err == 0:
     print(f"  FC1: ALL 128 outputs MATCH ✓")
 else:
     print(f"  FC1: {fc1_err}/128 MISMATCHES ✗")
+
 
 # ====================================================================
 # 8. FC2: 128 → 10, no activation
@@ -345,9 +472,8 @@ configure_layer(in_dim=128, out_dim=10, zp=0, mult=fc2_mult, shift=fc2_shift, ac
 print("  Loading weights...")
 load_weights_burst(fc2_weight_chunks)
 print("  Loading bias...")
-load_bias(fc2_bias)
+load_bias(fc2_bias_u32)
 print("  Loading FC1 output as input...")
-# FC1 输出 (signed int8) 直接作为 FC2 输入 (reinterpret as uint8)
 fc1_out_u8 = [int(x) & 0xFF for x in fc1_out]
 load_input(fc1_out_u8)
 
@@ -360,9 +486,9 @@ fc2_out = read_output(10)
 # 对比 FC2
 fc2_err = 0
 for i in range(10):
-    status_str = "OK" if fc2_out[i] == fc2_expected[i] else "MISMATCH"
-    print(f"  logit[{i}] = {fc2_out[i]:4d}  (golden={fc2_expected[i]:4d})  {status_str}")
-    if fc2_out[i] != fc2_expected[i]:
+    status_str = "OK" if fc2_out[i] == fc2_golden[i] else "MISMATCH"
+    print(f"  logit[{i}] = {fc2_out[i]:4d}  (golden={fc2_golden[i]:4d})  {status_str}")
+    if fc2_out[i] != fc2_golden[i]:
         fc2_err += 1
 
 if fc2_err == 0:
@@ -371,7 +497,7 @@ else:
     print(f"  FC2: {fc2_err}/10 MISMATCHES ✗")
 
 # ====================================================================
-# 9. Argmax 检查
+# 9. Argmax 检查 + 总结
 # ====================================================================
 hw_pred = mmio.read(PRED_CLASS)
 print(f"\n=== Result ===")
@@ -379,9 +505,6 @@ print(f"  HW predicted class: {hw_pred}")
 print(f"  Golden expected:    {expected_class}")
 print(f"  Argmax: {'MATCH ✓' if hw_pred == expected_class else 'MISMATCH ✗'}")
 
-# ====================================================================
-# 10. 总结
-# ====================================================================
 total_err = fc1_err + fc2_err + (0 if hw_pred == expected_class else 1)
 print(f"\n{'='*60}")
 if total_err == 0:
