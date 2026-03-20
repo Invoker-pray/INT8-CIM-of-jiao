@@ -14,10 +14,12 @@
 # ============================================================================
 
 # --- Configuration ---
+# NOTE: Pipeline-optimized cim_accel_core.sv now splits the post-accumulation
+# path into 4 stages (BIAS_ADD → ACTIVATE → REQUANT → STORE) to meet 125MHz.
 set PROJ_NAME  "cim_soc"
 set PART       "xc7z020clg400-1"
 set BOARD_PART "tul.com.tw:pynq-z2:part0:1.0"
-set FCLK_MHZ   25
+set FCLK_MHZ   125
 set N_JOBS     4
 
 # --- Paths (relative to where vivado is invoked, typically project root) ---
@@ -43,7 +45,6 @@ set rtl_files [list \
     ${HW_DIR}/rtl/pkg/cim_pkg.sv \
     ${HW_DIR}/rtl/core/cim_tile.sv \
     ${HW_DIR}/rtl/core/psum_accum.sv \
-    ${HW_DIR}/rtl/core/activation_unit.sv \
     ${HW_DIR}/rtl/mem/weight_sram.sv \
     ${HW_DIR}/rtl/mem/bias_sram.sv \
     ${HW_DIR}/rtl/mem/input_buffer.sv \

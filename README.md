@@ -122,3 +122,7 @@ step 1中，之前将`cim_pkg.sv: MAX_IN_DIM, MAX_OUT_DIM`设置为1024，触发
 一直有计算错误，查了一下午没找出问题来，，到晚上了想起来看timing_report，结果发现125MHZ时钟是8ns，但是我的critial path要28.7ns，所以结果全是错的。
 
 果然奇怪的问题还是要对时序。
+
+遂降频至25MHZ.
+
+_现在把cim_accel_core改成流水线版本解决这个问题。改成bias->activation->requant->store四级流水，activation_unit不再作为子模块实例化（已经删除）。_

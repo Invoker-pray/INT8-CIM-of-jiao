@@ -176,7 +176,8 @@ def weight_to_chunk_hex(weight_int8, tile_rows=TILE_ROWS, tile_cols=TILE_COLS):
                     else:
                         val = 0
                     word |= val << (b * 8)
-                lines.append(f"{word:08x}")
+                lines.append(f"{word:08x}")  # python 3.6+
+                # lines.append("{:0.8x}".format(word))  # python 3.5-
     return lines
 
 
