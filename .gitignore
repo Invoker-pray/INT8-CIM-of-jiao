@@ -60,3 +60,6 @@ sim
 
 vivado_proj/
 vivado_proj/**
+
+.pyre/
+.pyre/**
