@@ -124,6 +124,8 @@ if {$wrapper_file eq ""} {
 }
 add_files -norecurse ${wrapper_file}
 update_compile_order -fileset sources_1
+
+set_property top system_wrapper [current_fileset]
 puts "INFO: Wrapper added: ${wrapper_file}"
 
 # ============================================================================

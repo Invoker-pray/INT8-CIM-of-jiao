@@ -15,6 +15,10 @@
 
 set -e
 
+rm -rf vivado_proj
+# ============================================================================
+sed -i 's/parameter int PAR_OB = 4;/parameter int PAR_OB = 1;/' hw/rtl/pkg/cim_pkg.sv
+# ============================================================================
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
@@ -50,3 +54,7 @@ echo "============================================================"
 echo "Build finished. Check vivado_proj/vivado_build.log for details."
 echo "Deploy files: vivado_proj/pynq_deploy/"
 echo "============================================================"
+
+# ============================================================================
+sed -i 's/parameter int PAR_OB = 1;/parameter int PAR_OB = 4;/' hw/rtl/pkg/cim_pkg.sv
+# ============================================================================
