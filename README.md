@@ -116,3 +116,9 @@ step 1中，之前将`cim_pkg.sv: MAX_IN_DIM, MAX_OUT_DIM`设置为1024，触发
 要综合出BRAM，只对时钟拍是不够的，还需要整word操作，bit-select 部分写入，Vivado 不支持对这种写法推断 BRAM，会退化为纯寄存器。需要 read-modify-write 模式——先读出整个 128-bit word，在寄存器中合并 32-bit chunk，再整 word 写回。同时保留 generate 拆分，每个 bank 独立一个 BRAM。
 
 同时axi也要匹配chunk操作。
+
+## 一定要看timing_report.txt
+
+一直有计算错误，查了一下午没找出问题来，，到晚上了想起来看timing_report，结果发现125MHZ时钟是8ns，但是我的critial path要28.7ns，所以结果全是错的。
+
+果然奇怪的问题还是要对时序。
