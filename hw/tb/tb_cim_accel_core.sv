@@ -23,13 +23,13 @@ module tb_cim_accel_core;
   logic [31:0] cfg_requant_mult, cfg_requant_shift;
   act_mode_t                                          cfg_act_mode;
 
-  // Weight SRAM
+  // Weight SRAM (whole-row write interface)
   logic        [         clog2_safe(WSRAM_DEPTH)-1:0] w_rd_idx;
-  logic signed [                        WEIGHT_W-1:0] w_rd_tile      [TILE_ROWS] [TILE_COLS];
+  logic signed [                        WEIGHT_W-1:0] w_rd_tile         [TILE_ROWS] [TILE_COLS];
   logic                                               w_wr_en;
+  logic        [               $clog2(TILE_ROWS)-1:0] w_wr_row;
   logic        [         clog2_safe(WSRAM_DEPTH)-1:0] w_wr_tile_idx;
-  logic        [     clog2_safe(WSRAM_WORD_W/32)-1:0] w_wr_chunk_idx;
-  logic        [                                31:0] w_wr_data;
+  logic        [              TILE_COLS*WEIGHT_W-1:0] w_wr_row_data;
 
   // Bias SRAM
   logic        [         clog2_safe(BSRAM_DEPTH)-1:0] b_rd_addr;
@@ -38,13 +38,13 @@ module tb_cim_accel_core;
   logic        [         clog2_safe(BSRAM_DEPTH)-1:0] b_wr_addr;
   logic        [                                31:0] b_wr_data;
 
-  // Input buffer
+  // Input buffer (whole-tile write interface)
   logic        [clog2_safe(MAX_IN_DIM/TILE_COLS)-1:0] ibuf_rd_idx;
-  logic        [                         X_EFF_W-1:0] ibuf_x_eff     [TILE_COLS];
+  logic        [                         X_EFF_W-1:0] ibuf_x_eff        [TILE_COLS];
   logic                                               ibuf_wr_en;
-  logic        [          clog2_safe(MAX_IN_DIM)-1:0] ibuf_wr_addr;
-  logic        [                         INPUT_W-1:0] ibuf_wr_data;
-  logic signed [                         INPUT_W-1:0] ibuf_x_tile    [TILE_COLS];
+  logic        [clog2_safe(MAX_IN_DIM/TILE_COLS)-1:0] ibuf_wr_tile_idx;
+  logic        [               TILE_COLS*INPUT_W-1:0] ibuf_wr_tile_data;
+  logic        [                         INPUT_W-1:0] ibuf_x_tile       [TILE_COLS];
 
   // Output buffer
   logic                                               obuf_wr_en;
@@ -82,13 +82,13 @@ module tb_cim_accel_core;
   weight_sram #(
       .DEPTH(WSRAM_DEPTH)
   ) u_wsram (
-      .clk         (clk),
-      .wr_en       (w_wr_en),
-      .wr_tile_idx (w_wr_tile_idx),
-      .wr_chunk_idx(w_wr_chunk_idx),
-      .wr_data     (w_wr_data),
-      .rd_tile_idx (w_rd_idx),
-      .rd_tile     (w_rd_tile)
+      .clk        (clk),
+      .wr_en      (w_wr_en),
+      .wr_row     (w_wr_row),
+      .wr_tile_idx(w_wr_tile_idx),
+      .wr_row_data(w_wr_row_data),
+      .rd_tile_idx(w_rd_idx),
+      .rd_tile    (w_rd_tile)
   );
 
   bias_sram #(
@@ -105,14 +105,14 @@ module tb_cim_accel_core;
   input_buffer #(
       .MAX_LEN(MAX_IN_DIM)
   ) u_ibuf (
-      .clk        (clk),
-      .wr_en      (ibuf_wr_en),
-      .wr_addr    (ibuf_wr_addr),
-      .wr_data    (ibuf_wr_data),
-      .rd_tile_idx(ibuf_rd_idx),
-      .input_zp   (cfg_input_zp),
-      .x_tile     (ibuf_x_tile),
-      .x_eff      (ibuf_x_eff)
+      .clk         (clk),
+      .wr_en       (ibuf_wr_en),
+      .wr_tile_idx (ibuf_wr_tile_idx),
+      .wr_tile_data(ibuf_wr_tile_data),
+      .rd_tile_idx (ibuf_rd_idx),
+      .input_zp    (cfg_input_zp),
+      .x_tile      (ibuf_x_tile),
+      .x_eff       (ibuf_x_eff)
   );
 
   output_buffer #(
@@ -159,15 +159,26 @@ module tb_cim_accel_core;
       .perf_macs        (perf_macs)
   );
 
-  // ---------- Write one 32-bit chunk to weight SRAM ----------
-  task write_weight_chunk(input int tile_idx, input int chunk_idx, input logic [31:0] data);
+  // ---------- Write one whole row to weight SRAM ----------
+  task write_weight_row(input int tile_idx, input int row_idx,
+                        input logic [TILE_COLS*WEIGHT_W-1:0] row_data);
     @(posedge clk);
-    w_wr_en        <= 1'b1;
-    w_wr_tile_idx  <= tile_idx;
-    w_wr_chunk_idx <= chunk_idx;
-    w_wr_data      <= data;
+    w_wr_en       <= 1'b1;
+    w_wr_tile_idx <= tile_idx;
+    w_wr_row      <= row_idx;
+    w_wr_row_data <= row_data;
     @(posedge clk);
     w_wr_en <= 1'b0;
+  endtask
+
+  // ---------- Write one whole tile to input buffer ----------
+  task write_input_tile(input int tile_idx, input logic [TILE_COLS*INPUT_W-1:0] tile_data);
+    @(posedge clk);
+    ibuf_wr_en        <= 1'b1;
+    ibuf_wr_tile_idx  <= tile_idx;
+    ibuf_wr_tile_data <= tile_data;
+    @(posedge clk);
+    ibuf_wr_en <= 1'b0;
   endtask
 
   // ---------- Golden model ----------
@@ -233,52 +244,9 @@ module tb_cim_accel_core;
 
     for (int i = 0; i < TEST_IN; i++) golden_x[i] = $urandom_range(0, 255);
 
-    // ---- Load weights into SRAM (tile-packed) ----
-    $display("Loading weights into SRAM...");
-    for (int ob = 0; ob < TEST_NOB; ob++) begin
-      for (int ib = 0; ib < TEST_NIB; ib++) begin
-        automatic int tile_addr = ob * TEST_NIB + ib;
-        // Pack tile [TILE_ROWS][TILE_COLS] into WSRAM_WORD_W-bit word
-        // Write in 32-bit chunks
-        for (int chunk = 0; chunk < (TILE_ROWS * TILE_COLS * WEIGHT_W / 32); chunk++) begin
-          automatic logic [31:0] cdata = '0;
-          for (int b = 0; b < 32 / WEIGHT_W; b++) begin
-            automatic int flat = chunk * (32 / WEIGHT_W) + b;
-            automatic int r = flat / TILE_COLS;
-            automatic int c = flat % TILE_COLS;
-            automatic int out_idx = ob * TILE_ROWS + r;
-            automatic int in_idx = ib * TILE_COLS + c;
-            if (out_idx < TEST_OUT && in_idx < TEST_IN)
-              cdata[b*WEIGHT_W+:WEIGHT_W] = golden_w[out_idx][in_idx];
-          end
-          write_weight_chunk(tile_addr, chunk, cdata);
-        end
-      end
-    end
-
-    // ---- Load biases ----
-    $display("Loading biases...");
-    for (int o = 0; o < TEST_OUT; o++) begin
-      @(posedge clk);
-      b_wr_en   <= 1'b1;
-      b_wr_addr <= o;
-      b_wr_data <= golden_b[o];
-      @(posedge clk);
-      b_wr_en <= 1'b0;
-    end
-
-    // ---- Load inputs ----
-    $display("Loading inputs...");
-    for (int i = 0; i < TEST_IN; i++) begin
-      @(posedge clk);
-      ibuf_wr_en   <= 1'b1;
-      ibuf_wr_addr <= i;
-      ibuf_wr_data <= golden_x[i];
-      @(posedge clk);
-      ibuf_wr_en <= 1'b0;
-    end
-
-    repeat (5) @(posedge clk);
+    // ---- Load all data using shared task ----
+    $display("Loading weights/bias/input...");
+    load_all_data();
 
     // ---- Compute golden ----
     compute_golden_model();
@@ -399,22 +367,19 @@ module tb_cim_accel_core;
   // ==========================================================================
 
   task load_all_data();
-    // Load weights
+    // Load weights — assemble each row (16 bytes) then write whole-word
     for (int ob = 0; ob < TEST_NOB; ob++) begin
       for (int ib = 0; ib < TEST_NIB; ib++) begin
         automatic int tile_addr = ob * TEST_NIB + ib;
-        for (int chunk = 0; chunk < (TILE_ROWS * TILE_COLS * WEIGHT_W / 32); chunk++) begin
-          automatic logic [31:0] cdata = '0;
-          for (int b = 0; b < 32 / WEIGHT_W; b++) begin
-            automatic int flat = chunk * (32 / WEIGHT_W) + b;
-            automatic int r = flat / TILE_COLS;
-            automatic int c = flat % TILE_COLS;
+        for (int r = 0; r < TILE_ROWS; r++) begin
+          automatic logic [TILE_COLS*WEIGHT_W-1:0] row_data = '0;
+          for (int c = 0; c < TILE_COLS; c++) begin
             automatic int out_idx = ob * TILE_ROWS + r;
             automatic int in_idx = ib * TILE_COLS + c;
             if (out_idx < TEST_OUT && in_idx < TEST_IN)
-              cdata[b*WEIGHT_W+:WEIGHT_W] = golden_w[out_idx][in_idx];
+              row_data[c*WEIGHT_W+:WEIGHT_W] = golden_w[out_idx][in_idx];
           end
-          write_weight_chunk(tile_addr, chunk, cdata);
+          write_weight_row(tile_addr, r, row_data);
         end
       end
     end
@@ -427,14 +392,14 @@ module tb_cim_accel_core;
       @(posedge clk);
       b_wr_en <= 1'b0;
     end
-    // Load inputs
-    for (int i = 0; i < TEST_IN; i++) begin
-      @(posedge clk);
-      ibuf_wr_en   <= 1'b1;
-      ibuf_wr_addr <= i;
-      ibuf_wr_data <= golden_x[i];
-      @(posedge clk);
-      ibuf_wr_en <= 1'b0;
+    // Load inputs — assemble each tile (16 bytes) then write whole-word
+    for (int tile = 0; tile < TEST_NIB; tile++) begin
+      automatic logic [TILE_COLS*INPUT_W-1:0] tdata = '0;
+      for (int c = 0; c < TILE_COLS; c++) begin
+        automatic int idx = tile * TILE_COLS + c;
+        if (idx < TEST_IN) tdata[c*INPUT_W+:INPUT_W] = golden_x[idx];
+      end
+      write_input_tile(tile, tdata);
     end
     repeat (5) @(posedge clk);
   endtask
