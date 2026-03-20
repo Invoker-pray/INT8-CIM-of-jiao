@@ -99,42 +99,42 @@ package cim_pkg;
   // All offsets relative to base address of CIM IP
 
   // --- Control / Status ---
-  parameter logic [11:0] CSR_CTRL = 12'h000;  // [0]=start, [1]=clear_done, [2]=soft_rst
-  parameter logic [11:0] CSR_STATUS = 12'h004;  // [0]=busy, [1]=done, [7:4]=state
-  parameter logic [11:0] CSR_IRQ_EN = 12'h008;  // [0]=done_irq_en
-  parameter logic [11:0] CSR_IRQ_STATUS = 12'h00C;  // [0]=done_irq (write-1-clear)
+  parameter logic [13:0] CSR_CTRL = 14'h000;  // [0]=start, [1]=clear_done, [2]=soft_rst
+  parameter logic [13:0] CSR_STATUS = 14'h004;  // [0]=busy, [1]=done, [7:4]=state
+  parameter logic [13:0] CSR_IRQ_EN = 14'h008;  // [0]=done_irq_en
+  parameter logic [13:0] CSR_IRQ_STATUS = 14'h00C;  // [0]=done_irq (write-1-clear)
 
   // --- Layer Configuration ---
-  parameter logic [11:0] CSR_IN_DIM = 12'h010;  // input dimension (e.g. 784)
-  parameter logic [11:0] CSR_OUT_DIM = 12'h014;  // output dimension (e.g. 128)
-  parameter logic [11:0] CSR_N_IB = 12'h018;  // number of input blocks = ceil(IN_DIM/TILE_COLS)
-  parameter logic [11:0] CSR_N_OB = 12'h01C;  // number of output blocks = ceil(OUT_DIM/TILE_ROWS)
+  parameter logic [13:0] CSR_IN_DIM = 14'h010;  // input dimension (e.g. 784)
+  parameter logic [13:0] CSR_OUT_DIM = 14'h014;  // output dimension (e.g. 128)
+  parameter logic [13:0] CSR_N_IB = 14'h018;  // number of input blocks = ceil(IN_DIM/TILE_COLS)
+  parameter logic [13:0] CSR_N_OB = 14'h01C;  // number of output blocks = ceil(OUT_DIM/TILE_ROWS)
 
   // --- Quantization Parameters ---
-  parameter logic [11:0] CSR_REQUANT_MULT = 12'h020;  // requantize multiplier
-  parameter logic [11:0] CSR_REQUANT_SHIFT = 12'h024;  // requantize right-shift
-  parameter logic [11:0] CSR_INPUT_ZP = 12'h028;  // input zero point
-  parameter logic [11:0] CSR_ACT_MODE = 12'h02C;  // [1:0] 00=none, 01=ReLU, 10=clamp
+  parameter logic [13:0] CSR_REQUANT_MULT = 14'h020;  // requantize multiplier
+  parameter logic [13:0] CSR_REQUANT_SHIFT = 14'h024;  // requantize right-shift
+  parameter logic [13:0] CSR_INPUT_ZP = 14'h028;  // input zero point
+  parameter logic [13:0] CSR_ACT_MODE = 14'h02C;  // [1:0] 00=none, 01=ReLU, 10=clamp
 
   // --- Performance Counters ---
-  parameter logic [11:0] CSR_CYCLE_CNT_LO = 12'h030;  // cycle counter low 32
-  parameter logic [11:0] CSR_CYCLE_CNT_HI = 12'h034;  // cycle counter high 32
-  parameter logic [11:0] CSR_MAC_CNT_LO = 12'h038;  // MAC operation counter low 32
-  parameter logic [11:0] CSR_MAC_CNT_HI = 12'h03C;  // MAC operation counter high 32
+  parameter logic [13:0] CSR_CYCLE_CNT_LO = 14'h030;  // cycle counter low 32
+  parameter logic [13:0] CSR_CYCLE_CNT_HI = 14'h034;  // cycle counter high 32
+  parameter logic [13:0] CSR_MAC_CNT_LO = 14'h038;  // MAC operation counter low 32
+  parameter logic [13:0] CSR_MAC_CNT_HI = 14'h03C;  // MAC operation counter high 32
 
   // --- Result Readback ---
-  parameter logic [11:0] CSR_PRED_CLASS = 12'h040;  // argmax result
-  parameter logic [11:0] CSR_LOGIT_BASE = 12'h080;  // logits[0..63] at 0x080 + 4*i
+  parameter logic [13:0] CSR_PRED_CLASS = 14'h040;  // argmax result
+  parameter logic [13:0] CSR_LOGIT_BASE = 14'h100;  // logits[0..127] at 0x100 + 4*i
 
   // --- Memory Windows (for AXI writes) ---
-  // These are at higher offsets; the AXI wrapper routes them to SRAM ports
-  parameter logic [11:0] MEM_INPUT_BASE = 12'h400;  // input buffer:  0x400 + 4*i
-  parameter logic [11:0] MEM_BIAS_BASE = 12'h800;  // bias buffer:   0x800 + 4*i
+  // 16KB address space (14-bit). Input needs 784 words = 3136 bytes.
+  parameter logic [13:0] MEM_INPUT_BASE = 14'h1000;  // input buffer:  0x1000 + 4*i (up to 0x1C3F)
+  parameter logic [13:0] MEM_BIAS_BASE = 14'h2000;  // bias buffer:   0x2000 + 4*i (up to 0x21FF)
   // Weight SRAM uses a separate AXI-Full or burst interface (too wide for CSR)
   // For simplicity, we provide a DMA-style interface:
-  parameter logic [11:0] CSR_WDMA_ADDR = 12'h044;  // weight SRAM write address (tile index)
-  parameter logic [11:0] CSR_WDMA_DATA = 12'h048;  // weight SRAM write data (32-bit chunk)
-  parameter logic [11:0] CSR_WDMA_CTRL = 12'h04C;  // [0]=wr_en, [7:4]=chunk_idx
+  parameter logic [13:0] CSR_WDMA_ADDR = 14'h044;  // weight SRAM write address (tile index)
+  parameter logic [13:0] CSR_WDMA_DATA = 14'h048;  // weight SRAM write data (32-bit chunk)
+  parameter logic [13:0] CSR_WDMA_CTRL = 14'h04C;  // [0]=wr_en, [7:4]=chunk_idx
 
   // ==========================================================================
   // 8. Activation Function Modes

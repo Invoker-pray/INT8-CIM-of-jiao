@@ -13,7 +13,7 @@
 // ============================================================================
 
 module cim_axi_lite_slave_wrapper #(
-    parameter AXI_ADDR_W = 12,
+    parameter AXI_ADDR_W = 14,
     parameter AXI_DATA_W = 32
 ) (
     // ---- Clock & Reset ----

@@ -15,7 +15,7 @@
 module cim_axi_lite_slave
   import cim_pkg::*;
 #(
-    parameter int AXI_ADDR_W = 12,
+    parameter int AXI_ADDR_W = 14,
     parameter int AXI_DATA_W = 32
 ) (
     // AXI4-Lite Slave Interface
@@ -245,8 +245,8 @@ module cim_axi_lite_slave
   );
 
   // Bias/Input/Output write enable signals from AXI write path
-  wire bias_wr_hit = wr_fire && (aw_addr_r >= MEM_BIAS_BASE) && (aw_addr_r < 12'hC00);
-  wire input_wr_hit = wr_fire && (aw_addr_r >= MEM_INPUT_BASE) && (aw_addr_r < 12'h800);
+  wire bias_wr_hit  = wr_fire && (aw_addr_r >= MEM_BIAS_BASE)  && (aw_addr_r < MEM_BIAS_BASE + 14'h200);
+  wire input_wr_hit = wr_fire && (aw_addr_r >= MEM_INPUT_BASE) && (aw_addr_r < MEM_BIAS_BASE);
 
   bias_sram #(
       .DEPTH(BSRAM_DEPTH)
