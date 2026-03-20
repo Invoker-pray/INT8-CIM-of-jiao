@@ -106,7 +106,7 @@ apply_bd_automation -rule xilinx.com:bd_rule:axi4 \
 connect_bd_net [get_bd_pins cim_0/irq_done] [get_bd_pins ps7/IRQ_F2P]
 
 # --- 3e. Address mapping: 0x4000_0000, 4KB ---
-assign_bd_address -offset 0x40000000 -range 4K \
+assign_bd_address -offset 0x40000000 -range 16K \
     [get_bd_addr_segs {cim_0/S_AXI/reg0}]
 
 # --- 3f. Validate ---
