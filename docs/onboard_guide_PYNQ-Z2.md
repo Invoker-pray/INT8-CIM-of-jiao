@@ -194,7 +194,7 @@ def read_hex_u8(filename):
 
 def hex_u8_to_int8(vals):
     """uint8 列表 → signed int8 列表"""
-    return [np.int8(v) for v in vals]
+    return list(np.array(vals, dtype=np.uint8).view(np.int8))
 
 # ====================================================================
 # 4. 读取所有 golden 数据
@@ -285,7 +285,7 @@ def read_output(out_dim):
     out = []
     for i in range(out_dim):
         v = mmio.read(LOGIT_BASE + 4*i)
-        out.append(np.int8(v & 0xFF))
+        out.append(np.int8(v & 0xFF).view(np.int8))
     return out
 
 # ====================================================================
