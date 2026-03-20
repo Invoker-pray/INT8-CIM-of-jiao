@@ -54,6 +54,7 @@ set rtl_files [list \
 ]
 
 add_files -norecurse ${rtl_files}
+add_files -fileset constrs_1 -norecurse ${HW_DIR}/constraints/cim_soc.xdc
 # Ensure cim_pkg.sv compiles first
 set_property file_type SystemVerilog [get_files *.sv]
 update_compile_order -fileset sources_1
@@ -148,6 +149,10 @@ close_design
 # ============================================================================
 # 6. Implementation + Bitstream
 # ============================================================================
+
+set_property STEPS.PLACE_DESIGN.ARGS.DIRECTIVE ExtraNetDelay_high [get_runs impl_1]
+set_property STEPS.ROUTE_DESIGN.ARGS.DIRECTIVE AggressiveExplore  [get_runs impl_1]
+
 puts "INFO: Launching implementation + bitstream..."
 launch_runs impl_1 -to_step write_bitstream -jobs ${N_JOBS}
 wait_on_run impl_1

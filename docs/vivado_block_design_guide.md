@@ -44,9 +44,13 @@
 
 ## 运行文件
 
-直接在项目根目录下运行`bash hw/scripts/vivado_build.sh`.
+直接在项目根目录下运行`bash hw/scripts/vivado_build.sh`，就可以完成block desgin.
 
-## 步骤 1：创建工程
+## 手动配置
+
+如果想要手动配置，也可以：
+
+### 步骤 1：创建工程
 
 ```
 1. File → New Project → Next
@@ -57,7 +61,7 @@
 5. Finish
 ```
 
-## 步骤 2：添加 RTL 源文件
+### 步骤 2：添加 RTL 源文件
 
 ```
 1. 在 Sources 面板右键 → Add Sources → Add or create design sources
@@ -76,11 +80,11 @@
 4. 确保 cim_axi_lite_slave 被设为 top module（或让 Vivado 自动推断）
 ```
 
-## 步骤 3：将 CIM 模块打包为 IP
+### 步骤 3：将 CIM 模块打包为 IP
 
 为了在 Block Design 中使用，需要把 `cim_axi_lite_slave` 打包成 AXI IP。
 
-### 方法 A：手动使用 IP Packager（推荐）
+#### 方法 A：手动使用 IP Packager（推荐）
 
 ```
 1. Tools → Create and Package New IP → Next
@@ -99,7 +103,7 @@
    e. Review and Package → Package IP
 ```
 
-### 方法 B：直接在 BD 中使用 RTL Module（快捷）
+#### 方法 B：直接在 BD 中使用 RTL Module（快捷）
 
 ```
 1. Create Block Design → 命名 "system"
@@ -108,9 +112,9 @@
 4. Vivado 会自动识别 AXI 接口（如果端口命名规范的话）
 ```
 
-## 步骤 4：搭建 Block Design
+### 步骤 4：搭建 Block Design
 
-### 4.1 添加 Zynq PS
+#### 4.1 添加 Zynq PS
 
 ```
 1. 在 BD 中 "+" 搜索 → ZYNQ7 Processing System → 双击添加
@@ -124,14 +128,14 @@
    c. OK
 ```
 
-### 4.2 添加 CIM IP
+#### 4.2 添加 CIM IP
 
 ```
 1. 如果用方法 A: "+" 搜索 "cim_accel" → 添加
    如果用方法 B: 右键 → Add Module → 选择 cim_axi_lite_slave
 ```
 
-### 4.3 连接
+#### 4.3 连接
 
 ```
 1. 点击 "Run Connection Automation" → 勾选全部 → OK
@@ -149,7 +153,7 @@
    - 这个地址在 PYNQ Python 中通过 MMIO 访问
 ```
 
-### 4.4 验证设计
+#### 4.4 验证设计
 
 ```
 1. Tools → Validate Design (F6)
@@ -160,7 +164,7 @@
    - 地址冲突: 在 Address Editor 中确认没有重叠
 ```
 
-## 步骤 5：生成 Bitstream
+### 步骤 5：生成 Bitstream
 
 ```
 1. 在 BD 上右键 → Generate Output Products → Generate
@@ -172,9 +176,9 @@
   - .hwh 文件: vivado_proj/cim_soc.gen/sources_1/bd/system/hw_handoff/system.hwh
 ```
 
-## 步骤 6：在 PYNQ 上运行
+### 步骤 6：在 PYNQ 上运行
 
-### 6.1 上传文件到 PYNQ
+#### 6.1 上传文件到 PYNQ
 
 将以下两个文件上传到 PYNQ 板上的 Jupyter 同一目录下，**且文件名必须一致**:
 
@@ -183,7 +187,7 @@ cim_soc.bit    ← 重命名 system_wrapper.bit
 cim_soc.hwh    ← 重命名 system.hwh
 ```
 
-### 6.2 Python 驱动代码
+#### 6.2 Python 驱动代码
 
 ```python
 from pynq import Overlay, MMIO
@@ -358,83 +362,17 @@ if __name__ == "__main__":
     mnist_demo()
 ```
 
-## 步骤 7：Tcl 自动化（可选）
+## 关于xdc
 
-如果你想用脚本自动创建 Block Design（不用 GUI），可以用以下 Tcl：
+上一个项目[_MNIST-CIM-FPGA_](https://github.com/Invoker-pray/MNIST-CIM-FPGA)是纯PL设计，顶层直接接时钟、按钮、LED、UART 等物理引脚，所以需要逐个用 `set_property PACKAGE_PIN` 告诉 Vivado 每个信号对应 FPGA 的哪个管脚。
 
-```tcl
-# create_bd.tcl — 自动创建 CIM SoC Block Design
-# Usage: vivado -mode batch -source create_bd.tcl
+这次写的CIM SoC是Zynq PS + PL设计，架构不同；
 
-create_project cim_soc ./vivado_proj -part xc7z020clg400-1
-# 或 set_property board_part tul.com.tw:pynq-z2:part0:1.0 [current_project]
+顶层是`cim_axi_lite_slave_wrapper.v`是vivado自动生成的，已经有了外部端口`DDR`和`FIXED_IO`；这两组端口都是 PS 侧的硬连线引脚，在 Zynq 芯片内部就已经固定了物理位置，不经过 PL 可编程 IO，当你在 TCL 里用 apply_bd_automation 配合 PYNQ-Z2 board file 时，Vivado 自动把 DDR 时序、MIO 配置等全部写入 PS7 IP 内部，不需要也不允许在 XDC 里手动约束这些引脚。CIM 加速器通过 AXI 总线和 PS 通信，所有数据从 Python/PYNQ 经 MMIO 读写，没有任何 PL 侧的物理 IO，Zynq设计中手动写反而会有DRC错误，交给board automation处理就好了。
 
-# Add RTL sources
-add_files -norecurse {
-    hw/rtl/pkg/cim_pkg.sv
-    hw/rtl/core/cim_tile.sv
-    hw/rtl/core/psum_accum.sv
-    hw/rtl/core/activation_unit.sv
-    hw/rtl/mem/weight_sram.sv
-    hw/rtl/mem/bias_sram.sv
-    hw/rtl/mem/input_buffer.sv
-    hw/rtl/mem/output_buffer.sv
-    hw/rtl/core/cim_accel_core.sv
-    hw/rtl/axi/cim_axi_lite_slave.sv
-}
-update_compile_order -fileset sources_1
+这次的xdc只有：时钟约束，bistream配置。
 
-# Create Block Design
-create_bd_design "system"
-
-# Add Zynq PS
-create_bd_cell -type ip -vlnv xilinx.com:ip:processing_system7:5.5 ps7
-# Apply board preset (if board file installed)
-# apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 \
-#     -config {make_external "FIXED_IO, DDR"} [get_bd_cells ps7]
-
-# Configure PS
-set_property -dict [list \
-    CONFIG.PCW_USE_M_AXI_GP0 {1} \
-    CONFIG.PCW_USE_FABRIC_INTERRUPT {1} \
-    CONFIG.PCW_IRQ_F2P_INTR {1} \
-    CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ {100} \
-] [get_bd_cells ps7]
-
-# Add CIM IP as RTL module
-create_bd_cell -type module -reference cim_axi_lite_slave cim_0
-
-# Run connection automation
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 \
-    -config {Clk_master {/ps7/FCLK_CLK0} Clk_slave {Auto} \
-             Clk_xbar {Auto} Master {/ps7/M_AXI_GP0} \
-             Slave {/cim_0/S_AXI} ddr_seg {Auto} \
-             intc_ip {New AXI Interconnect} master_apm {0}} \
-    [get_bd_intf_pins cim_0/S_AXI]
-
-# Connect interrupt
-connect_bd_net [get_bd_pins cim_0/irq_done] [get_bd_pins ps7/IRQ_F2P]
-
-# Set address: 0x4000_0000, 4KB
-assign_bd_address -offset 0x40000000 -range 4K \
-    [get_bd_addr_segs {cim_0/S_AXI/reg0}]
-
-# Validate & save
-validate_bd_design
-save_bd_design
-
-# Generate wrapper & bitstream
-make_wrapper -files [get_files system.bd] -top
-add_files -norecurse vivado_proj/cim_soc.gen/sources_1/bd/system/hdl/system_wrapper.v
-update_compile_order -fileset sources_1
-
-launch_runs synth_1 -jobs 4
-wait_on_run synth_1
-launch_runs impl_1 -to_step write_bitstream -jobs 4
-wait_on_run impl_1
-
-puts "Done! Bitstream at: vivado_proj/cim_soc.runs/impl_1/system_wrapper.bit"
-```
+如果想要单独调试，应该在block design里把信号make_external，然后在官方XDC中取消对应行的注释。
 
 ## 常见问题
 
