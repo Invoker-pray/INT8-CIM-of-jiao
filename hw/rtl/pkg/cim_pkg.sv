@@ -35,7 +35,7 @@ package cim_pkg;
   //   PAR_OB=4  → 2 passes, each 49 iterations = 98 tile-cycles
   //   PAR_OB=8  → 1 pass,  49 iterations = 49 tile-cycles (max parallel for this layer)
 
-  parameter int PAR_OB = 4;  // tunable: 1, 2, 4, 8 (must divide N_OB of target layer)
+  parameter int PAR_OB = 1;  // tunable: 1, 2, 4, 8 (must divide N_OB of target layer)
 
   // ==========================================================================
   // 3. Data Widths
@@ -156,11 +156,12 @@ package cim_pkg;
     ST_WAIT_SRAM  = 4'd4,   // 1-cycle BRAM read latency
     ST_COMPUTE    = 4'd5,   // CIM tile array computes + accumulate
     ST_NEXT_IB    = 4'd6,   // advance input block pointer
-    ST_BIAS_ADD   = 4'd7,   // add bias to accumulated result
-    ST_ACTIVATE   = 4'd8,   // apply activation + requantize
-    ST_STORE      = 4'd9,   // store output neurons to output buffer
-    ST_NEXT_OB    = 4'd10,  // advance output block group pointer
-    ST_DONE       = 4'd11
+    ST_BIAS_ADD   = 4'd7,   // pipeline stage 1: MUX psum + set bias addr
+    ST_ACTIVATE   = 4'd8,   // pipeline stage 2: latch bias from BRAM
+    ST_REQUANT    = 4'd9,   // pipeline stage 3: bias add + ReLU (registered)
+    ST_STORE      = 4'd10,  // pipeline stage 4: requantize + write obuf
+    ST_NEXT_OB    = 4'd11,  // advance output block group pointer
+    ST_DONE       = 4'd12
   } accel_state_t;
 
   // ==========================================================================

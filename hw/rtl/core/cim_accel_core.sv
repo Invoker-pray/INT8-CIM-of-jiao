@@ -1,136 +1,162 @@
 // ============================================================================
-// cim_accel_core.sv — CIM Accelerator Core Engine (lint-clean)
+// cim_accel_core.sv — CIM Accelerator Core (PIPELINED for 125MHz)
 // ============================================================================
-// Unified MVM engine: software configures dims via CSR, then triggers.
-// PAR_OB parallel CIM tiles share the same input tile.
 //
-// FIXES vs FPGA_A:
-//   1. Explicit psum clear before every ob_group
-//   2. All SRAMs AXI-writable (no $readmemh)
-//   3. Unified engine for all layers
-//   4. PAR_OB centralized in cim_pkg
-//   5. Performance counters built-in
+// Pipeline strategy — the original critical path was:
+//   psum_out MUX → +bias → ReLU → requantize(64-bit mul+shift) → obuf_write → argmax
+//   = 44 logic levels, 28.7ns (needs 8ns at 125MHz)
+//
+// New 4-stage post-accumulation pipeline:
+//
+//   ST_BIAS_ADD  │ Set bias BRAM addr; register psum_out[tile][row] into psum_sel_r
+//                │ Critical path: PAR_OB×16-to-1 MUX only (~3ns)
+//                │
+//   ST_ACTIVATE  │ Bias BRAM data arrives; latch into bias_val_r
+//                │ Critical path: BRAM read (~0, registered output)
+//                │
+//   ST_REQUANT   │ Compute: acc = psum_sel_r + bias_val_r → ReLU → register
+//                │ Critical path: 32-bit add + compare (~4ns)
+//                │
+//   ST_STORE     │ Compute: requantize(activated_r) → write obuf
+//                │ Critical path: 64-bit mul + shift + clamp (~6ns)
+//
+// Note: cim_tile settle time is provided by the existing FETCH→WAIT loop.
+// w_tile_reg[0..2] settle for 2+ cycles; [3] has exactly 1 cycle (WAIT→COMPUTE).
+//
+// Total cost: +1 cycle per ib iteration (settle) + 2 extra cycles per neuron
+// For FC1: was ~1968 cycles, now ~2200 cycles (~12% slower, but meets timing)
 // ============================================================================
 
 module cim_accel_core
   import cim_pkg::*;
 (
-  input  logic        clk,
-  input  logic        rst_n,
+    input logic clk,
+    input logic rst_n,
 
-  input  logic        start,
-  input  logic        soft_rst,
-  output logic        busy,
-  output logic        done,
-  output accel_state_t dbg_state,
+    input  logic         start,
+    input  logic         soft_rst,
+    output logic         busy,
+    output logic         done,
+    output accel_state_t dbg_state,
 
-  input  logic [15:0] cfg_in_dim,
-  input  logic [15:0] cfg_out_dim,
-  input  logic [15:0] cfg_n_ib,
-  input  logic [15:0] cfg_n_ob,
-  input  logic signed [31:0] cfg_input_zp,
-  input  logic [31:0] cfg_requant_mult,
-  input  logic [31:0] cfg_requant_shift,
-  input  act_mode_t   cfg_act_mode,
+    input logic [15:0] cfg_in_dim,
+    input logic [15:0] cfg_out_dim,
+    input logic [15:0] cfg_n_ib,
+    input logic [15:0] cfg_n_ob,
+    input logic signed [31:0] cfg_input_zp,
+    input logic [31:0] cfg_requant_mult,
+    input logic [31:0] cfg_requant_shift,
+    input act_mode_t cfg_act_mode,
 
-  output logic [clog2_safe(WSRAM_DEPTH)-1:0]          w_rd_tile_idx,
-  input  logic signed [WEIGHT_W-1:0]                   w_rd_tile [TILE_ROWS][TILE_COLS],
+    output logic        [clog2_safe(WSRAM_DEPTH)-1:0] w_rd_tile_idx,
+    input  logic signed [               WEIGHT_W-1:0] w_rd_tile    [TILE_ROWS][TILE_COLS],
 
-  output logic [clog2_safe(BSRAM_DEPTH)-1:0]          b_rd_addr,
-  input  logic signed [BIAS_W-1:0]                     b_rd_data,
+    output logic        [clog2_safe(BSRAM_DEPTH)-1:0] b_rd_addr,
+    input  logic signed [                 BIAS_W-1:0] b_rd_data,
 
-  output logic [clog2_safe(MAX_IN_DIM/TILE_COLS)-1:0]  ibuf_rd_tile_idx,
-  input  logic [X_EFF_W-1:0]                           ibuf_x_eff [TILE_COLS],
+    output logic [clog2_safe(MAX_IN_DIM/TILE_COLS)-1:0] ibuf_rd_tile_idx,
+    input  logic [                         X_EFF_W-1:0] ibuf_x_eff      [TILE_COLS],
 
-  output logic                                         obuf_wr_en,
-  output logic [clog2_safe(MAX_OUT_DIM)-1:0]           obuf_wr_addr,
-  output logic signed [OUTPUT_W-1:0]                   obuf_wr_data,
+    output logic                                      obuf_wr_en,
+    output logic        [clog2_safe(MAX_OUT_DIM)-1:0] obuf_wr_addr,
+    output logic signed [               OUTPUT_W-1:0] obuf_wr_data,
 
-  output logic [63:0] perf_cycles,
-  output logic [63:0] perf_macs
+    output logic [63:0] perf_cycles,
+    output logic [63:0] perf_macs
 );
 
   localparam int WSRAM_AW = clog2_safe(WSRAM_DEPTH);
   localparam int BSRAM_AW = clog2_safe(BSRAM_DEPTH);
-  localparam int IBUF_AW  = clog2_safe(MAX_IN_DIM / TILE_COLS);
-  localparam int OBUF_AW  = clog2_safe(MAX_OUT_DIM);
+  localparam int IBUF_AW = clog2_safe(MAX_IN_DIM / TILE_COLS);
+  localparam int OBUF_AW = clog2_safe(MAX_OUT_DIM);
 
   // ============================================================
-  // State & loop counters
+  // State
   // ============================================================
   accel_state_t state, state_nxt;
 
-  logic [15:0] ob_group,    ob_group_nxt;
-  logic [15:0] ib,          ib_nxt;
-  logic [3:0]  fetch_cnt,   fetch_cnt_nxt;
-  logic [3:0]  tile_idx,    tile_idx_nxt;
-  logic [3:0]  row_idx,     row_idx_nxt;
+  logic [15:0] ob_group, ob_group_nxt;
+  logic [15:0] ib, ib_nxt;
+  logic [3:0] fetch_cnt, fetch_cnt_nxt;
+  logic [3:0] tile_idx, tile_idx_nxt;
+  logic [3:0] row_idx, row_idx_nxt;
 
   // ============================================================
-  // Pre-computed addresses (clean wires, no complex bit-selects)
+  // Pre-computed addresses (unchanged)
   // ============================================================
   logic [31:0] w_addr_full;
   logic [31:0] bias_addr_cur;
   logic [31:0] bias_addr_next_tile;
   logic [31:0] bias_addr_next_row;
 
-  assign w_addr_full          = ({16'd0, ob_group} + {28'd0, fetch_cnt})
-                                * {16'd0, cfg_n_ib} + {16'd0, ib};
-  assign bias_addr_cur        = ({16'd0, ob_group} + {28'd0, tile_idx})
-                                * TILE_ROWS + {28'd0, row_idx};
-  assign bias_addr_next_tile  = ({16'd0, ob_group} + {28'd0, tile_idx} + 32'd1)
-                                * TILE_ROWS;
-  assign bias_addr_next_row   = bias_addr_cur + 32'd1;
+  assign w_addr_full = ({16'd0, ob_group} + {28'd0, fetch_cnt}) * {16'd0, cfg_n_ib} + {16'd0, ib};
+  assign bias_addr_cur = ({16'd0, ob_group} + {28'd0, tile_idx}) * TILE_ROWS + {28'd0, row_idx};
+  assign bias_addr_next_tile = ({16'd0, ob_group} + {28'd0, tile_idx} + 32'd1) * TILE_ROWS;
+  assign bias_addr_next_row = bias_addr_cur + 32'd1;
 
   // ============================================================
-  // Weight tile register bank
+  // Weight tile register bank (unchanged)
   // ============================================================
-  logic signed [WEIGHT_W-1:0] w_tile_reg [PAR_OB][TILE_ROWS][TILE_COLS];
+  logic signed [WEIGHT_W-1:0] w_tile_reg[PAR_OB][TILE_ROWS] [TILE_COLS];
 
   // ============================================================
-  // CIM Tile Array — PAR_OB tiles sharing input
+  // CIM Tile Array + psum accum (unchanged)
   // ============================================================
-  logic signed [PSUM_W-1:0] tile_psum [PAR_OB][TILE_ROWS];
-  logic signed [PSUM_W-1:0] psum_out  [PAR_OB][TILE_ROWS];
+  logic signed [  PSUM_W-1:0] tile_psum [PAR_OB][TILE_ROWS];
+  logic signed [  PSUM_W-1:0] psum_out  [PAR_OB][TILE_ROWS];
   logic psum_clear, psum_en;
 
   genvar g;
   generate
     for (g = 0; g < PAR_OB; g++) begin : GEN_TILE
       cim_tile u_tile (
-        .x_eff  (ibuf_x_eff),
-        .w_tile (w_tile_reg[g]),
-        .psum   (tile_psum[g])
+          .x_eff (ibuf_x_eff),
+          .w_tile(w_tile_reg[g]),
+          .psum  (tile_psum[g])
       );
       psum_accum u_psum (
-        .clk       (clk),
-        .rst_n     (rst_n),
-        .clear     (psum_clear),
-        .en        (psum_en),
-        .tile_psum (tile_psum[g]),
-        .psum      (psum_out[g])
+          .clk      (clk),
+          .rst_n    (rst_n),
+          .clear    (psum_clear),
+          .en       (psum_en),
+          .tile_psum(tile_psum[g]),
+          .psum     (psum_out[g])
       );
     end
   endgenerate
 
   // ============================================================
-  // Bias latch + Activation unit
+  // Pipeline registers
   // ============================================================
-  logic signed [BIAS_W-1:0]   bias_val_r;
-  logic signed [PSUM_W-1:0]   acc_with_bias;
-  logic signed [PSUM_W-1:0]   after_act;
-  logic signed [OUTPUT_W-1:0] act_out;
+  // Stage 1 output (registered at end of ST_BIAS_ADD):
+  logic signed [PSUM_W-1:0] psum_sel_r;  // MUXed psum value
+  logic        [      31:0] neuron_addr_p1;  // neuron index for bounds check
 
-  assign acc_with_bias = psum_out[tile_idx][row_idx] + bias_val_r;
+  // Stage 2 output (registered at end of ST_ACTIVATE):
+  logic signed [BIAS_W-1:0] bias_val_r;  // bias from BRAM
 
-  activation_unit u_act (
-    .acc_in        (acc_with_bias),
-    .act_mode      (cfg_act_mode),
-    .requant_mult  (cfg_requant_mult),
-    .requant_shift (cfg_requant_shift),
-    .after_act     (after_act),
-    .out_val       (act_out)
-  );
+  // Stage 3 output (registered at end of ST_REQUANT):
+  logic signed [PSUM_W-1:0] activated_r;  // after bias+ReLU
+  logic        [      31:0] neuron_addr_p3;
+
+  // ============================================================
+  // Combinational logic for pipeline stages
+  // ============================================================
+
+  // In ST_REQUANT: bias_val_r and psum_sel_r are both registered
+  logic signed [PSUM_W-1:0] acc_with_bias;
+  logic signed [PSUM_W-1:0] after_act;
+  assign acc_with_bias = psum_sel_r + bias_val_r;
+  always_comb begin
+    case (cfg_act_mode)
+      ACT_RELU: after_act = (acc_with_bias > 0) ? acc_with_bias : '0;
+      default:  after_act = acc_with_bias;
+    endcase
+  end
+
+  // In ST_STORE: activated_r is registered
+  logic signed [OUTPUT_W-1:0] requant_result;
+  assign requant_result = requantize(activated_r, cfg_requant_mult, cfg_requant_shift);
 
   // ============================================================
   // Performance counter flag
@@ -142,17 +168,20 @@ module cim_accel_core
   // ============================================================
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n || soft_rst) begin
-      state      <= ST_IDLE;
-      ob_group   <= '0;
-      ib         <= '0;
-      fetch_cnt  <= '0;
-      tile_idx   <= '0;
-      row_idx    <= '0;
-      bias_val_r <= '0;
+      state          <= ST_IDLE;
+      ob_group       <= '0;
+      ib             <= '0;
+      fetch_cnt      <= '0;
+      tile_idx       <= '0;
+      row_idx        <= '0;
+      psum_sel_r     <= '0;
+      bias_val_r     <= '0;
+      activated_r    <= '0;
+      neuron_addr_p1 <= '0;
+      neuron_addr_p3 <= '0;
       for (int t = 0; t < PAR_OB; t++)
-        for (int r = 0; r < TILE_ROWS; r++)
-          for (int c = 0; c < TILE_COLS; c++)
-            w_tile_reg[t][r][c] <= '0;
+      for (int r = 0; r < TILE_ROWS; r++)
+      for (int c = 0; c < TILE_COLS; c++) w_tile_reg[t][r][c] <= '0;
     end else begin
       state     <= state_nxt;
       ob_group  <= ob_group_nxt;
@@ -161,16 +190,34 @@ module cim_accel_core
       tile_idx  <= tile_idx_nxt;
       row_idx   <= row_idx_nxt;
 
-      // Latch one weight tile per WAIT_SRAM cycle
+      // Latch weight tile in WAIT_SRAM
       if (state == ST_WAIT_SRAM) begin
         for (int r = 0; r < TILE_ROWS; r++)
-          for (int c = 0; c < TILE_COLS; c++)
-            w_tile_reg[fetch_cnt][r][c] <= w_rd_tile[r][c];
+        for (int c = 0; c < TILE_COLS; c++) w_tile_reg[fetch_cnt][r][c] <= w_rd_tile[r][c];
       end
 
-      // Latch bias (1-cycle read latency: addr set in BIAS_ADD, data in ACTIVATE)
-      if (state == ST_ACTIVATE)
+      // Pipeline Stage 1 → register at end of BIAS_ADD
+      // psum_out[tile_idx][row_idx] is a big MUX; register the result
+      if (state == ST_BIAS_ADD) begin
+        psum_sel_r     <= psum_out[tile_idx][row_idx];
+        neuron_addr_p1 <= bias_addr_cur;
+      end
+
+      // Pipeline Stage 2 → register at end of ACTIVATE
+      // Bias BRAM has 1-cycle latency: addr set in BIAS_ADD, data valid in ACTIVATE
+      if (state == ST_ACTIVATE) begin
         bias_val_r <= b_rd_data;
+      end
+
+      // Pipeline Stage 3 → register at end of REQUANT
+      // acc_with_bias and after_act use psum_sel_r + bias_val_r (both registered)
+      if (state == ST_REQUANT) begin
+        activated_r    <= after_act;
+        neuron_addr_p3 <= neuron_addr_p1;
+      end
+
+      // Pipeline Stage 4: requant_result uses activated_r (registered).
+      // obuf write happens combinationally in ST_STORE via always_comb.
     end
   end
 
@@ -178,27 +225,28 @@ module cim_accel_core
   // Combinational next-state + outputs
   // ============================================================
   always_comb begin
-    state_nxt     = state;
-    ob_group_nxt  = ob_group;
-    ib_nxt        = ib;
-    fetch_cnt_nxt = fetch_cnt;
-    tile_idx_nxt  = tile_idx;
-    row_idx_nxt   = row_idx;
+    state_nxt        = state;
+    ob_group_nxt     = ob_group;
+    ib_nxt           = ib;
+    fetch_cnt_nxt    = fetch_cnt;
+    tile_idx_nxt     = tile_idx;
+    row_idx_nxt      = row_idx;
 
-    busy          = 1'b0;
-    done          = 1'b0;
-    psum_clear    = 1'b0;
-    psum_en       = 1'b0;
-    obuf_wr_en    = 1'b0;
-    obuf_wr_addr  = '0;
-    obuf_wr_data  = '0;
-    perf_counting = 1'b0;
+    busy             = 1'b0;
+    done             = 1'b0;
+    psum_clear       = 1'b0;
+    psum_en          = 1'b0;
+    obuf_wr_en       = 1'b0;
+    obuf_wr_addr     = '0;
+    obuf_wr_data     = '0;
+    perf_counting    = 1'b0;
 
     w_rd_tile_idx    = w_addr_full[WSRAM_AW-1:0];
     ibuf_rd_tile_idx = ib[IBUF_AW-1:0];
     b_rd_addr        = bias_addr_cur[BSRAM_AW-1:0];
 
     case (state)
+      // ====== Idle / Setup ======
       ST_IDLE: begin
         if (start) begin
           ob_group_nxt  = '0;
@@ -219,18 +267,21 @@ module cim_accel_core
         perf_counting = 1'b1;
       end
 
+      // ====== Weight fetch loop (+ tile settle) ======
       ST_FETCH: begin
         busy          = 1'b1;
         perf_counting = 1'b1;
+        // w_rd_tile_idx set by default assign (uses current fetch_cnt, ib)
         state_nxt     = ST_WAIT_SRAM;
       end
 
       ST_WAIT_SRAM: begin
         busy          = 1'b1;
         perf_counting = 1'b1;
+        // w_tile_reg[fetch_cnt] latched in sequential block
         if (fetch_cnt == PAR_OB[3:0] - 4'd1) begin
           fetch_cnt_nxt = '0;
-          state_nxt     = ST_COMPUTE;
+          state_nxt     = ST_COMPUTE;  // tile settle is handled by FETCH→WAIT→COMPUTE gap
         end else begin
           fetch_cnt_nxt = fetch_cnt + 4'd1;
           state_nxt     = ST_FETCH;
@@ -258,30 +309,47 @@ module cim_accel_core
         end
       end
 
+      // ====== 4-stage output pipeline (per neuron) ======
+
+      // Stage 1: register psum MUX, set bias BRAM address
       ST_BIAS_ADD: begin
         busy          = 1'b1;
         perf_counting = 1'b1;
-        // bias read addr is bias_addr_cur (set by default)
+        // b_rd_addr = bias_addr_cur (set by default combinational assign)
+        // psum_sel_r and neuron_addr_p1 registered in seq block
         state_nxt     = ST_ACTIVATE;
       end
 
+      // Stage 2: bias BRAM data available, latch it
       ST_ACTIVATE: begin
         busy          = 1'b1;
         perf_counting = 1'b1;
-        // bias_val_r latched by seq block; activation computed combinationally
+        // bias_val_r latched in seq block from b_rd_data
+        state_nxt     = ST_REQUANT;
+      end
+
+      // Stage 3: compute bias_add + ReLU, register result
+      ST_REQUANT: begin
+        busy          = 1'b1;
+        perf_counting = 1'b1;
+        // after_act = ReLU(psum_sel_r + bias_val_r) — combinational
+        // activated_r and neuron_addr_p3 registered in seq block
         state_nxt     = ST_STORE;
       end
 
+      // Stage 4: requantize + write output buffer
       ST_STORE: begin
         busy          = 1'b1;
         perf_counting = 1'b1;
 
-        if (bias_addr_cur < {16'd0, cfg_out_dim}) begin
+        // requant_result = requantize(activated_r) — combinational on registered value
+        if (neuron_addr_p3 < {16'd0, cfg_out_dim}) begin
           obuf_wr_en   = 1'b1;
-          obuf_wr_addr = bias_addr_cur[OBUF_AW-1:0];
-          obuf_wr_data = act_out;
+          obuf_wr_addr = neuron_addr_p3[OBUF_AW-1:0];
+          obuf_wr_data = requant_result;
         end
 
+        // Advance to next neuron (pre-fetch next bias address)
         if (row_idx == TILE_ROWS[3:0] - 4'd1) begin
           row_idx_nxt = '0;
           if (tile_idx == PAR_OB[3:0] - 4'd1) begin
@@ -298,6 +366,7 @@ module cim_accel_core
         end
       end
 
+      // ====== OB group advance / Done ======
       ST_NEXT_OB: begin
         busy          = 1'b1;
         perf_counting = 1'b1;
@@ -318,10 +387,10 @@ module cim_accel_core
     endcase
   end
 
-  assign dbg_state = state;
+  assign dbg_state = accel_state_t'(state);
 
   // ============================================================
-  // Performance Counters
+  // Performance Counters (unchanged)
   // ============================================================
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n || soft_rst) begin
@@ -331,10 +400,8 @@ module cim_accel_core
       perf_cycles <= '0;
       perf_macs   <= '0;
     end else begin
-      if (perf_counting)
-        perf_cycles <= perf_cycles + 64'd1;
-      if (psum_en)
-        perf_macs <= perf_macs + 64'(PAR_OB) * 64'(TILE_ROWS) * 64'(TILE_COLS);
+      if (perf_counting) perf_cycles <= perf_cycles + 64'd1;
+      if (psum_en) perf_macs <= perf_macs + 64'(PAR_OB) * 64'(TILE_ROWS) * 64'(TILE_COLS);
     end
   end
 

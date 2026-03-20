@@ -437,7 +437,7 @@ module tb_cim_accel_core;
   always @(posedge clk) begin
     if (obuf_wr_en)
       $display(
-          "DBG_WR: obuf[%0d] <= %0d  (bias_val=%0d)", obuf_wr_addr, obuf_wr_data, dut.bias_val_r
+          "DBG_WR: obuf[%0d] <= %0d  (activated=%0d)", obuf_wr_addr, obuf_wr_data, dut.activated_r
       );
   end
 
