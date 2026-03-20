@@ -68,19 +68,34 @@ module weight_sram
   generate
     for (gr = 0; gr < TILE_ROWS; gr++) begin : GEN_BANK
       (* ram_style = "block" *)
-      logic [            ROW_W-1:0] bank_mem   [DEPTH];
+      logic [            ROW_W-1:0] bank_mem                                       [DEPTH];
 
       // --- Write path: read-modify-write for BRAM compatibility ---
-      // Stage 1: register write request, read old value
+      // 2-cycle pipeline with forwarding to handle back-to-back writes.
+      // Stage 1: register write request, read old value (or forward from Stage 2)
+      // Stage 2: merge 32-bit chunk into full word, write back to BRAM
       logic                         wr_pending;
       logic [clog2_safe(DEPTH)-1:0] wr_addr_r;
       logic [          CG_BITS-1:0] wr_cg_r;
       logic [                 31:0] wr_data_r;
       logic [            ROW_W-1:0] rmw_old;
+      logic [            ROW_W-1:0] rmw_merged;  // Stage 2 result (for forwarding)
+      logic [clog2_safe(DEPTH)-1:0] last_wr_addr;
+      logic                         last_wr_valid;
 
       always_ff @(posedge clk) begin
         // Default: clear pending
-        wr_pending <= 1'b0;
+        wr_pending    <= 1'b0;
+        last_wr_valid <= 1'b0;
+
+        // Stage 2: Merge and write back full word
+        if (wr_pending) begin
+          rmw_merged = rmw_old;
+          rmw_merged[wr_cg_r*32+:32] = wr_data_r;
+          bank_mem[wr_addr_r] <= rmw_merged;  // BRAM write (full word)
+          last_wr_addr <= wr_addr_r;
+          last_wr_valid <= 1'b1;
+        end
 
         // Stage 1: Capture write request and read old word
         if (wr_en && (wr_row == gr[ROW_BITS-1:0])) begin
@@ -88,15 +103,10 @@ module weight_sram
           wr_addr_r  <= wr_tile_idx;
           wr_cg_r    <= wr_col_group;
           wr_data_r  <= wr_data;
-          rmw_old    <= bank_mem[wr_tile_idx];  // BRAM read
-        end
-
-        // Stage 2: Merge and write back full word
-        if (wr_pending) begin : RMW_WRITE
-          logic [ROW_W-1:0] merged;
-          merged = rmw_old;
-          merged[wr_cg_r*32+:32] = wr_data_r;
-          bank_mem[wr_addr_r] <= merged;  // BRAM write (full word)
+          // Forwarding: if Stage 2 just wrote to the same address, use merged result
+          if (wr_pending && wr_addr_r == wr_tile_idx) rmw_old <= rmw_merged;
+          else if (last_wr_valid && last_wr_addr == wr_tile_idx) rmw_old <= rmw_merged;
+          else rmw_old <= bank_mem[wr_tile_idx];  // BRAM read
         end
       end
 

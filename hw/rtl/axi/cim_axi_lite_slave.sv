@@ -169,6 +169,7 @@ module cim_axi_lite_slave
   logic                   reg_wdma_wr;
   // FIX3: burst mode — auto-increment chunk/tile
   logic                   reg_wdma_burst;
+  logic                   burst_inc_pending;  // delayed auto-increment
 
   // Start/clear signals
   logic                   start_pulse;
@@ -318,12 +319,25 @@ module cim_axi_lite_slave
       reg_wdma_data     <= '0;
       reg_wdma_chunk    <= '0;
       reg_wdma_burst    <= 1'b0;
+      burst_inc_pending <= 1'b0;
     end else begin
       // Self-clearing pulses
       start_pulse    <= 1'b0;
       soft_rst_pulse <= 1'b0;
       done_irq_clear <= 1'b0;
       reg_wdma_wr    <= 1'b0;
+
+      // Burst auto-increment: fires one cycle AFTER the write pulse,
+      // so weight_sram sees current chunk_idx during wr_en, then we advance.
+      if (burst_inc_pending) begin
+        burst_inc_pending <= 1'b0;
+        if (reg_wdma_chunk == CHUNK_IDX_W'((TILE_ROWS * TILE_COLS / (32 / WEIGHT_W)) - 1)) begin
+          reg_wdma_chunk <= '0;
+          reg_wdma_addr  <= reg_wdma_addr + 16'd1;
+        end else begin
+          reg_wdma_chunk <= reg_wdma_chunk + CHUNK_IDX_W'(1);
+        end
+      end
 
       if (wr_fire) begin
         case (aw_addr_r)
@@ -344,16 +358,11 @@ module cim_axi_lite_slave
           CSR_WDMA_ADDR:     reg_wdma_addr <= w_data_r[15:0];
           CSR_WDMA_DATA: begin
             reg_wdma_data <= w_data_r;
-            // FIX3: In burst mode, auto-fire write + auto-increment
+            // FIX3: In burst mode, fire write with CURRENT chunk/tile,
+            // then increment AFTER the write pulse is consumed.
             if (reg_wdma_burst) begin
-              reg_wdma_wr <= 1'b1;
-              // Auto-increment chunk, wrap to next tile
-              if (reg_wdma_chunk == (TILE_ROWS * TILE_COLS / (32 / WEIGHT_W)) - 1) begin
-                reg_wdma_chunk <= '0;
-                reg_wdma_addr  <= reg_wdma_addr + 16'd1;
-              end else begin
-                reg_wdma_chunk <= reg_wdma_chunk + CHUNK_IDX_W'(1);
-              end
+              reg_wdma_wr       <= 1'b1;
+              burst_inc_pending <= 1'b1;  // increment next cycle
             end
           end
           CSR_WDMA_CTRL: begin
