@@ -231,23 +231,144 @@ module cim_axi_lite_slave
   );
 
   // ============================================================
-  // Memory Blocks
+  // Memory Blocks — with staging registers for BRAM-friendly writes
   // ============================================================
+  // Vivado BRAM inference requires PURE whole-word writes.
+  // We assemble partial writes in staging registers here,
+  // then write the full word to BRAM in one shot.
+
+  // ---- Weight SRAM: staging register for row assembly ----
+  // Each row = TILE_COLS * WEIGHT_W = 128 bits = 4 chunks of 32 bits.
+  // chunk_idx encodes (row, col_group): row = chunk_idx / 4, col_group = chunk_idx % 4.
+  // When col_group == 3 (last chunk of a row), commit the full 128-bit row to BRAM.
+  localparam int CHUNKS_PER_ROW = TILE_COLS / (32 / WEIGHT_W);  // 4
+  localparam int ROW_W = TILE_COLS * WEIGHT_W;  // 128
+  localparam int CG_BITS = $clog2(CHUNKS_PER_ROW);  // 2
+  localparam int ROW_BITS_W = $clog2(TILE_ROWS);  // 4
+
+  logic [                  ROW_W-1:0] wsram_staging;  // 128-bit staging register
+  logic                               wsram_commit;  // pulse: write full row to BRAM
+  logic [      $clog2(TILE_ROWS)-1:0] wsram_commit_row;  // which row to write
+  logic [clog2_safe(WSRAM_DEPTH)-1:0] wsram_commit_tile;  // which tile
+
+  // Fill staging register on each chunk write
+  wire  [                CG_BITS-1:0] wdma_col_group = reg_wdma_chunk[CG_BITS-1:0];
+  wire  [             ROW_BITS_W-1:0] wdma_row = reg_wdma_chunk[CG_BITS+:ROW_BITS_W];
+
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      wsram_staging   <= '0;
+      wsram_commit    <= 1'b0;
+      wsram_commit_row  <= '0;
+      wsram_commit_tile <= '0;
+    end else begin
+      wsram_commit <= 1'b0;  // self-clearing
+
+      if (reg_wdma_wr) begin
+        // Place 32-bit chunk into correct position of staging register
+        case (wdma_col_group)
+          2'd0: wsram_staging[31:0] <= reg_wdma_data;
+          2'd1: wsram_staging[63:32] <= reg_wdma_data;
+          2'd2: wsram_staging[95:64] <= reg_wdma_data;
+          2'd3: wsram_staging[127:96] <= reg_wdma_data;
+        endcase
+
+        // When last col_group is written, commit full row
+        if (wdma_col_group == CG_BITS'(CHUNKS_PER_ROW - 1)) begin
+          wsram_commit      <= 1'b1;
+          wsram_commit_row  <= wdma_row;
+          wsram_commit_tile <= reg_wdma_addr[clog2_safe(WSRAM_DEPTH)-1:0];
+        end
+      end
+    end
+  end
+
   weight_sram #(
       .DEPTH(WSRAM_DEPTH)
   ) u_wsram (
-      .clk         (clk),
-      .wr_en       (reg_wdma_wr),
-      .wr_tile_idx (reg_wdma_addr[clog2_safe(WSRAM_DEPTH)-1:0]),
-      .wr_chunk_idx(reg_wdma_chunk[clog2_safe(WSRAM_WORD_W/32)-1:0]),
-      .wr_data     (reg_wdma_data),
-      .rd_tile_idx (w_rd_tile_idx),
-      .rd_tile     (w_rd_tile)
+      .clk        (clk),
+      .wr_en      (wsram_commit),
+      .wr_row     (wsram_commit_row),
+      .wr_tile_idx(wsram_commit_tile),
+      .wr_row_data(wsram_staging),
+      .rd_tile_idx(w_rd_tile_idx),
+      .rd_tile    (w_rd_tile)
   );
 
-  // Bias/Input/Output write enable signals from AXI write path
-  wire bias_wr_hit  = wr_fire && (aw_addr_r >= MEM_BIAS_BASE)  && (aw_addr_r < MEM_BIAS_BASE + 14'h200);
+  // ---- Input Buffer: staging register for tile assembly ----
+  // Each tile = TILE_COLS * INPUT_W = 128 bits = 16 bytes.
+  // AXI writes one byte at a time to flat address (MEM_INPUT_BASE + 4*i).
+  // Staging register accumulates 16 bytes, commits when byte 15 is written.
+  localparam int IBUF_TILE_W = TILE_COLS * INPUT_W;  // 128
+  localparam int IBUF_DEPTH = (MAX_IN_DIM + TILE_COLS - 1) / TILE_COLS;
+  localparam int IBUF_COL_BITS = $clog2(TILE_COLS);  // 4
+
+  logic [IBUF_TILE_W-1:0] ibuf_staging;
+  logic ibuf_commit;
+  logic [clog2_safe(MAX_IN_DIM/TILE_COLS)-1:0] ibuf_commit_tile;
+
   wire input_wr_hit = wr_fire && (aw_addr_r >= MEM_INPUT_BASE) && (aw_addr_r < MEM_BIAS_BASE);
+  wire [13:0] input_flat_addr = (aw_addr_r - MEM_INPUT_BASE) >> 2;  // byte index
+  wire [IBUF_COL_BITS-1:0] ibuf_byte_pos = input_flat_addr[IBUF_COL_BITS-1:0];
+  wire [clog2_safe(
+MAX_IN_DIM/TILE_COLS
+)-1:0] ibuf_tile_addr = input_flat_addr[IBUF_COL_BITS+:clog2_safe(
+      MAX_IN_DIM/TILE_COLS
+  )];
+
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      ibuf_staging     <= '0;
+      ibuf_commit      <= 1'b0;
+      ibuf_commit_tile <= '0;
+    end else begin
+      ibuf_commit <= 1'b0;
+
+      if (input_wr_hit) begin
+        // Place byte into correct position
+        case (ibuf_byte_pos)
+          4'd0:  ibuf_staging[7:0] <= w_data_r[INPUT_W-1:0];
+          4'd1:  ibuf_staging[15:8] <= w_data_r[INPUT_W-1:0];
+          4'd2:  ibuf_staging[23:16] <= w_data_r[INPUT_W-1:0];
+          4'd3:  ibuf_staging[31:24] <= w_data_r[INPUT_W-1:0];
+          4'd4:  ibuf_staging[39:32] <= w_data_r[INPUT_W-1:0];
+          4'd5:  ibuf_staging[47:40] <= w_data_r[INPUT_W-1:0];
+          4'd6:  ibuf_staging[55:48] <= w_data_r[INPUT_W-1:0];
+          4'd7:  ibuf_staging[63:56] <= w_data_r[INPUT_W-1:0];
+          4'd8:  ibuf_staging[71:64] <= w_data_r[INPUT_W-1:0];
+          4'd9:  ibuf_staging[79:72] <= w_data_r[INPUT_W-1:0];
+          4'd10: ibuf_staging[87:80] <= w_data_r[INPUT_W-1:0];
+          4'd11: ibuf_staging[95:88] <= w_data_r[INPUT_W-1:0];
+          4'd12: ibuf_staging[103:96] <= w_data_r[INPUT_W-1:0];
+          4'd13: ibuf_staging[111:104] <= w_data_r[INPUT_W-1:0];
+          4'd14: ibuf_staging[119:112] <= w_data_r[INPUT_W-1:0];
+          4'd15: ibuf_staging[127:120] <= w_data_r[INPUT_W-1:0];
+        endcase
+
+        // Commit when last byte of tile is written
+        if (ibuf_byte_pos == IBUF_COL_BITS'(TILE_COLS - 1)) begin
+          ibuf_commit      <= 1'b1;
+          ibuf_commit_tile <= ibuf_tile_addr;
+        end
+      end
+    end
+  end
+
+  input_buffer #(
+      .MAX_LEN(MAX_IN_DIM)
+  ) u_ibuf (
+      .clk         (clk),
+      .wr_en       (ibuf_commit),
+      .wr_tile_idx (ibuf_commit_tile),
+      .wr_tile_data(ibuf_staging),
+      .rd_tile_idx (ibuf_rd_tile_idx),
+      .input_zp    (reg_input_zp),
+      .x_tile      (ibuf_x_tile),
+      .x_eff       (ibuf_x_eff)
+  );
+
+  // ---- Bias SRAM: already whole-word (32-bit), no staging needed ----
+  wire bias_wr_hit = wr_fire && (aw_addr_r >= MEM_BIAS_BASE) && (aw_addr_r < MEM_BIAS_BASE + 14'h200);
 
   bias_sram #(
       .DEPTH(BSRAM_DEPTH)
@@ -258,19 +379,6 @@ module cim_axi_lite_slave
       .wr_data(w_data_r),
       .rd_addr(b_rd_addr),
       .rd_data(b_rd_data)
-  );
-
-  input_buffer #(
-      .MAX_LEN(MAX_IN_DIM)
-  ) u_ibuf (
-      .clk        (clk),
-      .wr_en      (input_wr_hit),
-      .wr_addr    ((aw_addr_r - MEM_INPUT_BASE) >> 2),
-      .wr_data    (w_data_r[INPUT_W-1:0]),
-      .rd_tile_idx(ibuf_rd_tile_idx),
-      .input_zp   (reg_input_zp),
-      .x_tile     (ibuf_x_tile),
-      .x_eff      (ibuf_x_eff)
   );
 
   output_buffer #(
