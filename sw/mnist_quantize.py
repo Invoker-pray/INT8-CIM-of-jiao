@@ -334,8 +334,16 @@ def hw_infer_layer(x_uint8, w_int8, b_int32, zp, mult, shift, relu=True):
     return out
 
 
-def quantize_image(image_float, s_in, zp_in):
-    """Quantize a float image to UINT8 for hardware input."""
+def quantize_image(image_float, s_in, zp_in, normalize=True):
+    """Quantize a float image to UINT8 for hardware input.
+
+    image_float: raw [0,1] pixel values (from ToTensor).
+    If normalize=True, applies the same (x-mean)/std as training
+    BEFORE quantizing, so the UINT8 values match what the model expects.
+    """
+    if normalize:
+        # Must match transforms.Normalize((0.1307,), (0.3081,)) used in training
+        image_float = (image_float - 0.1307) / 0.3081
     x_q = np.clip(np.round(image_float / s_in + zp_in), 0, 255)
     return x_q.astype(np.uint8)
 
