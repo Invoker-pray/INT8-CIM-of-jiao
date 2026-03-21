@@ -154,14 +154,16 @@ package cim_pkg;
     ST_CLEAR_PSUM = 4'd2,
     ST_FETCH      = 4'd3,   // fetch weight tile + input tile from SRAM
     ST_WAIT_SRAM  = 4'd4,   // 1-cycle BRAM read latency
-    ST_COMPUTE    = 4'd5,   // CIM tile array computes + accumulate
-    ST_NEXT_IB    = 4'd6,   // advance input block pointer
-    ST_BIAS_ADD   = 4'd7,   // pipeline stage 1: MUX psum + set bias addr
-    ST_ACTIVATE   = 4'd8,   // pipeline stage 2: latch bias from BRAM
-    ST_REQUANT    = 4'd9,   // pipeline stage 3: bias add + ReLU (registered)
-    ST_STORE      = 4'd10,  // pipeline stage 4: requantize + write obuf
-    ST_NEXT_OB    = 4'd11,  // advance output block group pointer
-    ST_DONE       = 4'd12
+    ST_XEFF_REG   = 4'd5,   // NEW: register x_eff (ZP subtract settles here)
+    ST_MAC        = 4'd6,   // NEW: cim_tile MAC runs, register tile_psum output
+    ST_COMPUTE    = 4'd7,   // psum_accum += tile_psum_reg
+    ST_NEXT_IB    = 4'd8,   // advance input block pointer
+    ST_BIAS_ADD   = 4'd9,   // pipeline stage 1: MUX psum + set bias addr
+    ST_ACTIVATE   = 4'd10,  // pipeline stage 2: latch bias from BRAM
+    ST_REQUANT    = 4'd11,  // pipeline stage 3: bias add + ReLU (registered)
+    ST_STORE      = 4'd12,  // pipeline stage 4: requantize + write obuf
+    ST_NEXT_OB    = 4'd13,  // advance output block group pointer
+    ST_DONE       = 4'd14
   } accel_state_t;
 
   // ==========================================================================
