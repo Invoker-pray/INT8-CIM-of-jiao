@@ -94,9 +94,8 @@ def train_model(epochs=10, lr=0.001, device="cpu", seed=None):
     print(f"Seed: {seed if seed is not None else 'None (fully random)'}")
     print("=" * 60)
 
-    transform = transforms.Compose(
-        [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
-    )
+    # NO Normalize — train on raw [0,1] pixels so weights match hardware input domain
+    transform = transforms.Compose([transforms.ToTensor()])
     train_set = datasets.MNIST("./data", train=True, download=True, transform=transform)
     test_set = datasets.MNIST("./data", train=False, download=True, transform=transform)
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=128, shuffle=True)
@@ -174,33 +173,12 @@ def quantize_weight_symmetric(weight_float, scale):
     return w_q.to(torch.int8)
 
 
-def compute_requant_params(s_input, s_weight, s_output, shift=16):
-    """
-    Compute (mult, shift) for requantization.
-    M = (s_input * s_weight) / s_output
-    Fixed-point: mult = round(M * 2^shift)
-    """
-    M = (s_input * s_weight) / s_output
-    mult = max(1, int(round(M * (1 << shift))))
-    return mult, shift
-
-
-def quantize_bias(bias_float, s_input, s_weight):
-    """
-    Quantize bias to INT32.
-    bias_q = round(bias_float / (s_input * s_weight))
-    """
-    scale = s_input * s_weight
-    bias_q = torch.clamp(torch.round(bias_float / scale), -(2**31), 2**31 - 1)
-    return bias_q.to(torch.int32)
-
-
 def calibrate_fc1_output(model, device="cpu"):
     """
     Run RAW [0,1] images through float model to find FC1 output (after ReLU) range.
-    This is used to determine FC2 input quantization and FC1 requantization.
+    Model is trained on raw [0,1] pixels (no Normalize), so we calibrate with same.
     """
-    transform_raw = transforms.ToTensor()  # [0,1] float, NO normalization
+    transform_raw = transforms.ToTensor()
     cal_set = datasets.MNIST(
         "./data", train=True, download=True, transform=transform_raw
     )
@@ -210,24 +188,10 @@ def calibrate_fc1_output(model, device="cpu"):
     fc1_out_min, fc1_out_max = float("inf"), float("-inf")
     fc2_out_min, fc2_out_max = float("inf"), float("-inf")
 
-    # We need to run the model in a way that matches hardware:
-    # Hardware uses raw uint8 pixels, but model was trained with normalized input.
-    # To calibrate, we pass normalized input through the model (matching training),
-    # and observe the FLOAT activation ranges for requantization.
-    transform_norm = transforms.Compose(
-        [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
-    )
-    cal_set_norm = datasets.MNIST(
-        "./data", train=True, download=True, transform=transform_norm
-    )
-    cal_loader_norm = torch.utils.data.DataLoader(
-        cal_set_norm, batch_size=1000, shuffle=False
-    )
-
     with torch.no_grad():
-        for data_norm, _ in cal_loader_norm:
-            data_norm = data_norm.to(device).view(-1, 784)
-            fc1_out = model.relu(model.fc1(data_norm))
+        for data, _ in cal_loader:
+            data = data.to(device).view(-1, 784)
+            fc1_out = model.relu(model.fc1(data))
             fc1_out_min = min(fc1_out_min, fc1_out.min().item())
             fc1_out_max = max(fc1_out_max, fc1_out.max().item())
 
@@ -463,9 +427,8 @@ def main():
     os.makedirs(args.output_dir, exist_ok=True)
 
     # ---- Train or load ----
-    transform = transforms.Compose(
-        [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
-    )
+    # Model is trained on raw [0,1] pixels (no Normalize)
+    transform = transforms.Compose([transforms.ToTensor()])
     test_set = datasets.MNIST("./data", train=False, download=True, transform=transform)
 
     if args.pretrained and os.path.exists(args.pretrained):
