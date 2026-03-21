@@ -284,10 +284,10 @@ def full_ptq(model, calibration_loader, device="cpu"):
     hw_zp2 = -zp_in2
 
     return {
-        "w1": w1_q.numpy(),
-        "w2": w2_q.numpy(),
-        "b1": b1_q.numpy(),
-        "b2": b2_q.numpy(),
+        "w1": w1_q.cpu().numpy(),
+        "w2": w2_q.cpu().numpy(),
+        "b1": b1_q.cpu().numpy(),
+        "b2": b2_q.cpu().numpy(),
         "fc1_mult": fc1_mult,
         "fc1_shift": fc1_shift,
         "fc2_mult": fc2_mult,
