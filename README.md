@@ -127,6 +127,7 @@ step 1中，之前将`cim_pkg.sv: MAX_IN_DIM, MAX_OUT_DIM`设置为1024，触发
 
 _patch 1: 现在把cim_accel_core改成流水线版本解决这个问题。改成bias->activation->requant->store四级流水，activation_unit不再作为子模块实例化（已经删除）。（当前最高支持40MHZ，critial path是25.7ns）_
 
-_patch 2: 增加了新的流水，将compute切分成三段，Sat Mar 21 02:56:59 PM CST 2026 modify: cim_pkg.sv, add 3 stages; cim_accel_core.sv, divide the compute path into 3 stages: (1). ST_XEFF_REG: BREAM-read + ZP substract + latch x_eff_reg; (2). ST_MAC, X_eff_reg /times/ w_tile_reg MAC + latch tile_psum_reg; (3). psum_accum += tile_psum_reg. try to use 125MHZ(not last pipeline's 25~40MHZ). 但是在125MHZ下还是有time violation, 当前进度-12.7ns(20ns)，大约可以支持50MHZ._
+_patch 2: 增加了新的流水，将compute切分成三段，Sat Mar 21 02:56:59 PM CST 2026 modify: cim_pkg.sv, add 3 stages; cim_accel_core.sv, divide the compute path into 3 stages: (1). ST_XEFF_REG: BREAM-read + ZP substract + latch x_eff_reg; (2). ST_MAC, X_eff_reg /times/ w_tile_reg MAC + latch tile_psum_reg; (3). psum_accum += tile_psum_reg. try to use 125MHZ(not last pipeline's 25~40MHZ). 但是在125MHZ下还是有timing violation, 当前进度-12.7ns(20ns)，大约可以支持50MHZ._
 
-_patch 3: 新的critial path是ST_STORE，写obuf，requantize都耗时很多。这次把ST_STORE分成ST_STORE(64-bit multiply + reg `prod_r`), ST_SHIFT_CLAMP(shift + rounding + clamp, reg `requant_r`), ST_WRITE_OBUF(write output buffer)._
+_patch 3: 新的critial path是ST_STORE，写obuf，requantize都耗时很多。这次把ST_STORE分成ST_STORE(64-bit multiply + reg `prod_r`), ST_SHIFT_CLAMP(shift + rounding + clamp, reg `requant_r`), ST_WRITE_OBUF(write output buffer). 当前进度是16.2ns. 调整到62.5MHZ可以实现16ns的周期。
+布局之后的critial path: `w_tile_reg -> DSP48 -> CARRY4 -> tile_psum_reg`，如果想要在8ns之内完成，需要把16个元素拆成2x8再合并。cim_tile 做的是 16 列的 `Σ(x_eff[c] * w[r][c])`，这是一条 16 级串行加法链。需要把它拆成两拍：先算前 8 列，再算后 8 列。这样做的话改动量会比较大。这里选择降频到62.5MHZ，如果还不行的话再降一点（61.7MHZ）线完成任务再说。如果后面有时间的话，再做进一步优化。（到时候再开分支）_

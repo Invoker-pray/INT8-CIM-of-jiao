@@ -19,7 +19,7 @@
 set PROJ_NAME  "cim_soc"
 set PART       "xc7z020clg400-1"
 set BOARD_PART "tul.com.tw:pynq-z2:part0:1.0"
-set FCLK_MHZ   125
+set FCLK_MHZ   62.5
 set N_JOBS     4
 
 # --- Paths (relative to where vivado is invoked, typically project root) ---
