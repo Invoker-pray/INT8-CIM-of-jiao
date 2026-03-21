@@ -174,73 +174,84 @@ def quantize_weight_symmetric(weight_float, scale):
     return w_q.to(torch.int8)
 
 
-def calibrate_activations(model, calibration_loader, device="cpu"):
+def calibrate_fc1_output(model, device="cpu"):
     """
-    Run calibration data through model to find activation ranges.
-    Returns min/max for each layer's input.
+    Run RAW [0,1] images through float model to find FC1 output (after ReLU) range.
+    This is used to determine FC2 input quantization and FC1 requantization.
     """
+    transform_raw = transforms.ToTensor()  # [0,1] float, NO normalization
+    cal_set = datasets.MNIST(
+        "./data", train=True, download=True, transform=transform_raw
+    )
+    cal_loader = torch.utils.data.DataLoader(cal_set, batch_size=1000, shuffle=False)
+
     model.eval()
-    fc1_input_min, fc1_input_max = float("inf"), float("-inf")
-    fc2_input_min, fc2_input_max = float("inf"), float("-inf")
+    fc1_out_min, fc1_out_max = float("inf"), float("-inf")
+    fc2_out_min, fc2_out_max = float("inf"), float("-inf")
+
+    # We need to run the model in a way that matches hardware:
+    # Hardware uses raw uint8 pixels, but model was trained with normalized input.
+    # To calibrate, we pass normalized input through the model (matching training),
+    # and observe the FLOAT activation ranges for requantization.
+    transform_norm = transforms.Compose(
+        [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
+    )
+    cal_set_norm = datasets.MNIST(
+        "./data", train=True, download=True, transform=transform_norm
+    )
+    cal_loader_norm = torch.utils.data.DataLoader(
+        cal_set_norm, batch_size=1000, shuffle=False
+    )
 
     with torch.no_grad():
-        for data, _ in calibration_loader:
-            data = data.to(device).view(-1, 784)
+        for data_norm, _ in cal_loader_norm:
+            data_norm = data_norm.to(device).view(-1, 784)
+            fc1_out = model.relu(model.fc1(data_norm))
+            fc1_out_min = min(fc1_out_min, fc1_out.min().item())
+            fc1_out_max = max(fc1_out_max, fc1_out.max().item())
 
-            # FC1 input = raw image pixels (will be quantized to UINT8)
-            fc1_input_min = min(fc1_input_min, data.min().item())
-            fc1_input_max = max(fc1_input_max, data.max().item())
-
-            # FC1 output (after ReLU) = FC2 input
-            fc1_out = model.relu(model.fc1(data))
-            fc2_input_min = min(fc2_input_min, fc1_out.min().item())
-            fc2_input_max = max(fc2_input_max, fc1_out.max().item())
+            logits = model.fc2(fc1_out)
+            fc2_out_min = min(fc2_out_min, logits.min().item())
+            fc2_out_max = max(fc2_out_max, logits.max().item())
 
     return {
-        "fc1_input": (fc1_input_min, fc1_input_max),
-        "fc2_input": (fc2_input_min, fc2_input_max),
+        "fc1_output": (fc1_out_min, fc1_out_max),
+        "fc2_output": (fc2_out_min, fc2_out_max),
     }
-
-
-def compute_requant_params(s_input, s_weight, s_output, shift=16):
-    """
-    Compute (mult, shift) for requantization.
-
-    The real operation is: output = round(acc * M)
-    where M = (s_input * s_weight) / s_output
-
-    Fixed-point: mult = round(M * 2^shift), then hardware does:
-      result = (acc * mult + 2^(shift-1)) >> shift
-    """
-    M = (s_input * s_weight) / s_output
-    mult = max(1, int(round(M * (1 << shift))))
-    return mult, shift
-
-
-def quantize_bias(bias_float, s_input, s_weight):
-    """
-    Quantize bias to INT32.
-    bias_q = round(bias_float / (s_input * s_weight))
-    """
-    scale = s_input * s_weight
-    bias_q = torch.clamp(torch.round(bias_float / scale), -(2**31), 2**31 - 1)
-    return bias_q.to(torch.int32)
 
 
 def full_ptq(model, calibration_loader, device="cpu"):
     """
     Full post-training quantization pipeline.
-    Returns all quantized parameters matching CIM hardware format.
+
+    Key design decisions (matching mini_test.ipynb / CIM hardware):
+      - Input: FIXED quantization. Raw pixel [0,255] as UINT8.
+        scale_in = 1/255, hw_zp = -128 (hardware does x_eff = x_u8 + 128)
+      - Weights: symmetric INT8, zp=0
+      - Bias: INT32, scale = scale_in * scale_w
+      - FC1 output: symmetric INT8 (after ReLU, all non-negative)
+      - FC2 output: symmetric INT8
     """
     print("\n" + "=" * 60)
     print("Post-Training Quantization")
     print("=" * 60)
 
-    # Step 1: Calibrate activation ranges
-    print("  Calibrating activation ranges...")
-    act_ranges = calibrate_activations(model, calibration_loader, device)
+    # ---- Step 1: Fixed input quantization ----
+    # MNIST pixels are [0, 255] UINT8. Hardware stores as UINT8.
+    # Hardware does: x_eff = x_u8 - hw_zp = x_u8 + 128
+    # This gives x_eff in [128, 383] for pixel range [0, 255]
+    # Equivalent float: x_eff_float = pixel_value + 128
+    # So effective input scale for the accumulator:
+    #   acc = sum(w_q * x_eff) = sum(w_q * (pixel + 128))
+    # We need: acc ≈ float_acc / (s_in * s_w)
+    # With s_in = 1/255 and pixel in [0,1] from ToTensor():
+    #   x_u8 = round(pixel * 255) gives [0, 255]
+    s_in1 = 1.0 / 255.0
+    hw_zp1 = -128  # hardware subtracts this, so x_eff = x_u8 + 128
 
-    # Step 2: Quantize weights (symmetric, zp=0)
+    print(f"  FC1 input: FIXED scale=1/255={s_in1:.6f}, hw_zp={hw_zp1}")
+
+    # ---- Step 2: Quantize weights (symmetric, zp=0) ----
     s_w1, _ = compute_scale_zp_symmetric(model.fc1.weight.data)
     s_w2, _ = compute_scale_zp_symmetric(model.fc2.weight.data)
 
@@ -250,49 +261,37 @@ def full_ptq(model, calibration_loader, device="cpu"):
     print(f"  FC1 weight: scale={s_w1:.6f}, range=[{w1_q.min()}, {w1_q.max()}]")
     print(f"  FC2 weight: scale={s_w2:.6f}, range=[{w2_q.min()}, {w2_q.max()}]")
 
-    # Step 3: Compute input quantization params
-    # FC1 input: MNIST pixels normalized by torchvision → need to map to UINT8
-    # Hardware expects UINT8 [0,255] with zero_point subtraction
-    # We use asymmetric quantization for inputs
-    fc1_min, fc1_max = act_ranges["fc1_input"]
-    s_in1, zp_in1 = compute_scale_zp_asymmetric(fc1_min, fc1_max)
+    # ---- Step 3: Calibrate FC1 output range ----
+    print("  Calibrating FC1 output range...")
+    ranges = calibrate_fc1_output(model, device)
+    fc1_out_min, fc1_out_max = ranges["fc1_output"]
+    fc2_out_min, fc2_out_max = ranges["fc2_output"]
 
-    fc2_min, fc2_max = act_ranges["fc2_input"]
-    s_in2, zp_in2 = compute_scale_zp_asymmetric(fc2_min, fc2_max)
+    # FC1 output scale (symmetric, after ReLU so min=0)
+    fc1_out_abs = max(abs(fc1_out_min), abs(fc1_out_max))
+    s_out1 = fc1_out_abs / 127.0 if fc1_out_abs > 0 else 1e-8
 
-    print(f"  FC1 input: scale={s_in1:.6f}, zp={zp_in1}")
-    print(f"  FC2 input: scale={s_in2:.6f}, zp={zp_in2}")
+    # This is also FC2's input scale
+    s_in2 = s_out1
+    hw_zp2 = 0  # FC1 output after ReLU is non-negative, symmetric around 0
 
-    # Step 4: Compute output scales (for requantization)
-    # FC1 output feeds into FC2 input, so s_out1 = s_in2
-    s_out1 = s_in2
-    # FC2 output: we want to preserve as much range as possible
-    # Use the accumulator range to determine output scale
-    s_out2 = (
-        s_in2 * s_w2
-    )  # keep in accumulator scale (no further requant needed for argmax)
-    # Actually for FC2 we still requantize to INT8 for readback
-    # Use a calibration-based output scale
-    s_out2_scale = max(abs(fc2_min), abs(fc2_max)) * s_w2 / 127.0
-    if s_out2_scale == 0:
-        s_out2_scale = 1e-8
+    print(f"  FC1 output range: [{fc1_out_min:.4f}, {fc1_out_max:.4f}]")
+    print(f"  FC1 output / FC2 input scale: {s_out1:.6f}, hw_zp={hw_zp2}")
 
-    # Step 5: Compute requant mult/shift
+    # FC2 output scale (for requantization to INT8 logits)
+    fc2_out_abs = max(abs(fc2_out_min), abs(fc2_out_max))
+    s_out2 = fc2_out_abs / 127.0 if fc2_out_abs > 0 else 1e-8
+
+    # ---- Step 4: Compute requant parameters ----
     fc1_mult, fc1_shift = compute_requant_params(s_in1, s_w1, s_out1, shift=16)
-    fc2_mult, fc2_shift = compute_requant_params(s_in2, s_w2, s_out2_scale, shift=16)
+    fc2_mult, fc2_shift = compute_requant_params(s_in2, s_w2, s_out2, shift=16)
 
     print(f"  FC1 requant: mult={fc1_mult}, shift={fc1_shift}")
     print(f"  FC2 requant: mult={fc2_mult}, shift={fc2_shift}")
 
-    # Step 6: Quantize biases
+    # ---- Step 5: Quantize biases ----
     b1_q = quantize_bias(model.fc1.bias.data, s_in1, s_w1)
     b2_q = quantize_bias(model.fc2.bias.data, s_in2, s_w2)
-
-    # Hardware zero points (stored as signed int, subtracted from UINT8 input)
-    # CIM does: x_eff = uint8(x) - zp, where zp is signed
-    # For FC1: input zp = -zp_in1 (hardware subtracts, so negate)
-    hw_zp1 = -zp_in1  # e.g., if zp_in1=128, hw_zp1=-128
-    hw_zp2 = -zp_in2
 
     return {
         "w1": w1_q.cpu().numpy(),
@@ -334,17 +333,14 @@ def hw_infer_layer(x_uint8, w_int8, b_int32, zp, mult, shift, relu=True):
     return out
 
 
-def quantize_image(image_float, s_in, zp_in, normalize=True):
-    """Quantize a float image to UINT8 for hardware input.
+def quantize_image(image_float, s_in=None, zp_in=None):
+    """Quantize a [0,1] float image to UINT8 [0,255] for hardware.
 
-    image_float: raw [0,1] pixel values (from ToTensor).
-    If normalize=True, applies the same (x-mean)/std as training
-    BEFORE quantizing, so the UINT8 values match what the model expects.
+    Simple fixed mapping: x_u8 = round(pixel * 255).
+    s_in and zp_in are accepted but ignored (for API compatibility).
+    The actual scale (1/255) and zp (-128) are baked into the PTQ parameters.
     """
-    if normalize:
-        # Must match transforms.Normalize((0.1307,), (0.3081,)) used in training
-        image_float = (image_float - 0.1307) / 0.3081
-    x_q = np.clip(np.round(image_float / s_in + zp_in), 0, 255)
+    x_q = np.clip(np.round(image_float * 255.0), 0, 255)
     return x_q.astype(np.uint8)
 
 
