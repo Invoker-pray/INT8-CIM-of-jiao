@@ -148,23 +148,24 @@ package cim_pkg;
   // ==========================================================================
   // 9. Accelerator FSM States
   // ==========================================================================
-  typedef enum logic [3:0] {
-    ST_IDLE       = 4'd0,
-    ST_LOAD_CFG   = 4'd1,
-    ST_CLEAR_PSUM = 4'd2,
-    ST_FETCH      = 4'd3,   // fetch weight tile + input tile from SRAM
-    ST_WAIT_SRAM  = 4'd4,   // 1-cycle BRAM read latency
-    ST_XEFF_REG   = 4'd5,   // NEW: register x_eff (ZP subtract settles here)
-    ST_MAC        = 4'd6,   // NEW: cim_tile MAC runs, register tile_psum output
-    ST_COMPUTE    = 4'd7,   // psum_accum += tile_psum_reg
-    ST_NEXT_IB    = 4'd8,   // advance input block pointer
-    ST_BIAS_ADD   = 4'd9,   // pipeline stage 1: MUX psum + set bias addr
-    ST_ACTIVATE   = 4'd10,  // pipeline stage 2: latch bias from BRAM
-    ST_REQUANT    = 4'd11,  // pipeline stage 3: bias add + ReLU (registered)
-    ST_STORE      = 4'd12,  // pipeline stage 4: requantize (registered)
-    ST_WRITE_OBUF = 4'd13,  // pipeline stage 5: write obuf from requant_r
-    ST_NEXT_OB    = 4'd14,  // advance output block group pointer
-    ST_DONE       = 4'd15
+  typedef enum logic [4:0] {
+    ST_IDLE        = 5'd0,
+    ST_LOAD_CFG    = 5'd1,
+    ST_CLEAR_PSUM  = 5'd2,
+    ST_FETCH       = 5'd3,
+    ST_WAIT_SRAM   = 5'd4,
+    ST_XEFF_REG    = 5'd5,
+    ST_MAC         = 5'd6,
+    ST_COMPUTE     = 5'd7,
+    ST_NEXT_IB     = 5'd8,
+    ST_BIAS_ADD    = 5'd9,
+    ST_ACTIVATE    = 5'd10,
+    ST_REQUANT     = 5'd11,
+    ST_STORE       = 5'd12,  // 64-bit multiply → prod_r
+    ST_SHIFT_CLAMP = 5'd13,  // shift + round + clamp → requant_r
+    ST_WRITE_OBUF  = 5'd14,  // write obuf
+    ST_NEXT_OB     = 5'd15,
+    ST_DONE        = 5'd16
   } accel_state_t;
 
   // ==========================================================================
