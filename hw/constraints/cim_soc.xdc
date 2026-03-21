@@ -31,11 +31,11 @@
 ## buffer output pin is the standard approach for Zynq designs.
 ## ============================================================================
 
-## FCLK_CLK0 = 62.5 MHz → period = 16.0 ns
+## FCLK_CLK0 = 60 MHz → period = 16.667 ns
 ## The exact get_pins path depends on the BD hierarchy; Vivado typically names
 ## the output buffer as shown below. If synthesis warns about the pin not being
 ## found, the auto-generated clock from PS7 IP will still be used.
-create_clock -name fclk0 -period 16.000 \
+create_clock -name fclk0 -period 16.667 \
     [get_pins -quiet system_i/ps7/inst/PS7_i/FCLKCLK[0]]
 
 ## ============================================================================
