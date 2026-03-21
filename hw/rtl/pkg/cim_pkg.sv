@@ -161,9 +161,10 @@ package cim_pkg;
     ST_BIAS_ADD   = 4'd9,   // pipeline stage 1: MUX psum + set bias addr
     ST_ACTIVATE   = 4'd10,  // pipeline stage 2: latch bias from BRAM
     ST_REQUANT    = 4'd11,  // pipeline stage 3: bias add + ReLU (registered)
-    ST_STORE      = 4'd12,  // pipeline stage 4: requantize + write obuf
-    ST_NEXT_OB    = 4'd13,  // advance output block group pointer
-    ST_DONE       = 4'd14
+    ST_STORE      = 4'd12,  // pipeline stage 4: requantize (registered)
+    ST_WRITE_OBUF = 4'd13,  // pipeline stage 5: write obuf from requant_r
+    ST_NEXT_OB    = 4'd14,  // advance output block group pointer
+    ST_DONE       = 4'd15
   } accel_state_t;
 
   // ==========================================================================
