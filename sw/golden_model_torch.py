@@ -29,6 +29,14 @@ import numpy as np
 import argparse
 import os
 
+
+def _apply_seed(seed):
+    """If seed is not None, fix numpy+torch RNG for reproducibility; otherwise fully random."""
+    if seed is not None:
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+
+
 # ============================================================================
 # Hardware parameters (must match cim_pkg.sv)
 # ============================================================================
@@ -170,10 +178,9 @@ def save_hex(lines, filepath):
 # ============================================================================
 
 
-def generate_random_model(seed=42):
-    """Random weights/bias/input with specified seed."""
-    np.random.seed(seed)
-    torch.manual_seed(seed)
+def generate_random_model(seed=None):
+    """Random weights/bias/input. seed=None → fully random, seed=int → reproducible."""
+    _apply_seed(seed)
 
     w1 = np.random.randint(-128, 127, (128, 784), dtype=np.int8)
     b1 = np.random.randint(-5000, 5000, 128, dtype=np.int32)
@@ -212,12 +219,14 @@ def generate_fixed_model():
 # ============================================================================
 
 
-def generate_mnist_e2e(output_dir, mode="random", seed=42):
+def generate_mnist_e2e(output_dir, mode="random", seed=None):
     os.makedirs(output_dir, exist_ok=True)
 
     print("=" * 60)
     print(f"Golden Model (PyTorch) — MNIST E2E")
-    print(f"  Mode: {mode}, Seed: {seed}")
+    print(
+        f"  Mode: {mode}, Seed: {seed if seed is not None else 'None (fully random)'}"
+    )
     print(f"  Output: {output_dir}")
     print(f"  PyTorch: {torch.__version__}")
     print("=" * 60)
@@ -322,13 +331,12 @@ def generate_mnist_e2e(output_dir, mode="random", seed=42):
 # ============================================================================
 
 
-def self_test():
+def self_test(seed=None):
     print("=" * 60)
     print("Self-test: numpy vs torch cross-validation")
     print("=" * 60)
 
-    np.random.seed(99)
-    torch.manual_seed(99)
+    _apply_seed(seed)
 
     IN, OUT = 32, 16
     w = np.random.randint(-128, 127, (OUT, IN), dtype=np.int8)
@@ -372,13 +380,13 @@ Golden Model (PyTorch) — Usage
 ============================================================
   python golden_model_torch.py                            Show this usage
   python golden_model_torch.py --self-test                Cross-validate numpy vs torch
-  python golden_model_torch.py --mnist-e2e                Random model, calibrated quant
+  python golden_model_torch.py --mnist-e2e                Random model (fully random)
   python golden_model_torch.py --mnist-e2e --fixed        Fixed pattern weights (debug)
-  python golden_model_torch.py --mnist-e2e --seed 123     Custom random seed
+  python golden_model_torch.py --mnist-e2e --seed 42      Reproducible random
 
 Options:
   --output-dir DIR    Output directory (default: data_e2e_torch)
-  --seed N            Random seed (default: 42)
+  --seed N            Random seed (default: None = fully random)
   --fixed             Use deterministic fixed-pattern weights
 
 Output format is IDENTICAL to golden_model.py — same hex files, same layout.
@@ -402,13 +410,18 @@ if __name__ == "__main__":
         help="Use fixed-pattern weights (deterministic, easy to debug)",
     )
     parser.add_argument("--output-dir", type=str, default="data_e2e_torch")
-    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Random seed (default: None = fully random)",
+    )
     args = parser.parse_args()
 
     if args.mnist_e2e:
         mode = "fixed" if args.fixed else "random"
         generate_mnist_e2e(args.output_dir, mode=mode, seed=args.seed)
     elif args.self_test:
-        self_test()
+        self_test(args.seed)
     else:
         print(USAGE)
