@@ -1,30 +1,26 @@
 // ============================================================================
-// cim_accel_core.sv — CIM Accelerator Core (PIPELINED for 125MHz)
+// cim_accel_core.sv — CIM Accelerator Core (FULLY PIPELINED for 125MHz)
 // ============================================================================
 //
-// Pipeline strategy — the original critical path was:
-//   psum_out MUX → +bias → ReLU → requantize(64-bit mul+shift) → obuf_write → argmax
-//   = 44 logic levels, 28.7ns (needs 8ns at 125MHz)
+// Two pipeline regions:
 //
-// New 4-stage post-accumulation pipeline:
+// A) Compute pipeline (per input-block iteration):
+//    Splits the 26ns combinational path BRAM→ZP→MAC→accumulate into 3 stages:
 //
-//   ST_BIAS_ADD  │ Set bias BRAM addr; register psum_out[tile][row] into psum_sel_r
-//                │ Critical path: PAR_OB×16-to-1 MUX only (~3ns)
-//                │
-//   ST_ACTIVATE  │ Bias BRAM data arrives; latch into bias_val_r
-//                │ Critical path: BRAM read (~0, registered output)
-//                │
-//   ST_REQUANT   │ Compute: acc = psum_sel_r + bias_val_r → ReLU → register
-//                │ Critical path: 32-bit add + compare (~4ns)
-//                │
-//   ST_STORE     │ Compute: requantize(activated_r) → write obuf
-//                │ Critical path: 64-bit mul + shift + clamp (~6ns)
+//    ST_FETCH/WAIT  │ Issue BRAM read addr; weight BRAM → w_tile_reg
+//    ST_XEFF_REG    │ input BRAM output + ZP subtract settles → register x_eff_reg
+//                   │ Critical path: BRAM Tco + 32-bit subtract + clamp (~10ns) ✓
+//    ST_MAC         │ cim_tile: x_eff_reg × w_tile_reg → register tile_psum_reg
+//                   │ Critical path: 16-element MAC chain (~10ns) ✓
+//    ST_COMPUTE     │ psum_accum += tile_psum_reg (registered add)
+//                   │ Critical path: 32-bit add (~4ns) ✓
 //
-// Note: cim_tile settle time is provided by the existing FETCH→WAIT loop.
-// w_tile_reg[0..2] settle for 2+ cycles; [3] has exactly 1 cycle (WAIT→COMPUTE).
+// B) Output pipeline (per neuron, after all IB iterations):
+//    ST_BIAS_ADD  → ST_ACTIVATE → ST_REQUANT → ST_STORE
+//    (unchanged from previous version)
 //
-// Total cost: +1 cycle per ib iteration (settle) + 2 extra cycles per neuron
-// For FC1: was ~1968 cycles, now ~2200 cycles (~12% slower, but meets timing)
+// Cost: +2 cycles per IB iteration (XEFF_REG + MAC) vs original.
+// For FC1: ~49*(9+2) = ~539 compute cycles + output pipeline.
 // ============================================================================
 
 module cim_accel_core
@@ -97,20 +93,33 @@ module cim_accel_core
   // ============================================================
   // Weight tile register bank (unchanged)
   // ============================================================
-  logic signed [WEIGHT_W-1:0] w_tile_reg[PAR_OB][TILE_ROWS] [TILE_COLS];
+  logic signed [WEIGHT_W-1:0] w_tile_reg[PAR_OB][TILE_ROWS][TILE_COLS];
 
   // ============================================================
-  // CIM Tile Array + psum accum (unchanged)
+  // Compute pipeline registers (NEW for 125MHz timing closure)
   // ============================================================
-  logic signed [  PSUM_W-1:0] tile_psum [PAR_OB][TILE_ROWS];
-  logic signed [  PSUM_W-1:0] psum_out  [PAR_OB][TILE_ROWS];
+  // Stage A output: registered x_eff (latched in ST_XEFF_REG)
+  // Cuts path: BRAM_read → ZP_subtract | register | cim_tile_MAC
+  logic [X_EFF_W-1:0] x_eff_reg[TILE_COLS];
+
+  // Stage B output: registered tile_psum (latched in ST_MAC)
+  // Cuts path: cim_tile_MAC | register | psum_accumulate
+  logic signed [PSUM_W-1:0] tile_psum_reg[PAR_OB][TILE_ROWS];
+
+  // ============================================================
+  // CIM Tile Array + psum accum
+  // ============================================================
+  // cim_tile is purely combinational: x_eff_reg × w_tile_reg → tile_psum
+  // tile_psum is registered into tile_psum_reg before feeding psum_accum
+  logic signed [PSUM_W-1:0] tile_psum[PAR_OB][TILE_ROWS];
+  logic signed [PSUM_W-1:0] psum_out[PAR_OB][TILE_ROWS];
   logic psum_clear, psum_en;
 
   genvar g;
   generate
     for (g = 0; g < PAR_OB; g++) begin : GEN_TILE
       cim_tile u_tile (
-          .x_eff (ibuf_x_eff),
+          .x_eff (x_eff_reg),      // use REGISTERED x_eff
           .w_tile(w_tile_reg[g]),
           .psum  (tile_psum[g])
       );
@@ -119,7 +128,7 @@ module cim_accel_core
           .rst_n    (rst_n),
           .clear    (psum_clear),
           .en       (psum_en),
-          .tile_psum(tile_psum[g]),
+          .tile_psum(tile_psum_reg[g]),  // use REGISTERED tile_psum
           .psum     (psum_out[g])
       );
     end
@@ -179,9 +188,12 @@ module cim_accel_core
       activated_r    <= '0;
       neuron_addr_p1 <= '0;
       neuron_addr_p3 <= '0;
+      for (int c = 0; c < TILE_COLS; c++) x_eff_reg[c] <= '0;
       for (int t = 0; t < PAR_OB; t++)
-      for (int r = 0; r < TILE_ROWS; r++)
-      for (int c = 0; c < TILE_COLS; c++) w_tile_reg[t][r][c] <= '0;
+      for (int r = 0; r < TILE_ROWS; r++) begin
+        tile_psum_reg[t][r] <= '0;
+        for (int c = 0; c < TILE_COLS; c++) w_tile_reg[t][r][c] <= '0;
+      end
     end else begin
       state     <= state_nxt;
       ob_group  <= ob_group_nxt;
@@ -194,6 +206,21 @@ module cim_accel_core
       if (state == ST_WAIT_SRAM) begin
         for (int r = 0; r < TILE_ROWS; r++)
         for (int c = 0; c < TILE_COLS; c++) w_tile_reg[fetch_cnt][r][c] <= w_rd_tile[r][c];
+      end
+
+      // NEW Stage A: Register x_eff (ZP subtract output settles during WAIT_SRAM)
+      // ibuf_x_eff is combinational from BRAM rd_word → ZP subtract.
+      // By the time we reach ST_XEFF_REG, BRAM read is done and x_eff is stable.
+      if (state == ST_XEFF_REG) begin
+        for (int c = 0; c < TILE_COLS; c++) x_eff_reg[c] <= ibuf_x_eff[c];
+      end
+
+      // NEW Stage B: Register tile_psum (cim_tile MAC output)
+      // cim_tile is combinational on x_eff_reg × w_tile_reg → tile_psum.
+      // In ST_MAC, tile_psum has settled; latch it for psum_accum.
+      if (state == ST_MAC) begin
+        for (int t = 0; t < PAR_OB; t++)
+        for (int r = 0; r < TILE_ROWS; r++) tile_psum_reg[t][r] <= tile_psum[t][r];
       end
 
       // Pipeline Stage 1 → register at end of BIAS_ADD
@@ -281,13 +308,30 @@ module cim_accel_core
         // w_tile_reg[fetch_cnt] latched in sequential block
         if (fetch_cnt == PAR_OB[3:0] - 4'd1) begin
           fetch_cnt_nxt = '0;
-          state_nxt     = ST_COMPUTE;  // tile settle is handled by FETCH→WAIT→COMPUTE gap
+          state_nxt     = ST_XEFF_REG;  // → register x_eff before MAC
         end else begin
           fetch_cnt_nxt = fetch_cnt + 4'd1;
           state_nxt     = ST_FETCH;
         end
       end
 
+      // NEW Stage A: x_eff settles (BRAM read + ZP subtract done), register it
+      ST_XEFF_REG: begin
+        busy          = 1'b1;
+        perf_counting = 1'b1;
+        // x_eff_reg latched in sequential block from ibuf_x_eff
+        state_nxt     = ST_MAC;
+      end
+
+      // NEW Stage B: cim_tile MAC runs on x_eff_reg × w_tile_reg, register tile_psum
+      ST_MAC: begin
+        busy          = 1'b1;
+        perf_counting = 1'b1;
+        // tile_psum_reg latched in sequential block from tile_psum
+        state_nxt     = ST_COMPUTE;
+      end
+
+      // Stage C: psum_accum += tile_psum_reg (registered input, short path)
       ST_COMPUTE: begin
         busy          = 1'b1;
         psum_en       = 1'b1;
