@@ -174,6 +174,27 @@ def quantize_weight_symmetric(weight_float, scale):
     return w_q.to(torch.int8)
 
 
+def compute_requant_params(s_input, s_weight, s_output, shift=16):
+    """
+    Compute (mult, shift) for requantization.
+    M = (s_input * s_weight) / s_output
+    Fixed-point: mult = round(M * 2^shift)
+    """
+    M = (s_input * s_weight) / s_output
+    mult = max(1, int(round(M * (1 << shift))))
+    return mult, shift
+
+
+def quantize_bias(bias_float, s_input, s_weight):
+    """
+    Quantize bias to INT32.
+    bias_q = round(bias_float / (s_input * s_weight))
+    """
+    scale = s_input * s_weight
+    bias_q = torch.clamp(torch.round(bias_float / scale), -(2**31), 2**31 - 1)
+    return bias_q.to(torch.int32)
+
+
 def calibrate_fc1_output(model, device="cpu"):
     """
     Run RAW [0,1] images through float model to find FC1 output (after ReLU) range.
