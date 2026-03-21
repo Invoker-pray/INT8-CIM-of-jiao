@@ -125,8 +125,8 @@ step 1中，之前将`cim_pkg.sv: MAX_IN_DIM, MAX_OUT_DIM`设置为1024，触发
 
 遂降频至25MHZ.
 
-_现在把cim_accel_core改成流水线版本解决这个问题。改成bias->activation->requant->store四级流水，activation_unit不再作为子模块实例化（已经删除）。（当前最高支持40MHZ，critial path是25.7ns）_
+_patch 1: 现在把cim_accel_core改成流水线版本解决这个问题。改成bias->activation->requant->store四级流水，activation_unit不再作为子模块实例化（已经删除）。（当前最高支持40MHZ，critial path是25.7ns）_
 
 _patch 2: 增加了新的流水，将compute切分成三段，Sat Mar 21 02:56:59 PM CST 2026 modify: cim_pkg.sv, add 3 stages; cim_accel_core.sv, divide the compute path into 3 stages: (1). ST_XEFF_REG: BREAM-read + ZP substract + latch x_eff_reg; (2). ST_MAC, X_eff_reg /times/ w_tile_reg MAC + latch tile_psum_reg; (3). psum_accum += tile_psum_reg. try to use 125MHZ(not last pipeline's 25~40MHZ). 但是在125MHZ下还是有time violation, 当前进度-12.7ns(20ns)，大约可以支持50MHZ._
 
-_patch 3: 新的critial path是ST_STORE，写obuf，requantize都耗时。这次把ST_STORE分成ST_STORE(64-bit multiply + reg `prod_r`), ST_SHIFT_CLAMP(shift + rounding + clamp, reg `requant_r`), ST_WRITE_OBUF(write output buffer)._
+_patch 3: 新的critial path是ST_STORE，写obuf，requantize都耗时很多。这次把ST_STORE分成ST_STORE(64-bit multiply + reg `prod_r`), ST_SHIFT_CLAMP(shift + rounding + clamp, reg `requant_r`), ST_WRITE_OBUF(write output buffer)._
