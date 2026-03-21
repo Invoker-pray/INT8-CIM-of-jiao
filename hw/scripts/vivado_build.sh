@@ -15,7 +15,7 @@
 
 set -e
 
-rm -rf vivado_proj
+rm -rf vivado_proj .Xil
 # ============================================================================
 sed -i 's/parameter int PAR_OB = 4;/parameter int PAR_OB = 1;/' hw/rtl/pkg/cim_pkg.sv
 # ============================================================================
