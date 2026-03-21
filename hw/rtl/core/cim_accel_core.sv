@@ -138,23 +138,27 @@ module cim_accel_core
   // Pipeline registers
   // ============================================================
   // Stage 1 output (registered at end of ST_BIAS_ADD):
-  logic signed [PSUM_W-1:0] psum_sel_r;  // MUXed psum value
-  logic        [      31:0] neuron_addr_p1;  // neuron index for bounds check
+  logic signed [  PSUM_W-1:0] psum_sel_r;  // MUXed psum value
+  logic        [        31:0] neuron_addr_p1;  // neuron index for bounds check
 
   // Stage 2 output (registered at end of ST_ACTIVATE):
-  logic signed [BIAS_W-1:0] bias_val_r;  // bias from BRAM
+  logic signed [  BIAS_W-1:0] bias_val_r;  // bias from BRAM
 
   // Stage 3 output (registered at end of ST_REQUANT):
-  logic signed [PSUM_W-1:0] activated_r;  // after bias+ReLU
-  logic        [      31:0] neuron_addr_p3;
+  logic signed [  PSUM_W-1:0] activated_r;  // after bias+ReLU
+  logic        [        31:0] neuron_addr_p3;
+
+  // Stage 4 output (registered at end of ST_STORE):
+  logic signed [OUTPUT_W-1:0] requant_r;  // requantized INT8 value
+  logic        [        31:0] neuron_addr_p4;
 
   // ============================================================
   // Combinational logic for pipeline stages
   // ============================================================
 
   // In ST_REQUANT: bias_val_r and psum_sel_r are both registered
-  logic signed [PSUM_W-1:0] acc_with_bias;
-  logic signed [PSUM_W-1:0] after_act;
+  logic signed [  PSUM_W-1:0] acc_with_bias;
+  logic signed [  PSUM_W-1:0] after_act;
   assign acc_with_bias = psum_sel_r + bias_val_r;
   always_comb begin
     case (cfg_act_mode)
@@ -188,6 +192,8 @@ module cim_accel_core
       activated_r    <= '0;
       neuron_addr_p1 <= '0;
       neuron_addr_p3 <= '0;
+      requant_r      <= '0;
+      neuron_addr_p4 <= '0;
       for (int c = 0; c < TILE_COLS; c++) x_eff_reg[c] <= '0;
       for (int t = 0; t < PAR_OB; t++)
       for (int r = 0; r < TILE_ROWS; r++) begin
@@ -243,8 +249,13 @@ module cim_accel_core
         neuron_addr_p3 <= neuron_addr_p1;
       end
 
-      // Pipeline Stage 4: requant_result uses activated_r (registered).
-      // obuf write happens combinationally in ST_STORE via always_comb.
+      // Pipeline Stage 4 → register at end of ST_STORE
+      // requantize is combinational on activated_r (registered input)
+      // Register the result so obuf write + argmax happen on clean registered data
+      if (state == ST_STORE) begin
+        requant_r      <= requant_result;
+        neuron_addr_p4 <= neuron_addr_p3;
+      end
     end
   end
 
@@ -381,16 +392,24 @@ module cim_accel_core
         state_nxt     = ST_STORE;
       end
 
-      // Stage 4: requantize + write output buffer
+      // Stage 4: requantize only — result registered into requant_r
       ST_STORE: begin
         busy          = 1'b1;
         perf_counting = 1'b1;
+        // requant_result = requantize(activated_r) — combinational
+        // requant_r and neuron_addr_p4 latched in seq block
+        state_nxt     = ST_WRITE_OBUF;
+      end
 
-        // requant_result = requantize(activated_r) — combinational on registered value
-        if (neuron_addr_p3 < {16'd0, cfg_out_dim}) begin
+      // Stage 5: write output buffer from registered requant_r
+      ST_WRITE_OBUF: begin
+        busy          = 1'b1;
+        perf_counting = 1'b1;
+
+        if (neuron_addr_p4 < {16'd0, cfg_out_dim}) begin
           obuf_wr_en   = 1'b1;
-          obuf_wr_addr = neuron_addr_p3[OBUF_AW-1:0];
-          obuf_wr_data = requant_result;
+          obuf_wr_addr = neuron_addr_p4[OBUF_AW-1:0];
+          obuf_wr_data = requant_r;
         end
 
         // Advance to next neuron (pre-fetch next bias address)
