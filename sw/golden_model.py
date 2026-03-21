@@ -21,6 +21,13 @@ import numpy as np
 import argparse
 import os
 
+
+def _apply_seed(seed):
+    """If seed is not None, fix numpy RNG for reproducibility; otherwise fully random."""
+    if seed is not None:
+        np.random.seed(seed)
+
+
 # ============================================================================
 # Hardware parameters (must match cim_pkg.sv)
 # ============================================================================
@@ -208,17 +215,21 @@ def save_hex(lines, filepath):
 # ============================================================================
 
 
-def generate_mnist_e2e(output_dir, seed=42):
+def generate_mnist_e2e(output_dir, seed=None):
     """
     Generate random MNIST-like 784→128→10 model and test data.
     Writes all hex files needed by tb_mnist_e2e.sv.
+
+    Args:
+        seed: int — fixed seed for reproducible output; None — fully random.
     """
-    np.random.seed(seed)
+    _apply_seed(seed)
     os.makedirs(output_dir, exist_ok=True)
 
     print("=" * 60)
     print("Generating MNIST E2E golden data")
     print(f"Output dir: {output_dir}")
+    print(f"Seed: {seed if seed is not None else 'None (fully random)'}")
     print("=" * 60)
 
     # ---- Model parameters ----
@@ -562,17 +573,18 @@ def infer_conv_layer(
     }
 
 
-def im2col_demo(mode="both"):
+def im2col_demo(mode="both", seed=None):
     """
     Demo: run Conv inference with explicit, implicit, or both modes.
 
     mode: "explicit", "implicit", or "both" (default)
+    seed: int — fixed seed for reproducible output; None — fully random.
     """
     print("=" * 60)
     print(f"im2col Conv Inference Demo  (mode={mode})")
     print("=" * 60)
 
-    np.random.seed(123)
+    _apply_seed(seed)
 
     # Small Conv layer: 3×8×8 input, 16 output channels, 3×3 kernel
     C_in, H, W = 3, 8, 8
@@ -625,12 +637,12 @@ def im2col_demo(mode="both"):
 # ============================================================================
 
 
-def self_test():
+def self_test(seed=None):
     print("=" * 60)
     print("Golden Model Self-Test")
     print("=" * 60)
 
-    np.random.seed(42)
+    _apply_seed(seed)
     IN_DIM, OUT_DIM = 32, 16
     ZP, MULT, SHIFT = -128, 1073741824, 30
 
@@ -669,9 +681,11 @@ CIM SoC Golden Model — Usage
 Options:
   --im2col-mode MODE  "explicit", "implicit", or "both" (default: both)
   --output-dir DIR    Output directory for hex files  (default: data_e2e)
-  --seed N            Random seed                      (default: 42)
+  --seed N            Random seed (default: None = fully random)
 
 Examples:
+  python golden_model.py --mnist-e2e --seed 42                               # reproducible
+  python golden_model.py --mnist-e2e                                          # fully random
   python golden_model.py --mnist-e2e --output-dir ../hw/sim/tb_mnist_e2e/data_e2e
   python golden_model.py --im2col-demo --im2col-mode explicit
 ============================================================
@@ -698,14 +712,19 @@ if __name__ == "__main__":
         help="im2col mode (default: both)",
     )
     parser.add_argument("--output-dir", type=str, default="data_e2e")
-    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Random seed (default: None = fully random)",
+    )
     args = parser.parse_args()
 
     if args.mnist_e2e:
         generate_mnist_e2e(args.output_dir, args.seed)
     elif args.self_test:
-        self_test()
+        self_test(args.seed)
     elif args.im2col_demo:
-        im2col_demo(mode=args.im2col_mode)
+        im2col_demo(mode=args.im2col_mode, seed=args.seed)
     else:
         print(USAGE)

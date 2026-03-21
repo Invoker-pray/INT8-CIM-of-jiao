@@ -45,6 +45,14 @@ import argparse
 import os
 import sys
 
+
+def _apply_seed(seed):
+    """If seed is not None, fix numpy+torch RNG for reproducibility; otherwise fully random."""
+    if seed is not None:
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+
+
 # ============================================================================
 # Hardware parameters (must match cim_pkg.sv)
 # ============================================================================
@@ -77,10 +85,13 @@ class MnistMLP(nn.Module):
 # ============================================================================
 # 2. Training
 # ============================================================================
-def train_model(epochs=10, lr=0.001, device="cpu"):
+def train_model(epochs=10, lr=0.001, device="cpu", seed=None):
     """Train MNIST MLP from scratch."""
+    _apply_seed(seed)
+
     print("=" * 60)
     print("Training MNIST MLP (784→128→10)")
+    print(f"Seed: {seed if seed is not None else 'None (fully random)'}")
     print("=" * 60)
 
     transform = transforms.Compose(
@@ -415,6 +426,12 @@ def main():
     )
     parser.add_argument("--output-dir", type=str, default="mnist_real_data")
     parser.add_argument("--save-model", type=str, default="mnist_mlp.pt")
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Random seed (default: None = fully random)",
+    )
     args = parser.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -432,7 +449,7 @@ def main():
         model.load_state_dict(torch.load(args.pretrained, map_location=device))
         float_acc = "N/A (pretrained)"
     else:
-        model, _, float_acc = train_model(args.epochs, device=device)
+        model, _, float_acc = train_model(args.epochs, device=device, seed=args.seed)
         torch.save(model.state_dict(), args.save_model)
         print(f"Model saved to {args.save_model}")
 
