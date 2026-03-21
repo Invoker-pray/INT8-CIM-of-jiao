@@ -66,3 +66,12 @@ vivado_proj/**
 
 .Xil/
 .Xil/**
+
+mnist_real_data/
+mnist_real_data/**
+mnist_real_data.zip
+data/
+data/***
+__pycache__/
+
+mnist_mlp.pt

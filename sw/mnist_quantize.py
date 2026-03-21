@@ -173,6 +173,27 @@ def quantize_weight_symmetric(weight_float, scale):
     return w_q.to(torch.int8)
 
 
+def compute_requant_params(s_input, s_weight, s_output, shift=16):
+    """
+    Compute (mult, shift) for requantization.
+    M = (s_input * s_weight) / s_output
+    Fixed-point: mult = round(M * 2^shift)
+    """
+    M = (s_input * s_weight) / s_output
+    mult = max(1, int(round(M * (1 << shift))))
+    return mult, shift
+
+
+def quantize_bias(bias_float, s_input, s_weight):
+    """
+    Quantize bias to INT32.
+    bias_q = round(bias_float / (s_input * s_weight))
+    """
+    scale = s_input * s_weight
+    bias_q = torch.clamp(torch.round(bias_float / scale), -(2**31), 2**31 - 1)
+    return bias_q.to(torch.int32)
+
+
 def calibrate_fc1_output(model, device="cpu"):
     """
     Run RAW [0,1] images through float model to find FC1 output (after ReLU) range.
@@ -211,7 +232,7 @@ def full_ptq(model, calibration_loader, device="cpu"):
 
     Key design decisions (matching mini_test.ipynb / CIM hardware):
       - Input: FIXED quantization. Raw pixel [0,255] as UINT8.
-        scale_in = 1/255, hw_zp = -128 (hardware does x_eff = x_u8 + 128)
+        scale_in = 1/255, hw_zp = 0 (x_eff = x_u8 directly)
       - Weights: symmetric INT8, zp=0
       - Bias: INT32, scale = scale_in * scale_w
       - FC1 output: symmetric INT8 (after ReLU, all non-negative)
@@ -223,16 +244,13 @@ def full_ptq(model, calibration_loader, device="cpu"):
 
     # ---- Step 1: Fixed input quantization ----
     # MNIST pixels are [0, 255] UINT8. Hardware stores as UINT8.
-    # Hardware does: x_eff = x_u8 - hw_zp = x_u8 + 128
-    # This gives x_eff in [128, 383] for pixel range [0, 255]
-    # Equivalent float: x_eff_float = pixel_value + 128
-    # So effective input scale for the accumulator:
-    #   acc = sum(w_q * x_eff) = sum(w_q * (pixel + 128))
-    # We need: acc ≈ float_acc / (s_in * s_w)
-    # With s_in = 1/255 and pixel in [0,1] from ToTensor():
-    #   x_u8 = round(pixel * 255) gives [0, 255]
+    # Model is trained on raw [0,1] pixels (ToTensor only, no Normalize).
+    # Quantization: x_u8 = round(pixel * 255), scale = 1/255, zp = 0.
+    # hw_infer_layer does: x_eff = x_u8 - hw_zp = x_u8 - 0 = x_u8
+    # So x_eff in [0, 255], and dequant: pixel ≈ x_u8 * (1/255).
+    # acc = w_q @ x_u8 + b_q ≈ (w_float @ pixel) / (s_in * s_w)
     s_in1 = 1.0 / 255.0
-    hw_zp1 = -128  # hardware subtracts this, so x_eff = x_u8 + 128
+    hw_zp1 = 0  # x_eff = x_u8 - 0 = x_u8, range [0, 255] matching float [0,1]
 
     print(f"  FC1 input: FIXED scale=1/255={s_in1:.6f}, hw_zp={hw_zp1}")
 
