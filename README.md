@@ -103,6 +103,14 @@ _RTL本身没有Conv专用硬件，这里用了python的im2col + 硬件MVM实现
 - [] Phase 2: Zynq UltraScale+ 的 PS 是 Cortex-A53（AXI 接口兼容，驱动几乎不改），综合 + 时序收敛 + 上板验证
 - [] Phase 3: 性能对比报告：PYNQ-Z2 vs KV260（资源、频率、吞吐）
 
+# 进展记录
+
+## checkpoint 1
+
+现在是2026.03.22，已经基本完成了step 1~3的所有内容。当前的项目是，已经实现了PL侧，硬件的MVM + bias + ReLU + Requantize, 软件侧实现了im2col, 当然也完全可以支持MaxPool等计算，还没考虑但是应该比较容易实现的是AveragePool, Dropout, BatchNorm, Softmax等。
+
+现在理论上已经可以跑所有由`Conv + FC + ReLU + MaxPool`组成的网络，已经覆盖了大多数CNN；当前的实际瓶颈是硬件尺寸限制导致输入不能够大于784x128，Conv 层 im2col 后 col_len = C_in × K × K 不能超过 784，C_out 不能超过 128。对于 MNIST 尺寸的网络完全够用，但跑 ImageNet 级别的模型就需要分块或扩容，这一点之前也有说过了(不过是时间上的之前，不是这个md的之前)。
+
 # 坑
 
 ## vivado综合器限制
