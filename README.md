@@ -60,30 +60,32 @@ cim_soc/
 
 ## 开发路线
 
-### [] step 1: 逻辑设计 + 仿真
+### [x] step 1: 逻辑设计 + 仿真
 
 - [x] Phase 0: 参数体系 + CSR 地址映射
 - [x] Phase 1: CIM 核心重写 (lint clean)
 - [x] Phase 1: AXI4-Lite slave wrapper
 - [x] Phase 1: Golden model + Testbench
 - [x] Phase 2: 完成MNIST端到端testbench
-- [] Phase 2.5 : 实现对CNN支持
+- [] Phase 2.5 : 实现对CNN支持 <-- RTL层面没有修改，但是im2col已经在python实现
 - [x] Phase 3: 增加Conv层im2col映射支持
 - [x] Phase 4: 完成边界测试
 - [x] Phase 5: 完成所有testbench和regression脚本自动化。
 
-### [] step 2: PYNQ-Z2 + ZYNQ PS部署
+_RTL本身没有Conv专用硬件，这里用了python的im2col + 硬件MVM实现的异构方案。_
+
+### [x] step 2: PYNQ-Z2 + ZYNQ PS部署
 
 - [x] Phase 1: Vivado Block Design 实际搭建
 - [x] Phase 2: PYNQ 上板验证 MNIST
-- [ ] Phase 3: 多层网络调度 (FC1→FC2 软件循环)
-- [ ] Phase 3: im2col Conv 上板验证支持
+- [x] Phase 3: 多层网络调度 (FC1→FC2 软件循环) <-- MLP 2 layers + LeNet-5 7 layers, PASS
+- [x] Phase 3: im2col Conv 上板验证支持 <-- LeNet-5 Conv1+Conv2 bit-exact PASS
 
 ### [] step 3: extensions
 
-- [ ] Phase 1: 实现多层自动化推理(python driver做layer-by-layer循环)
-- [ ] Phase 2: im2col展开Conv层：python侧做im2col变换后喂给MVM引擎
-- [ ] Phase 3: 尝试映射一个Conv网络(比如LeNet-5)
+- [x] Phase 1: 实现多层自动化推理(python driver做layer-by-layer循环) <-- cim_driver.py CIMModel
+- [x] Phase 2: im2col展开Conv层：python侧做im2col变换后喂给MVM引擎 <-- LwNet-5, PASS
+- [x] Phase 3: 尝试映射一个Conv网络(比如LeNet-5) <-- 20 pics, bit-exact 100%
 - [] Phase 4: 尝试讨论bit-plane
 
 ### [] step 4: PicoRV32替换ARM控制
