@@ -75,7 +75,7 @@ cim_soc/
 ### [] step 2: PYNQ-Z2 + ZYNQ PS部署
 
 - [x] Phase 1: Vivado Block Design 实际搭建
-- [ ] Phase 2: PYNQ 上板验证 MNIST
+- [x] Phase 2: PYNQ 上板验证 MNIST
 - [ ] Phase 3: 多层网络调度 (FC1→FC2 软件循环)
 - [ ] Phase 3: im2col Conv 上板验证支持
 
