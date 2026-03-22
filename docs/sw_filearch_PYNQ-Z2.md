@@ -1,4 +1,4 @@
-# sw file archtecture
+# sw file archtecture(mnist 2 layers)
 
 ## .py
 
@@ -24,3 +24,32 @@ weight, INT8 bias, scale/zero_point等，还有测试图片，把这些信息送
 `generate_mnist_data.ipynb`是运行于宿主机的，在这个文件中，可以（方便地）生成指定数量的测试数据，还可以通过训练模型检测硬件计算的（预测）准确率。
 
 `full_cim_test_pynq.ipynb`和`mnist_real_test_pynq.ipynb`是运于pynq的，前者使用三个python文件生成的数据来验证硬件电路设计是否正确，后者通过测试`generate_mnist_data.ipynb`或者是`mnist_quantize.py`生成的真实数据，检测整体设计的实际性能和准确率。
+
+# lenet5 + im2col
+
+## .py
+
+写了两个python文件。
+
+`lenet5_quantize.py`，可以实现（选种子可复现的）训练，量化，导出，生成指定数量的测试数据。
+在这个文件里，训练了LeNet-5，逐层PTQ，进行bit-accurate INT8推理(im2col + hw_mvm)，导出hex文件。
+
+`cim_driver.py`，这是PYNQ侧的python API.
+比如说想跑LeNet-5，只需要：
+
+```python
+from cim_driver import CIMDriver, CIMModel, weight_to_chunks, bias_to_u32
+
+drv = CIMDriver('cim_soc.bit')
+model = CIMModel(drv)
+
+# 加载 LeNet-5 各层（从 hex 读取或直接传 numpy array）
+model.add_conv(w_conv1_4d, b_conv1, zp=0, mult=m1, shift=16, stride=1, padding=0, relu=True)
+# Pool1 在 Python 侧做（model.predict 内部自动处理需要手动加 pool）
+model.add_conv(w_conv2_4d, b_conv2, zp=0, mult=m2, shift=16, stride=1, padding=0, relu=True)
+model.add_fc(256, 120, w3_chunks, b3_u32, zp=0, mult=m3, shift=16, relu=True)
+model.add_fc(120, 84,  w4_chunks, b4_u32, zp=0, mult=m4, shift=16, relu=True)
+model.add_fc(84,  10,  w5_chunks, b5_u32, zp=0, mult=m5, shift=16, relu=False)
+
+pred, output = model.predict(image_u8, verbose=True)
+```
