@@ -1,0 +1,223 @@
+// ============================================================================
+// firmware.c — RISC-V firmware for CIM SoC MNIST inference
+// ============================================================================
+// Runs on PicoRV32 (RV32IM). Performs 2-layer MLP inference:
+//   FC1: 784→128 (ReLU)
+//   FC2: 128→10  (no activation)
+//
+// Weight/bias/test data are linked as const arrays (stored in BRAM).
+// Result is output via UART.
+//
+// Compile:
+//   riscv64-unknown-elf-gcc -march=rv32im -mabi=ilp32 -Os -nostdlib \
+//       -T firmware.lds -o firmware.elf firmware.c start.S
+//   riscv64-unknown-elf-objcopy -O verilog firmware.elf firmware.hex
+// ============================================================================
+
+#include <stdint.h>
+
+// ============================================================================
+// Hardware registers (memory-mapped)
+// ============================================================================
+#define CIM_BASE        0x40000000
+
+#define CIM_CTRL        (*(volatile uint32_t*)(CIM_BASE + 0x000))
+#define CIM_STATUS      (*(volatile uint32_t*)(CIM_BASE + 0x004))
+#define CIM_IN_DIM      (*(volatile uint32_t*)(CIM_BASE + 0x010))
+#define CIM_OUT_DIM     (*(volatile uint32_t*)(CIM_BASE + 0x014))
+#define CIM_N_IB        (*(volatile uint32_t*)(CIM_BASE + 0x018))
+#define CIM_N_OB        (*(volatile uint32_t*)(CIM_BASE + 0x01C))
+#define CIM_REQUANT_MULT  (*(volatile uint32_t*)(CIM_BASE + 0x020))
+#define CIM_REQUANT_SHIFT (*(volatile uint32_t*)(CIM_BASE + 0x024))
+#define CIM_INPUT_ZP    (*(volatile uint32_t*)(CIM_BASE + 0x028))
+#define CIM_ACT_MODE    (*(volatile uint32_t*)(CIM_BASE + 0x02C))
+#define CIM_PRED_CLASS  (*(volatile uint32_t*)(CIM_BASE + 0x040))
+#define CIM_WDMA_ADDR   (*(volatile uint32_t*)(CIM_BASE + 0x044))
+#define CIM_WDMA_DATA   (*(volatile uint32_t*)(CIM_BASE + 0x048))
+#define CIM_WDMA_CTRL   (*(volatile uint32_t*)(CIM_BASE + 0x04C))
+
+// Logit readback: 0x100 + 4*i
+#define CIM_LOGIT(i)    (*(volatile uint32_t*)(CIM_BASE + 0x100 + 4*(i)))
+
+// Input buffer: 0x1000 + 4*i
+#define CIM_INPUT(i)    (*(volatile uint32_t*)(CIM_BASE + 0x1000 + 4*(i)))
+
+// Bias buffer: 0x2000 + 4*i
+#define CIM_BIAS(i)     (*(volatile uint32_t*)(CIM_BASE + 0x2000 + 4*(i)))
+
+// UART
+#define UART_TX_DATA    (*(volatile uint32_t*)0x80000000)
+#define UART_TX_STATUS  (*(volatile uint32_t*)0x80000004)
+
+// ============================================================================
+// UART output
+// ============================================================================
+static void uart_putc(char c) {
+    while (!(UART_TX_STATUS & 1))
+        ;  // wait for ready
+    UART_TX_DATA = (uint32_t)c;
+}
+
+static void uart_puts(const char *s) {
+    while (*s)
+        uart_putc(*s++);
+}
+
+static void uart_put_dec(int val) {
+    if (val < 0) {
+        uart_putc('-');
+        val = -val;
+    }
+    if (val >= 10)
+        uart_put_dec(val / 10);
+    uart_putc('0' + (val % 10));
+}
+
+static void uart_put_hex32(uint32_t val) {
+    const char hex[] = "0123456789abcdef";
+    for (int i = 28; i >= 0; i -= 4)
+        uart_putc(hex[(val >> i) & 0xF]);
+}
+
+// ============================================================================
+// CIM control functions
+// ============================================================================
+static void cim_soft_reset(void) {
+    CIM_CTRL = 0x4;
+}
+
+static void cim_configure(uint32_t in_dim, uint32_t out_dim,
+                           int32_t zp, uint32_t mult, uint32_t shift,
+                           uint32_t relu) {
+    CIM_IN_DIM  = in_dim;
+    CIM_OUT_DIM = out_dim;
+    CIM_N_IB    = (in_dim + 15) / 16;
+    CIM_N_OB    = (out_dim + 15) / 16;
+    CIM_REQUANT_MULT  = mult;
+    CIM_REQUANT_SHIFT = shift;
+    CIM_INPUT_ZP      = (uint32_t)zp;
+    CIM_ACT_MODE      = relu ? 1 : 0;
+}
+
+static void cim_load_weights_burst(const uint32_t *chunks, uint32_t n) {
+    CIM_WDMA_ADDR = 0;
+    CIM_WDMA_CTRL = 0x02;  // burst enable
+    for (uint32_t i = 0; i < n; i++)
+        CIM_WDMA_DATA = chunks[i];
+    CIM_WDMA_CTRL = 0x00;
+}
+
+static void cim_load_bias(const uint32_t *bias, uint32_t n) {
+    for (uint32_t i = 0; i < n; i++)
+        CIM_BIAS(i) = bias[i];
+}
+
+static void cim_load_input(const uint8_t *data, uint32_t n) {
+    // Pad to multiple of 16
+    uint32_t padded_n = ((n + 15) / 16) * 16;
+    for (uint32_t i = 0; i < padded_n; i++) {
+        uint32_t val = (i < n) ? data[i] : 0;
+        CIM_INPUT(i) = val;
+    }
+}
+
+static void cim_start_and_wait(void) {
+    CIM_CTRL = 0x2;  // clear done
+    CIM_CTRL = 0x1;  // start
+    while (!(CIM_STATUS & 0x2))
+        ;  // wait done
+}
+
+static uint32_t cim_read_pred(void) {
+    return CIM_PRED_CLASS;
+}
+
+static int8_t cim_read_output(uint32_t idx) {
+    uint32_t v = CIM_LOGIT(idx);
+    return (int8_t)(v & 0xFF);
+}
+
+// ============================================================================
+// Weight/bias/image data — to be filled by build script
+// These arrays will be populated from hex files during compilation.
+// For now, declare them as extern; the actual data is in a separate .c file
+// generated by a Python script.
+// ============================================================================
+extern const uint32_t fc1_weight_chunks[];
+extern const uint32_t fc1_bias[];
+extern const uint32_t fc2_weight_chunks[];
+extern const uint32_t fc2_bias[];
+extern const uint8_t  test_image[];
+extern const uint32_t fc1_n_chunks;  // number of weight chunks
+extern const uint32_t fc2_n_chunks;
+extern const uint32_t fc1_mult, fc1_shift;
+extern const uint32_t fc2_mult, fc2_shift;
+extern const int32_t  hw_zp1, hw_zp2;
+extern const uint32_t expected_label;
+
+// ============================================================================
+// Main
+// ============================================================================
+void main(void) {
+    uart_puts("\r\n=== CIM SoC RISC-V MNIST Inference ===\r\n");
+
+    // ---- FC1: 784 → 128, ReLU ----
+    uart_puts("FC1: loading...\r\n");
+    cim_soft_reset();
+    cim_configure(784, 128, hw_zp1, fc1_mult, fc1_shift, 1);
+    cim_load_weights_burst(fc1_weight_chunks, fc1_n_chunks);
+    cim_load_bias(fc1_bias, 128);
+    cim_load_input(test_image, 784);
+
+    uart_puts("FC1: computing...\r\n");
+    cim_start_and_wait();
+
+    // Read FC1 output (signed INT8, reinterpret as UINT8 for FC2 input)
+    uint8_t fc1_output[128];
+    for (int i = 0; i < 128; i++) {
+        fc1_output[i] = (uint8_t)cim_read_output(i);
+    }
+    uart_puts("FC1: done\r\n");
+
+    // ---- FC2: 128 → 10, no activation ----
+    uart_puts("FC2: loading...\r\n");
+    cim_configure(128, 10, hw_zp2, fc2_mult, fc2_shift, 0);
+    cim_load_weights_burst(fc2_weight_chunks, fc2_n_chunks);
+    cim_load_bias(fc2_bias, 10);
+    cim_load_input(fc1_output, 128);
+
+    uart_puts("FC2: computing...\r\n");
+    cim_start_and_wait();
+
+    // Read result
+    uint32_t pred = cim_read_pred();
+
+    uart_puts("\r\n--- Result ---\r\n");
+    uart_puts("Predicted: ");
+    uart_put_dec(pred);
+    uart_puts("\r\n");
+    uart_puts("Expected:  ");
+    uart_put_dec(expected_label);
+    uart_puts("\r\n");
+
+    if (pred == expected_label) {
+        uart_puts(">>> CORRECT <<<\r\n");
+    } else {
+        uart_puts(">>> WRONG <<<\r\n");
+    }
+
+    // Print logits
+    uart_puts("Logits: ");
+    for (int i = 0; i < 10; i++) {
+        int8_t v = cim_read_output(i);
+        uart_put_dec(v);
+        uart_putc(' ');
+    }
+    uart_puts("\r\n");
+
+    uart_puts("=== Done ===\r\n");
+
+    // Halt
+    while (1)
+        ;
+}
