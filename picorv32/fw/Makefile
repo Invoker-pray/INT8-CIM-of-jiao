@@ -59,9 +59,9 @@ firmware.elf: $(OBJS)
 
 # Convert to Verilog hex (for $readmemh)
 firmware.hex: firmware.elf
-	$(OBJCOPY) -O verilog $< $@
+	$(OBJCOPY) -O verilog $< $@.bytes
 	python3 verilog_byte_to_word.py $@.bytes $@
-	@rm -f $@.bytes
+	@rm -f $@.bytes	
 	@echo "=== firmware.hex generated (32-bit word format) ==="
 	@echo "Copy to RTL sim directory or Vivado project"
 
