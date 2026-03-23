@@ -110,6 +110,11 @@ if {[file exists ${fw_hex}]} {
 # 4. Synthesis
 # ============================================================================
 puts "INFO: Launching synthesis..."
+if {[file exists ${fw_hex}]} {
+    add_files -norecurse ${fw_hex}
+    set_property file_type {Memory Initialization Files} [get_files firmware.hex]
+    puts "INFO: firmware.hex added as memory init file"
+}
 launch_runs synth_1 -jobs ${N_JOBS}
 wait_on_run synth_1
 
@@ -161,23 +166,43 @@ set bit_file [glob ${OUT_DIR}/${PROJ_NAME}.runs/impl_1/cim_rv32_fpga_top.bit]
 file mkdir ${OUT_DIR}/deploy
 file copy -force ${bit_file} ${OUT_DIR}/deploy/cim_rv32_soc.bit
 
-puts "============================================================"
-puts "BUILD COMPLETE"
-puts "  Bitstream : ${OUT_DIR}/deploy/cim_rv32_soc.bit"
-puts ""
-puts "  Program FPGA:"
-puts "    open_hw_manager"
-puts "    connect_hw_server"
-puts "    open_hw_target"
-puts "    set_property PROGRAM.FILE {${OUT_DIR}/deploy/cim_rv32_soc.bit} [get_hw_devices]"
-puts "    program_hw_device [get_hw_devices]"
-puts ""
-puts "  Or use openFPGALoader:"
-puts "    openFPGALoader -b pynq_z2 ${OUT_DIR}/deploy/cim_rv32_soc.bit"
-puts ""
-puts "  Connect USB-TTL to PMODA pin 1 (Y18), open minicom:"
-puts "    minicom -D /dev/ttyUSBx -b 115200"
-puts "============================================================"
+# ============================================================================
+# generate hwh
+# ============================================================================
+#write_hw_platform -fixed -include_bit -force ${OUT_DIR}/deploy/cim_rv32_soc.xsa
+#
+## 从 xsa 中提取 hwh（xsa 本质是 zip）
+#set xsa_file "${OUT_DIR}/deploy/cim_rv32_soc.xsa"
+#exec unzip -o -j ${xsa_file} *.hwh -d ${OUT_DIR}/deploy/ 2>/dev/null
+## 重命名为统一名称
+#foreach hwh [glob -nocomplain ${OUT_DIR}/deploy/*.hwh] {
+#    file rename -force $hwh ${OUT_DIR}/deploy/cim_rv32_soc.hwh
+#    break
+#}
+
+
+# ============================================================================
+# generate hwh
+# ============================================================================
+
+
+#puts "============================================================"
+#puts "BUILD COMPLETE"
+#puts "  Bitstream : ${OUT_DIR}/deploy/cim_rv32_soc.bit"
+#puts ""
+#puts "  Program FPGA:"
+#puts "    open_hw_manager"
+#puts "    connect_hw_server"
+#puts "    open_hw_target"
+#puts "    set_property PROGRAM.FILE {${OUT_DIR}/deploy/cim_rv32_soc.bit} [get_hw_devices]"
+#puts "    program_hw_device [get_hw_devices]"
+#puts ""
+#puts "  Or use openFPGALoader:"
+#puts "    openFPGALoader -b pynq_z2 ${OUT_DIR}/deploy/cim_rv32_soc.bit"
+#puts ""
+#puts "  Connect USB-TTL to PMODA pin 1 (Y18), open minicom:"
+#puts "    minicom -D /dev/ttyUSBx -b 115200"
+#puts "============================================================"
 
 # Reports
 open_run impl_1
