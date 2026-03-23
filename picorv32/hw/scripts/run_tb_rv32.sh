@@ -1,74 +1,68 @@
 #!/bin/bash
 # ============================================================================
-# run_tb_rv32_batch.sh — Batch-test 20 MNIST images through PicoRV32+CIM SoC
+# run_tb_rv32_batch.sh — VCS 批量仿真 20 张 MNIST 图片
 # ============================================================================
-# Compiles VCS once, then loops through 20 images:
-#   rebuild firmware → swap firmware.hex → re-run simv → parse result
+# 在只有 VCS 的虚拟机上运行。
+# 前置条件: 宿主机已运行 build_all_firmware.sh 生成 fw_hex_batch/
 #
-# Prerequisites:
-#   1. VCS simulator
-#   2. RISC-V GCC toolchain (riscv64-elf-gcc or riscv64-unknown-elf-gcc)
-#   3. Python 3 with PyTorch + torchvision (for model training)
-#   4. picorv32.v in hw/rtl/riscv/
+# 目录结构 (相对于项目根 INT8-CIM-of-jiao/):
+#   hw/rtl/                         CIM IP RTL
+#   picorv32/hw/rtl/riscv/          PicoRV32 SoC RTL
+#   picorv32/hw/tb/                 Testbench
+#   picorv32/fw/fw_hex_batch/       预编译固件 (从宿主机复制)
 #
 # Usage:
 #   cd picorv32/
 #   bash hw/scripts/run_tb_rv32_batch.sh
 #
-# Or specify number of images:
-#   N_IMAGES=5 bash hw/scripts/run_tb_rv32_batch.sh
+#   # 或指定 hex 目录和数量:
+#   HEX_DIR=fw/fw_hex_batch N_IMAGES=5 bash hw/scripts/run_tb_rv32_batch.sh
 # ============================================================================
 
 set -euo pipefail
 
-# ---- Paths (relative to picorv32/) ----
+# ---- 路径 ----
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJ_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-FW_DIR="${PROJ_ROOT}/fw"
-HW_DIR="${PROJ_ROOT}/hw"
-CIM_RTL_DIR="${PROJ_ROOT}/../hw/rtl" # shared CIM IP
-RV_RTL_DIR="${HW_DIR}/rtl/riscv"
-TB_DIR="${HW_DIR}/tb"
-SIM_DIR="${HW_DIR}/sim/batch"
-
-DATA_DIR="small_mlp_data"
+PICORV32_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+CIM_RTL_DIR="${PICORV32_ROOT}/../hw/rtl"
+RV_RTL_DIR="${PICORV32_ROOT}/hw/rtl/riscv"
+TB_DIR="${PICORV32_ROOT}/hw/tb"
+SIM_DIR="${PICORV32_ROOT}/hw/sim/batch"
+HEX_DIR="${HEX_DIR:-${PICORV32_ROOT}/fw/fw_hex_batch}"
 N_IMAGES="${N_IMAGES:-20}"
 
 echo "=============================================="
-echo " PicoRV32 + CIM SoC — Batch Test (${N_IMAGES} images)"
+echo " PicoRV32 + CIM SoC — VCS 批量仿真"
 echo "=============================================="
-echo "Project root : ${PROJ_ROOT}"
-echo "Firmware dir : ${FW_DIR}"
-echo "Sim dir      : ${SIM_DIR}"
+echo "HEX_DIR  : ${HEX_DIR}"
+echo "SIM_DIR  : ${SIM_DIR}"
+echo "N_IMAGES : ${N_IMAGES}"
 echo ""
 
-# ============================================================
-# Step 0: Check prerequisites
-# ============================================================
-check_tool() { command -v "$1" &>/dev/null || {
-	echo "ERROR: $1 not found"
+# ---- 检查 ----
+command -v vcs &>/dev/null || {
+	echo "ERROR: vcs not found"
 	exit 1
-}; }
-check_tool vcs
-check_tool python3
+}
 
-# Check RISC-V GCC — try common prefixes
-RV_GCC=""
-for prefix in riscv64-elf- riscv64-unknown-elf- riscv32-unknown-elf-; do
-	if command -v "${prefix}gcc" &>/dev/null; then
-		RV_GCC="${prefix}gcc"
-		break
-	fi
-done
-if [ -z "$RV_GCC" ]; then
-	echo "ERROR: RISC-V GCC toolchain not found"
-	echo "  Install: sudo pacman -S riscv64-elf-gcc  (Arch)"
-	echo "       or: sudo apt install gcc-riscv64-unknown-elf  (Debian/Ubuntu)"
+if [ ! -d "${HEX_DIR}" ]; then
+	echo "ERROR: ${HEX_DIR} 不存在!"
+	echo "  请先在宿主机运行: cd fw && bash build_all_firmware.sh"
+	echo "  然后将 fw_hex_batch/ 复制到此机器"
 	exit 1
 fi
-echo "RISC-V GCC: ${RV_GCC}"
 
-# Check picorv32.v
+# 检查 hex 文件
+for i in $(seq 0 $((N_IMAGES - 1))); do
+	idx=$(printf '%04d' $i)
+	if [ ! -f "${HEX_DIR}/firmware_${idx}.hex" ]; then
+		echo "ERROR: ${HEX_DIR}/firmware_${idx}.hex 不存在"
+		exit 1
+	fi
+done
+echo "预编译固件 OK: ${N_IMAGES} 个 hex 文件"
+
+# 检查 picorv32.v
 if [ ! -f "${RV_RTL_DIR}/picorv32.v" ]; then
 	echo "ERROR: picorv32.v not found in ${RV_RTL_DIR}/"
 	echo "  Run: wget -O ${RV_RTL_DIR}/picorv32.v \\"
@@ -76,39 +70,30 @@ if [ ! -f "${RV_RTL_DIR}/picorv32.v" ]; then
 	exit 1
 fi
 
-# ============================================================
-# Step 1: Train model & generate test data (if needed)
-# ============================================================
-if [ ! -d "${FW_DIR}/${DATA_DIR}" ]; then
-	echo ""
-	echo "=== Generating ${DATA_DIR} (training small MLP) ==="
-	cd "${FW_DIR}"
-	python3 small_mlp_quantize.py --output-dir "${DATA_DIR}" --num-test "${N_IMAGES}" --seed 42
+# 读取标签文件
+LABEL_FILE="${HEX_DIR}/labels.txt"
+declare -A LABELS
+if [ -f "${LABEL_FILE}" ]; then
+	while read -r idx label; do
+		[[ "$idx" == "#"* ]] && continue
+		LABELS[$idx]=$label
+	done <"${LABEL_FILE}"
+	echo "标签文件 OK: ${#LABELS[@]} 条"
+else
+	echo "WARNING: labels.txt 未找到, 将不显示 label 信息"
 fi
 
-# Verify test images exist
-for i in $(seq 0 $((N_IMAGES - 1))); do
-	img_hex="${FW_DIR}/${DATA_DIR}/test_images/img_$(printf '%04d' $i).hex"
-	if [ ! -f "$img_hex" ]; then
-		echo "ERROR: ${img_hex} not found"
-		echo "  Re-run: cd fw && python3 small_mlp_quantize.py --num-test ${N_IMAGES}"
-		exit 1
-	fi
-done
-echo "Test data OK: ${N_IMAGES} images in ${DATA_DIR}"
-
 # ============================================================
-# Step 2: Compile VCS (once)
+# Step 1: VCS 编译 (一次)
 # ============================================================
 mkdir -p "${SIM_DIR}"
 cd "${SIM_DIR}"
 
-# Build a dummy firmware.hex so VCS compile doesn't warn about missing file
-# (actual firmware gets swapped per-image before each run)
+# 放一个 dummy firmware.hex 让编译通过
 echo "00000013" >firmware.hex
 
 echo ""
-echo "=== Compiling VCS ==="
+echo "=== VCS 编译 ==="
 
 SRCS=(
 	"${CIM_RTL_DIR}/pkg/cim_pkg.sv"
@@ -136,87 +121,78 @@ vcs -full64 -sverilog -timescale=1ns/1ps \
 	2>&1 | tee compile.log
 
 if [ ! -f simv ]; then
-	echo "ERROR: VCS compilation failed!"
+	echo "ERROR: VCS 编译失败!"
 	exit 1
 fi
-echo "VCS compile OK"
+echo "VCS 编译 OK"
 
 # ============================================================
-# Step 3: Loop through images
+# Step 2: 逐图仿真
 # ============================================================
 echo ""
-echo "=== Running ${N_IMAGES} simulations ==="
+echo "=== 开始仿真 (${N_IMAGES} 张图) ==="
 
-RESULTS=()
 PASS=0
 WRONG=0
 FAIL=0
-
-# Determine Makefile CROSS prefix (match whatever we found earlier)
-CROSS_PREFIX=$(echo "$RV_GCC" | sed 's/gcc$//')
+declare -a RESULT_TABLE
 
 for i in $(seq 0 $((N_IMAGES - 1))); do
-	IDX=$(printf '%04d' $i)
-	LABEL=$(cat "${FW_DIR}/${DATA_DIR}/test_images/img_${IDX}_label.txt" | tr -d '[:space:]')
+	idx=$(printf '%04d' $i)
+	label="${LABELS[$idx]:-?}"
+
+	# 替换 firmware.hex
+	cp "${HEX_DIR}/firmware_${idx}.hex" "${SIM_DIR}/firmware.hex"
 
 	echo ""
-	echo "--- Image ${IDX} (label=${LABEL}) ---"
+	echo "--- Image ${idx} (label=${label}) ---"
 
-	# Rebuild firmware for this image
-	cd "${FW_DIR}"
-	make -s clean 2>/dev/null || true
-	make -s DATA_DIR="${DATA_DIR}" IMAGE_IDX=$i CROSS="${CROSS_PREFIX}" 2>&1 | tail -2
+	# 运行仿真
+	./simv +TIMEOUT=60000 2>&1 | tee "sim_img${idx}.log"
 
-	# Copy firmware.hex to sim directory
-	cp "${FW_DIR}/firmware.hex" "${SIM_DIR}/firmware.hex"
-
-	# Run simulation
-	cd "${SIM_DIR}"
-	./simv +TIMEOUT=60000 2>&1 | tee "sim_img${IDX}.log" | grep -E "^(Predicted|Expected|>>>|RESULT:)" || true
-
-	# Parse result
-	RESULT=$(grep "^RESULT:" "sim_img${IDX}.log" 2>/dev/null | tail -1 | awk '{print $2}')
+	# 解析结果
+	RESULT=$(grep "^RESULT:" "sim_img${idx}.log" 2>/dev/null | tail -1 | awk '{print $2}')
 	if [ -z "$RESULT" ]; then
 		RESULT="FAIL"
 	fi
 
-	RESULTS+=("${IDX}:${LABEL}:${RESULT}")
+	RESULT_TABLE+=("${idx} ${label} ${RESULT}")
 
 	case "$RESULT" in
 	PASS) PASS=$((PASS + 1)) ;;
 	WRONG) WRONG=$((WRONG + 1)) ;;
+	TIMEOUT) FAIL=$((FAIL + 1)) ;;
 	*) FAIL=$((FAIL + 1)) ;;
 	esac
-
-	echo "  -> ${RESULT}"
 done
 
 # ============================================================
-# Step 4: Summary
+# Step 3: 汇总
 # ============================================================
 echo ""
 echo "=============================================="
-echo " BATCH TEST SUMMARY"
+echo " 批量仿真结果"
 echo "=============================================="
-printf "%-6s %-6s %-10s\n" "Image" "Label" "Result"
-printf "%-6s %-6s %-10s\n" "-----" "-----" "----------"
+printf "%-8s %-8s %-12s\n" "Image" "Label" "Result"
+printf "%-8s %-8s %-12s\n" "------" "------" "------------"
 
-for entry in "${RESULTS[@]}"; do
-	IFS=: read -r img lbl res <<<"$entry"
-	printf "%-6s %-6s %-10s\n" "$img" "$lbl" "$res"
+for entry in "${RESULT_TABLE[@]}"; do
+	read -r img lbl res <<<"$entry"
+	printf "%-8s %-8s %-12s\n" "$img" "$lbl" "$res"
 done
 
+TOTAL=$((PASS + WRONG + FAIL))
 echo "----------------------------------------------"
-echo "PASS: ${PASS}/${N_IMAGES}  WRONG: ${WRONG}/${N_IMAGES}  FAIL: ${FAIL}/${N_IMAGES}"
+echo "PASS: ${PASS}/${TOTAL}  WRONG: ${WRONG}/${TOTAL}  FAIL: ${FAIL}/${TOTAL}"
 echo ""
 
 if [ "$FAIL" -eq 0 ]; then
-	echo "Hardware verification: ALL ${N_IMAGES} images completed successfully."
-	echo "Model accuracy: ${PASS}/${N_IMAGES} correct predictions."
+	echo "硬件验证: 全部 ${TOTAL} 张图仿真完成 (无超时/崩溃)"
+	echo "模型准确率: ${PASS}/${TOTAL}"
 	echo ""
 	echo "EXIT: SUCCESS"
 	exit 0
 else
-	echo "EXIT: FAILURE (${FAIL} images did not complete)"
+	echo "EXIT: FAILURE (${FAIL} 张图仿真未完成)"
 	exit 1
 fi
