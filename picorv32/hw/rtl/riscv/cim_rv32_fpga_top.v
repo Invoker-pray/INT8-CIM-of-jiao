@@ -38,21 +38,24 @@ module cim_rv32_fpga_top (
   MMCME2_BASE #(
       .CLKIN1_PERIOD   (8.000),   // 125 MHz = 8ns
       .CLKFBOUT_MULT_F (36.0),    // VCO = 125 * 36 / 5 = 900 MHz
-      .CLKOUT0_DIVIDE_F(15.0),    // 900 / 15 = 60 MHz
+      .CLKOUT0_DIVIDE_F(18.0),    // 900 / 18 = 50 MHz
       .DIVCLK_DIVIDE   (5)
   ) u_mmcm (
-      .CLKIN1   (sys_clk_125),
-      .CLKFBOUT (mmcm_fb),
-      .CLKFBIN  (mmcm_fb),
-      .CLKOUT0  (clk_60m),
-      .LOCKED   (mmcm_locked),
-      .PWRDWN   (1'b0),
-      .RST      (btn_rst)         // active-high reset for MMCM
+      .CLKIN1  (sys_clk_125),
+      .CLKFBOUT(mmcm_fb),
+      .CLKFBIN (mmcm_fb),
+      .CLKOUT0 (clk_60m),
+      .LOCKED  (mmcm_locked),
+      .PWRDWN  (1'b0),
+      .RST     (btn_rst)       // active-high reset for MMCM
   );
 
   // Buffer the output clock
   wire clk;
-  BUFG u_bufg (.I(clk_60m), .O(clk));
+  BUFG u_bufg (
+      .I(clk_60m),
+      .O(clk)
+  );
 
   // ============================================================
   // Reset synchronizer
@@ -62,10 +65,8 @@ module cim_rv32_fpga_top (
   wire rst_n = rst_pipe[3];
 
   always @(posedge clk) begin
-    if (!mmcm_locked || btn_rst)
-      rst_pipe <= 4'b0000;
-    else
-      rst_pipe <= {rst_pipe[2:0], 1'b1};
+    if (!mmcm_locked || btn_rst) rst_pipe <= 4'b0000;
+    else rst_pipe <= {rst_pipe[2:0], 1'b1};
   end
 
   // ============================================================
@@ -74,14 +75,14 @@ module cim_rv32_fpga_top (
   wire cim_done_irq;
 
   cim_rv32_top #(
-      .CLK_FREQ  (60_000_000),
-      .BAUD_RATE (115200),
-      .FW_HEX    ("firmware.hex")
+      .CLK_FREQ (60_000_000),
+      .BAUD_RATE(115200),
+      .FW_HEX   ("firmware.hex")
   ) u_soc (
-      .clk          (clk),
-      .rst_n        (rst_n),
-      .uart_txd     (uart_txd),
-      .cim_done_irq (cim_done_irq)
+      .clk         (clk),
+      .rst_n       (rst_n),
+      .uart_txd    (uart_txd),
+      .cim_done_irq(cim_done_irq)
   );
 
   assign led_done = cim_done_irq;
@@ -92,7 +93,7 @@ module cim_rv32_fpga_top (
   reg [25:0] hb_cnt = 0;
   always @(posedge clk)
     if (!rst_n) hb_cnt <= 0;
-    else        hb_cnt <= hb_cnt + 1;
+    else hb_cnt <= hb_cnt + 1;
 
   assign led_heartbeat = hb_cnt[25];
 

@@ -16,7 +16,7 @@
 module cim_rv32_top
   import cim_pkg::*;
 #(
-    parameter int CLK_FREQ  = 60_000_000,
+    parameter int CLK_FREQ  = 50_000_000,
     parameter int BAUD_RATE = 115200,
     parameter     FW_HEX    = "firmware.hex"
 ) (

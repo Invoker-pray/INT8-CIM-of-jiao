@@ -35,7 +35,7 @@ package cim_pkg;
   //   PAR_OB=4  → 2 passes, each 49 iterations = 98 tile-cycles
   //   PAR_OB=8  → 1 pass,  49 iterations = 49 tile-cycles (max parallel for this layer)
 
-  parameter int PAR_OB = 4;  // tunable: 1, 2, 4, 8 (must divide N_OB of target layer)
+  parameter int PAR_OB = 1;  // tunable: 1, 2, 4, 8 (must divide N_OB of target layer)
 
   // ==========================================================================
   // 3. Data Widths
