@@ -90,10 +90,10 @@ _RTL本身没有Conv专用硬件，这里用了python的im2col + 硬件MVM实现
 
 ### [] step 4: PicoRV32替换ARM控制
 
-- [] Phase 1: 集成PicoRV32开源RISC-V软核到PL
-- [] Phase 2: 写 Wishbone→CSR bridge（或直接用 PicoRV32 native memory interface 映射到 CSR 地址空间）
-- [] Phase 3: RISC-V 固件（C）完成：weight DMA 加载、层配置、推理触发、结果读取
-- [] Phase 4: 用 riscv64-unknown-elf-gcc 交叉编译，固件存 BRAM
+- [x] Phase 1: 集成PicoRV32开源RISC-V软核到PL
+- [x] Phase 2: 写 Wishbone→CSR bridge（或直接用 PicoRV32 native memory interface 映射到 CSR 地址空间）
+- [x] Phase 3: RISC-V 固件（C）完成：weight DMA 加载、层配置、推理触发、结果读取
+- [x] Phase 4: 用 riscv64-unknown-elf-gcc 交叉编译，固件存 BRAM
 - [] Phase 5: 仿真 + 上板验证功能等价
 
 ### [] step 5: Kria KV 260移植
