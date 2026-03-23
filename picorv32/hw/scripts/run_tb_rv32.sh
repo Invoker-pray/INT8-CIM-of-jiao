@@ -47,8 +47,6 @@ command -v vcs &>/dev/null || {
 
 if [ ! -d "${HEX_DIR}" ]; then
 	echo "ERROR: ${HEX_DIR} 不存在!"
-	echo "  请先在宿主机运行: cd fw && bash build_all_firmware.sh"
-	echo "  然后将 fw_hex_batch/ 复制到此机器"
 	exit 1
 fi
 

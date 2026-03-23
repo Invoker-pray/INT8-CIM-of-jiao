@@ -77,7 +77,7 @@ __pycache__/
 
 mnist_mlp.pt
 
-picorv32/hw/rtl/riscv/picorv32.v
+
 picorv32/fw/data/
 picorv32/fw/data/**
 picorv32/fw/small_mlp_data/
