@@ -64,6 +64,6 @@ pred, output = model.predict(image_u8, verbose=True)
 
 写了`generate_universal_data.ipynb`和`universal_model_test_pynq.ipynb`，一个用来生成测试数据，一个用来进行PYNQ测试。
 
-在`generate_universal_data.ipynb`中，主要修改`ARCH = 'lenet5'`就可以完成切换模型。
+在`generate_universal_data.ipynb`中，主要修改`ARCH = 'lenet5'`就可以完成切换模型，当然也可以选择在`model_zoo.py`中新添加定义的模型。
 
 在`universal_model_test_pynq.ipynb`中，会从`generate_universal_data.ipynb`中僧成的`model_info.json`读取网络结构，不需要硬编码层定义。支持Conv + Pool + FC的组合。在当前项目checkpoint 1中，PYNQ端的推理函数遍历，`layer_defs`遇到conv会做im2col + MVM，遇到pool会做maxpool，遇到fc做MVM.
