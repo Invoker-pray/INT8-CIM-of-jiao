@@ -82,5 +82,4 @@ picorv32/fw/data/
 picorv32/fw/data/**
 picorv32/fw/small_mlp_data/
 picorv32/fw/small_mlp_data/**
-
-
+picorv32/hw/tb/firmware.hex
