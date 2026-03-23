@@ -14,7 +14,7 @@
 # ============================================================================
 
 # Toolchain prefix — adjust if your toolchain has a different name
-CROSS   = riscv64-unknown-elf-
+CROSS   = riscv64-elf-
 CC      = $(CROSS)gcc
 OBJCOPY = $(CROSS)objcopy
 OBJDUMP = $(CROSS)objdump

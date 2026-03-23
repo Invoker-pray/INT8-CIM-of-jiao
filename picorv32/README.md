@@ -56,14 +56,7 @@
 
 ## 构建步骤
 
-### 1. 获取 PicoRV32
-
-```bash
-cd hw/rtl/riscv/
-wget https://raw.githubusercontent.com/YosysHQ/picorv32/main/picorv32.v
-```
-
-### 2. 安装 RISC-V 工具链
+### 1. 安装 RISC-V 工具链
 
 ```bash
 # arch
@@ -77,24 +70,36 @@ sudo apt install gcc-riscv64-unknown-elf
 # https://github.com/sifive/freedom-tools/releases
 ```
 
+_这里有坑，不同distro的约定不一样，archlinux的前缀是`riscv64-elf-`，官方GNU toolchain一般是`riscv64-unknown-elf-`，如果在你的系统报错，修改`Makefile`的前缀就好。_
 验证安装成功：
 
 ```bash
 riscv64-elf-gcc --version
 ```
 
-### 3. 生成测试数据（宿主机）
+### 2. 训练生成测试数据（宿主机）
 
 ```bash
-cd sw/
-python mnist_quantize.py --seed 42 --num-test 1 --output-dir mnist_real_data
+cd fw/
+python3 small_mlp_quantize.py --seed 42
+#-> small_mlp_data
+
+# generate c array.
+python3 gen_fw_data.py --data-dir small_mlp_data --image-idx0
+```
+
+### 3. 获取　PicoRV32
+
+```bash
+wget -O ../hw/rtl/riscv/picorv32.v \
+    https://raw.githubusercontent.com/YosysHQ/picorv32/main/picorv32.v
 ```
 
 ### 4. 编译固件
 
 ```bash
 cd fw/
-make DATA_DIR=../sw/mnist_real_data IMAGE_IDX=0
+make DATA_DIR=small_mlp_data IMAGE_IDX=0
 # 产出: firmware.hex (Verilog $readmemh 格式)
 ```
 
