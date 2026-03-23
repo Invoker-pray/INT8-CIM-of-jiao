@@ -53,3 +53,17 @@ model.add_fc(84,  10,  w5_chunks, b5_u32, zp=0, mult=m5, shift=16, relu=False)
 
 pred, output = model.predict(image_u8, verbose=True)
 ```
+
+# universal test
+
+## .py
+
+这里写了`model_zoo.py`，作用是实现模型定义，训练，量化，bit-accurat-INT8推理（+im2col/maxpool），hex导出。支持`mlp`和`lenet5`，新模型只需要加`nn.Module`子类 + 注册到`MODEL_REGISTRY` + 在`_get_layer_descriptors`&`_calibrate`加分支。
+
+## .ipynb
+
+写了`generate_universal_data.ipynb`和`universal_model_test_pynq.ipynb`，一个用来生成测试数据，一个用来进行PYNQ测试。
+
+在`generate_universal_data.ipynb`中，主要修改`ARCH = 'lenet5'`就可以完成切换模型。
+
+在`universal_model_test_pynq.ipynb`中，会从`generate_universal_data.ipynb`中僧成的`model_info.json`读取网络结构，不需要硬编码层定义。支持Conv + Pool + FC的组合。在当前项目checkpoint 1中，PYNQ端的推理函数遍历，`layer_defs`遇到conv会做im2col + MVM，遇到pool会做maxpool，遇到fc做MVM.
