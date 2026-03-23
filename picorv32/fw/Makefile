@@ -28,7 +28,7 @@ CFLAGS  = $(ARCH) -Os -Wall -nostdlib -ffreestanding
 LDFLAGS = $(ARCH) -nostdlib -T firmware.lds -Wl,--no-relax
 
 # Data source
-DATA_DIR  ?= mnist_real_data
+DATA_DIR  ?= small_mlp_data
 IMAGE_IDX ?= 0
 
 # Source files

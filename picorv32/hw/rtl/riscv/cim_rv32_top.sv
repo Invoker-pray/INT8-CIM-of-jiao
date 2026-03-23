@@ -96,7 +96,9 @@ module cim_rv32_top
 
   initial $readmemh(FW_HEX, fw_mem);
 
-  always_ff @(posedge clk) begin
+  // NOTE: use `always` (not `always_ff`) because `initial $readmemh` is a
+  // second procedural driver — `always_ff` forbids this (VCS Error-[ICPD]).
+  always @(posedge clk) begin
     if (fw_en) begin
       if (fw_we[0]) fw_mem[fw_word_addr][7:0] <= fw_wdata[7:0];
       if (fw_we[1]) fw_mem[fw_word_addr][15:8] <= fw_wdata[15:8];
