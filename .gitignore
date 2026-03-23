@@ -89,3 +89,8 @@ picorv32/fw/*.hex
 picorv32/fw/*.bin
 picorv32/fw/*.lst
 picorv32/fw/model_data.c
+picorv32/fw/small_mlp_data.zip
+
+sw/fw_hex_batch/
+sw/fw_hex_batch/**
+sw/fw_hex_batch.zip
