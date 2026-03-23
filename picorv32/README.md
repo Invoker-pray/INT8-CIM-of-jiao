@@ -106,7 +106,10 @@ make DATA_DIR=small_mlp_data IMAGE_IDX=0
 ### 5. 仿真（VCS 或 Verilator）
 
 ```bash
+cd picorv32/
+cp fw/firmware.hex hw/tb
 # 把 firmware.hex 放到仿真目录
+
 # cim_rv32_top 的 FW_HEX 参数指向它
 # 观察 UART TXD 输出
 ```

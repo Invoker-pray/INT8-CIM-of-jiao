@@ -8,19 +8,22 @@
 #   3. picorv32.v downloaded from GitHub
 #
 # Usage:
-#   cd hw/tb
-#   bash run_tb_rv32.sh
+#   cd hw/
+#   bash scripts/run_tb_rv32.sh
 # ============================================================================
 
 set -e
 
 # Paths (relative to hw/tb/)
-RTL_DIR="../rtl"
+RTL_DIR="../../../hw/rtl"
 RV_DIR="../rtl/riscv"
-TB="tb_cim_rv32.sv"
+TB="../tb/tb_cim_rv32.sv"
+SIM="sim"
 
+mkdir -p sim
+cd ${SIM}
 # Check firmware.hex exists
-if [ ! -f firmware.hex ]; then
+if [ ! -f ../tb/firmware.hex ]; then
     echo "ERROR: firmware.hex not found!"
     echo "  Run: cd ../../fw && make && cp firmware.hex ../../hw/tb/"
     exit 1
@@ -53,6 +56,7 @@ SRCS=(
     "${RV_DIR}/cim_rv32_top.sv"
     "${TB}"
 )
+
 
 # VCS compile
 vcs -full64 -sverilog -timescale=1ns/1ps \
