@@ -250,6 +250,8 @@ pygments==2.19.2
     # via ipython-pygments-lexers
     # via jupyter-console
     # via nbconvert
+pyserial==3.5
+    # via sw
 python-dateutil==2.9.0.post0
     # via arrow
     # via jupyter-client
