@@ -67,7 +67,7 @@ cim_soc/
 - [x] Phase 1: AXI4-Lite slave wrapper
 - [x] Phase 1: Golden model + Testbench
 - [x] Phase 2: 完成MNIST端到端testbench
-- [] Phase 2.5 : 实现对CNN支持 <-- RTL层面没有修改，但是im2col已经在python实现
+- [x] Phase 2.5 : 实现对CNN支持 <-- RTL层面没有修改，但是im2col已经在python实现
 - [x] Phase 3: 增加Conv层im2col映射支持
 - [x] Phase 4: 完成边界测试
 - [x] Phase 5: 完成所有testbench和regression脚本自动化。
