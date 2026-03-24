@@ -94,3 +94,5 @@ picorv32/fw/small_mlp_data.zip
 sw/fw_hex_batch/
 sw/fw_hex_batch/**
 sw/fw_hex_batch.zip
+
+tree.txt
