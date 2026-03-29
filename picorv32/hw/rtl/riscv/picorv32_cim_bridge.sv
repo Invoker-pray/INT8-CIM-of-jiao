@@ -1,19 +1,14 @@
 // ============================================================================
-// picorv32_cim_bridge.sv — Bridge PicoRV32 native bus → CIM + BRAM + UART
+// picorv32_cim_bridge.sv — Bridge PicoRV32 native bus → CIM + BRAM + UART + Result
 // ============================================================================
 //
 // Address map (32-bit byte-addressed):
 //   0x0000_0000 - 0x0000_7FFF : Firmware BRAM (32KB, RW)
-//   0x4000_0000 - 0x4000_3FFF : CIM CSR / memory windows (16KB, same as AXI)
+//   0x4000_0000 - 0x4000_3FFF : CIM CSR / memory windows (16KB)
 //   0x8000_0000               : UART TX data register (write-only)
 //   0x8000_0004               : UART TX status (read-only, bit[0]=ready)
-//
-// Wait cycles:
-//   BRAM write:  1 cycle (immediate, goes to S_DONE same cycle)
-//   BRAM read:   2 cycles (S_BRAM_RD waits for sync BRAM output)
-//   CIM write:   ~4-5 cycles (waits for AXI master cim_wr_done)
-//   CIM read:    ~5-6 cycles (waits for AXI master cim_rd_done)
-//   UART write:  1 cycle if ready, stalls if busy
+//   0xC000_0000 - 0xC000_00FF : Result BRAM (256 bytes, RW)
+//                                PS reads this via AXI to verify results
 // ============================================================================
 
 module picorv32_cim_bridge (
@@ -36,24 +31,32 @@ module picorv32_cim_bridge (
     input  logic [31:0] fw_bram_rdata,
 
     // ---- CIM AXI master control ----
-    output logic        cim_start_wr,   // pulse: start AXI write
-    output logic        cim_start_rd,   // pulse: start AXI read
+    output logic        cim_start_wr,
+    output logic        cim_start_rd,
     output logic [13:0] cim_addr,
     output logic [31:0] cim_wdata,
     input  logic [31:0] cim_rdata,
-    input  logic        cim_wr_done,    // pulse: AXI write complete
-    input  logic        cim_rd_done,    // pulse: AXI read complete, rdata valid
+    input  logic        cim_wr_done,
+    input  logic        cim_rd_done,
 
     // ---- UART TX ----
     output logic        uart_tx_valid,
     output logic [ 7:0] uart_tx_data,
-    input  logic        uart_tx_ready
+    input  logic        uart_tx_ready,
+
+    // ---- Result BRAM (port A = PicoRV32 side) ----
+    output logic        res_bram_en,
+    output logic [ 3:0] res_bram_we,
+    output logic [ 7:0] res_bram_addr,   // 256 bytes = 64 words, 8-bit byte addr
+    output logic [31:0] res_bram_wdata,
+    input  logic [31:0] res_bram_rdata
 );
 
   // Address decode
   wire sel_bram = (mem_addr[31:16] == 16'h0000);
   wire sel_cim  = (mem_addr[31:16] == 16'h4000);
   wire sel_uart = (mem_addr[31:4]  == 28'h8000_000);
+  wire sel_res  = (mem_addr[31:8]  == 24'hC000_00);
   wire is_write = (mem_wstrb != 4'b0000);
 
   // FSM
@@ -62,6 +65,7 @@ module picorv32_cim_bridge (
     S_BRAM_RD,
     S_CIM_WR_WAIT,
     S_CIM_RD_WAIT,
+    S_RES_RD,
     S_DONE
   } state_t;
 
@@ -77,24 +81,18 @@ module picorv32_cim_bridge (
         S_IDLE: begin
           if (mem_valid) begin
             if (sel_bram) begin
-              if (is_write)
-                state <= S_DONE;        // write immediate
-              else
-                state <= S_BRAM_RD;     // wait 1 cycle for read data
+              state <= is_write ? S_DONE : S_BRAM_RD;
             end else if (sel_cim) begin
-              if (is_write)
-                state <= S_CIM_WR_WAIT;
-              else
-                state <= S_CIM_RD_WAIT;
+              state <= is_write ? S_CIM_WR_WAIT : S_CIM_RD_WAIT;
             end else if (sel_uart) begin
               if (is_write) begin
-                if (uart_tx_ready)
-                  state <= S_DONE;
-                // else stall: stay IDLE, mem_ready=0
+                if (uart_tx_ready) state <= S_DONE;
               end else begin
                 rdata_r <= {31'b0, uart_tx_ready};
                 state   <= S_DONE;
               end
+            end else if (sel_res) begin
+              state <= is_write ? S_DONE : S_RES_RD;
             end else begin
               rdata_r <= 32'hDEAD_BEEF;
               state   <= S_DONE;
@@ -103,13 +101,12 @@ module picorv32_cim_bridge (
         end
 
         S_BRAM_RD: begin
-          rdata_r <= fw_bram_rdata;     // sync BRAM data now valid
+          rdata_r <= fw_bram_rdata;
           state   <= S_DONE;
         end
 
         S_CIM_WR_WAIT: begin
-          if (cim_wr_done)
-            state <= S_DONE;
+          if (cim_wr_done) state <= S_DONE;
         end
 
         S_CIM_RD_WAIT: begin
@@ -119,8 +116,13 @@ module picorv32_cim_bridge (
           end
         end
 
+        S_RES_RD: begin
+          rdata_r <= res_bram_rdata;
+          state   <= S_DONE;
+        end
+
         S_DONE: begin
-          state <= S_IDLE;              // mem_ready=1 for exactly this cycle
+          state <= S_IDLE;
         end
 
         default: state <= S_IDLE;
@@ -132,13 +134,13 @@ module picorv32_cim_bridge (
   assign mem_ready = (state == S_DONE);
   assign mem_rdata = rdata_r;
 
-  // BRAM
+  // Firmware BRAM
   assign fw_bram_en    = mem_valid && sel_bram && (state == S_IDLE);
   assign fw_bram_we    = (mem_valid && sel_bram && is_write && state == S_IDLE) ? mem_wstrb : 4'b0;
   assign fw_bram_addr  = mem_addr[14:0];
   assign fw_bram_wdata = mem_wdata;
 
-  // CIM: one-cycle start pulses
+  // CIM
   assign cim_start_wr = mem_valid && sel_cim && is_write  && (state == S_IDLE);
   assign cim_start_rd = mem_valid && sel_cim && !is_write && (state == S_IDLE);
   assign cim_addr     = mem_addr[13:0];
@@ -147,5 +149,11 @@ module picorv32_cim_bridge (
   // UART
   assign uart_tx_valid = mem_valid && sel_uart && is_write && uart_tx_ready && (state == S_IDLE);
   assign uart_tx_data  = mem_wdata[7:0];
+
+  // Result BRAM (port A)
+  assign res_bram_en    = mem_valid && sel_res && (state == S_IDLE);
+  assign res_bram_we    = (mem_valid && sel_res && is_write && state == S_IDLE) ? mem_wstrb : 4'b0;
+  assign res_bram_addr  = mem_addr[7:0];
+  assign res_bram_wdata = mem_wdata;
 
 endmodule
