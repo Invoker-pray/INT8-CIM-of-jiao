@@ -57,10 +57,14 @@ module tb_cim_rv32;
       .BAUD_RATE(115200),
       .FW_HEX   ("firmware.hex")
   ) u_dut (
-      .clk(clk), .rst_n(rst_n),
-      .uart_txd(uart_txd), .cim_done_irq(cim_done_irq),
-      .res_b_en(res_b_en), .res_b_we(res_b_we),
-      .res_b_addr(res_b_addr), .res_b_wdata(res_b_wdata),
+      .clk(clk),
+      .rst_n(rst_n),
+      .uart_txd(uart_txd),
+      .cim_done_irq(cim_done_irq),
+      .res_b_en(res_b_en),
+      .res_b_we(res_b_we),
+      .res_b_addr(res_b_addr),
+      .res_b_wdata(res_b_wdata),
       .res_b_rdata(res_b_rdata)
   );
 
@@ -71,8 +75,8 @@ module tb_cim_rv32;
 
   task automatic res_read(input int word_idx, output logic [31:0] data);
     @(posedge clk);
-    res_b_en   <= 1;
-    res_b_we   <= 4'b0;
+    res_b_en <= 1;
+    res_b_we <= 4'b0;
     res_b_addr <= word_idx * 4;  // byte address
     res_b_wdata <= 0;
     @(posedge clk);  // BRAM registered output
@@ -107,7 +111,7 @@ module tb_cim_rv32;
   // ============================================================
   task automatic check_results;
     logic [31:0] pred, expected, match_flag;
-    logic [31:0] logits [0:9];
+    logic [31:0] logits[0:9];
 
     res_read(1, pred);
     res_read(2, expected);
@@ -121,17 +125,13 @@ module tb_cim_rv32;
     for (int i = 0; i < 10; i++) begin
       res_read(4 + i, logits[i]);
       // Sign-extend for display
-      if (logits[i][31])
-        $write(" %0d", $signed(logits[i]));
-      else
-        $write(" %0d", logits[i]);
+      if (logits[i][31]) $write(" %0d", $signed(logits[i]));
+      else $write(" %0d", logits[i]);
     end
     $display("");
 
-    if (match_flag)
-      $display("RESULT: PASS");
-    else
-      $display("RESULT: WRONG");
+    if (match_flag) $display("RESULT: PASS");
+    else $display("RESULT: WRONG");
   endtask
 
   // ============================================================
@@ -141,12 +141,12 @@ module tb_cim_rv32;
   localparam int CLKS_PER_BIT = 50_000_000 / BAUD;
 
   initial begin
-    forever begin
+    forever begin : uart_rx_loop
+      reg [7:0] rx_byte;
       @(negedge uart_txd);
       #(CLK_PERIOD * CLKS_PER_BIT / 2);
       if (uart_txd !== 1'b0) continue;
 
-      reg [7:0] rx_byte;
       rx_byte = 0;
       for (int b = 0; b < 8; b++) begin
         #(CLK_PERIOD * CLKS_PER_BIT);
