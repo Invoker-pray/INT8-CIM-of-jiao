@@ -51,6 +51,7 @@ set all_files [list \
     ${RV_HW}/rtl/riscv/uart_tx.sv \
     ${RV_HW}/rtl/riscv/picorv32_cim_bridge.sv \
     ${RV_HW}/rtl/riscv/cim_rv32_top.sv \
+    ${RV_HW}/rtl/riscv/cim_rv32_top_wrapper.v \
 ]
 
 add_files -norecurse ${all_files}
@@ -84,7 +85,7 @@ set_property -dict [list \
 ] [get_bd_cells ps7]
 
 # --- cim_rv32_top ---
-create_bd_cell -type module -reference cim_rv32_top rv32_soc
+create_bd_cell -type module -reference cim_rv32_top_wrapper rv32_soc
 
 # --- Reset ---
 create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_ps
