@@ -1,33 +1,27 @@
 // ============================================================================
-// tb_cim_rv32.sv — Testbench for PicoRV32 + CIM SoC
+// tb_cim_rv32.sv — Testbench for PicoRV32 + CIM SoC (Result BRAM check)
 // ============================================================================
-// Captures UART TX output and checks for CORRECT/WRONG in the stream.
-// Outputs a machine-parseable "RESULT: PASS/FAIL/WRONG" line for scripting.
+// Monitors result BRAM port B for the magic word 0xC1AA_0001, then reads
+// prediction and logits. Much faster than UART-based checking.
 //
 // Usage:
-//   ./simv                    (no VCD)
-//   ./simv +VCD               (dump waveform)
+//   ./simv                    (default 50ms timeout)
 //   ./simv +TIMEOUT=100000    (custom timeout in us)
+//   ./simv +VCD               (dump waveform)
 // ============================================================================
 
 `timescale 1ns / 1ps
 
 module tb_cim_rv32;
 
-  // ============================================================
-  // Parameters
-  // ============================================================
-  localparam real CLK_PERIOD = 16.667;  // 60 MHz
-  localparam int DEFAULT_TO = 50_000;  // 50ms default timeout
-  localparam int BAUD = 115200;
-  localparam int CLKS_PER_BIT = 60_000_000 / BAUD;  // 520
+  localparam real CLK_PERIOD = 20.0;  // 50 MHz (matches CLK_FREQ=50_000_000)
+  localparam int DEFAULT_TO = 50_000;
 
   // ============================================================
   // Clock and reset
   // ============================================================
   logic clk = 0;
   logic rst_n = 0;
-
   always #(CLK_PERIOD / 2) clk = ~clk;
 
   initial begin
@@ -37,134 +31,136 @@ module tb_cim_rv32;
     $display("=== Reset released at %0t ===", $time);
   end
 
-  // Timeout (configurable via +TIMEOUT=<us>)
   integer timeout_us;
   initial begin
     if (!$value$plusargs("TIMEOUT=%d", timeout_us)) timeout_us = DEFAULT_TO;
     #(timeout_us * 1000);
-    $display("");
     $display("ERROR: Timeout after %0d us!", timeout_us);
     $display("RESULT: TIMEOUT");
     $finish;
   end
 
   // ============================================================
-  // DUT
+  // DUT — result BRAM port B directly accessible
   // ============================================================
-  logic uart_txd;
-  logic cim_done_irq;
+  logic uart_txd, cim_done_irq;
+
+  // Port B of result BRAM: we use it to read results
+  logic        res_b_en;
+  logic [ 3:0] res_b_we;
+  logic [ 7:0] res_b_addr;
+  logic [31:0] res_b_wdata;
+  logic [31:0] res_b_rdata;
 
   cim_rv32_top #(
-      .CLK_FREQ (60_000_000),
-      .BAUD_RATE(BAUD),
+      .CLK_FREQ (50_000_000),
+      .BAUD_RATE(115200),
       .FW_HEX   ("firmware.hex")
   ) u_dut (
-      .clk         (clk),
-      .rst_n       (rst_n),
-      .uart_txd    (uart_txd),
-      .cim_done_irq(cim_done_irq)
+      .clk(clk), .rst_n(rst_n),
+      .uart_txd(uart_txd), .cim_done_irq(cim_done_irq),
+      .res_b_en(res_b_en), .res_b_we(res_b_we),
+      .res_b_addr(res_b_addr), .res_b_wdata(res_b_wdata),
+      .res_b_rdata(res_b_rdata)
   );
 
   // ============================================================
-  // UART RX — behavioral 8N1 receiver
+  // Result BRAM polling — read word[0] until magic appears
   // ============================================================
-  reg     [      7:0] rx_byte;
-  reg                 rx_valid;
-  integer             rx_bit_idx;
+  logic [31:0] read_word;
 
-  // Capture buffer (512 chars)
-  reg     [8*512-1:0] uart_buf;
-  integer             uart_len;
+  task automatic res_read(input int word_idx, output logic [31:0] data);
+    @(posedge clk);
+    res_b_en   <= 1;
+    res_b_we   <= 4'b0;
+    res_b_addr <= word_idx * 4;  // byte address
+    res_b_wdata <= 0;
+    @(posedge clk);  // BRAM registered output
+    res_b_en <= 0;
+    @(posedge clk);  // data valid now
+    data = res_b_rdata;
+  endtask
 
   initial begin
-    uart_len = 0;
-    uart_buf = '0;
-    rx_valid = 0;
+    res_b_en    = 0;
+    res_b_we    = 0;
+    res_b_addr  = 0;
+    res_b_wdata = 0;
 
+    @(posedge rst_n);
+    $display("Waiting for PicoRV32 to complete inference...");
+
+    // Poll magic word every 1000 cycles
     forever begin
-      @(negedge uart_txd);  // start bit edge
-      #(CLK_PERIOD * CLKS_PER_BIT / 2);  // half-bit to center
-      if (uart_txd !== 1'b0) continue;  // false trigger
-
-      rx_byte = 8'h0;
-      for (rx_bit_idx = 0; rx_bit_idx < 8; rx_bit_idx++) begin
-        #(CLK_PERIOD * CLKS_PER_BIT);
-        rx_byte[rx_bit_idx] = uart_txd;
+      #(CLK_PERIOD * 1000);
+      res_read(0, read_word);
+      if (read_word == 32'hC1AA_0001) begin
+        $display("=== Magic word detected! Inference complete. ===");
+        check_results();
+        $finish;
       end
-      #(CLK_PERIOD * CLKS_PER_BIT);  // stop bit
-
-      rx_valid = 1;
-
-      // Print character
-      if (rx_byte >= 8'h20 && rx_byte <= 8'h7E) $write("%c", rx_byte);
-      else if (rx_byte == 8'h0A) $write("\n");
-      else
-      if (rx_byte == 8'h0D);  // skip CR
-      else $write("<%02x>", rx_byte);
-
-      // Buffer
-      if (uart_len < 511) begin
-        uart_buf[uart_len*8+:8] = rx_byte;
-        uart_len = uart_len + 1;
-      end
-
-      // Check for "Done" end marker
-      if (uart_len >= 4) begin
-        if (uart_buf[(uart_len-4)*8 +: 8] == "D" &&
-            uart_buf[(uart_len-3)*8 +: 8] == "o" &&
-            uart_buf[(uart_len-2)*8 +: 8] == "n" &&
-            uart_buf[(uart_len-1)*8 +: 8] == "e") begin
-          #(CLK_PERIOD * CLKS_PER_BIT * 20);
-          $display("\n");
-          check_result();
-          $finish;
-        end
-      end
-
-      rx_valid = 0;
     end
   end
 
   // ============================================================
-  // Result check — scan buffer for CORRECT / WRONG
+  // Read and verify results
   // ============================================================
-  task check_result;
-    integer i;
-    reg found_correct, found_wrong;
-    found_correct = 0;
-    found_wrong   = 0;
+  task automatic check_results;
+    logic [31:0] pred, expected, match_flag;
+    logic [31:0] logits [0:9];
 
-    for (i = 0; i < uart_len - 6; i++) begin
-      if (uart_buf[(i+0)*8 +: 8] == "C" &&
-          uart_buf[(i+1)*8 +: 8] == "O" &&
-          uart_buf[(i+2)*8 +: 8] == "R" &&
-          uart_buf[(i+3)*8 +: 8] == "R" &&
-          uart_buf[(i+4)*8 +: 8] == "E" &&
-          uart_buf[(i+5)*8 +: 8] == "C" &&
-          uart_buf[(i+6)*8 +: 8] == "T")
-        found_correct = 1;
+    res_read(1, pred);
+    res_read(2, expected);
+    res_read(3, match_flag);
 
-      if (i < uart_len - 4)
-        if (uart_buf[(i+0)*8 +: 8] == "W" &&
-            uart_buf[(i+1)*8 +: 8] == "R" &&
-            uart_buf[(i+2)*8 +: 8] == "O" &&
-            uart_buf[(i+3)*8 +: 8] == "N" &&
-            uart_buf[(i+4)*8 +: 8] == "G")
-          found_wrong = 1;
+    $display("  Predicted: %0d", pred);
+    $display("  Expected:  %0d", expected);
+    $display("  Match:     %s", match_flag ? "YES" : "NO");
+
+    $write("  Logits:   ");
+    for (int i = 0; i < 10; i++) begin
+      res_read(4 + i, logits[i]);
+      // Sign-extend for display
+      if (logits[i][31])
+        $write(" %0d", $signed(logits[i]));
+      else
+        $write(" %0d", logits[i]);
     end
+    $display("");
 
-    if (found_correct) begin
+    if (match_flag)
       $display("RESULT: PASS");
-    end else if (found_wrong) begin
+    else
       $display("RESULT: WRONG");
-    end else begin
-      $display("RESULT: FAIL");
-    end
   endtask
 
   // ============================================================
-  // VCD dump (optional, +VCD)
+  // Optional UART monitor (for debug, prints chars as they come)
   // ============================================================
+  localparam int BAUD = 115200;
+  localparam int CLKS_PER_BIT = 50_000_000 / BAUD;
+
+  initial begin
+    forever begin
+      @(negedge uart_txd);
+      #(CLK_PERIOD * CLKS_PER_BIT / 2);
+      if (uart_txd !== 1'b0) continue;
+
+      reg [7:0] rx_byte;
+      rx_byte = 0;
+      for (int b = 0; b < 8; b++) begin
+        #(CLK_PERIOD * CLKS_PER_BIT);
+        rx_byte[b] = uart_txd;
+      end
+      #(CLK_PERIOD * CLKS_PER_BIT);
+
+      if (rx_byte >= 8'h20 && rx_byte <= 8'h7E) $write("%c", rx_byte);
+      else if (rx_byte == 8'h0A) $write("\n");
+      else if (rx_byte != 8'h0D) $write("<%02x>", rx_byte);
+    end
+  end
+
+  // VCD
   initial begin
     if ($test$plusargs("VCD")) begin
       $dumpfile("tb_cim_rv32.vcd");
@@ -172,14 +168,12 @@ module tb_cim_rv32;
     end
   end
 
-  // ============================================================
-  // Progress monitor — every 5ms (less noisy for batch runs)
-  // ============================================================
+  // Progress
   initial begin
     @(posedge rst_n);
     forever begin
-      #(5_000_000);  // 5ms
-      $display("[%0t] Running... done_irq=%b", $time, cim_done_irq);
+      #(5_000_000);
+      $display("[%0t] Running...", $time);
     end
   end
 
