@@ -22,7 +22,8 @@ module cim_rv32_top
   import cim_pkg::*;
 #(
     parameter int CLK_FREQ  = 50_000_000,
-    parameter int BAUD_RATE = 115200
+    parameter int BAUD_RATE = 115200,
+    parameter     FW_HEX    = ""          // sim-only: path to firmware hex
 ) (
     input  logic clk,
     input  logic rst_n,       // global reset
@@ -81,6 +82,10 @@ module cim_rv32_top
   wire [FW_AW-1:0] fw_b_word = fw_b_addr[FW_AW+1:2];
 
   (* ram_style = "block" *) reg [31:0] fw_mem [0:FW_DEPTH-1];
+
+  // synthesis translate_off
+  initial if (FW_HEX != "") $readmemh(FW_HEX, fw_mem);
+  // synthesis translate_on
 
   always @(posedge clk) begin  // Port A
     if (fw_a_en) begin
