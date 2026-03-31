@@ -88,13 +88,13 @@ _RTL本身没有Conv专用硬件，这里用了python的im2col + 硬件MVM实现
 - [x] Phase 3: 尝试映射一个Conv网络(比如LeNet-5) <-- 20 pics, bit-exact 100%
 - [] Phase 4: 尝试讨论bit-plane
 
-### [] step 4: PicoRV32替换ARM控制
+### [x] step 4: PicoRV32替换ARM控制
 
 - [x] Phase 1: 集成PicoRV32开源RISC-V软核到PL
 - [x] Phase 2: 写 Wishbone→CSR bridge（或直接用 PicoRV32 native memory interface 映射到 CSR 地址空间）
 - [x] Phase 3: RISC-V 固件（C）完成：weight DMA 加载、层配置、推理触发、结果读取
 - [x] Phase 4: 用 riscv64-unknown-elf-gcc 交叉编译，固件存 BRAM
-- [] Phase 5: 仿真 + 上板验证功能等价
+- [x] Phase 5: 仿真 + 上板验证功能等价
 
 ### [] step 5: Kria KV 260移植
 
@@ -110,6 +110,54 @@ _RTL本身没有Conv专用硬件，这里用了python的im2col + 硬件MVM实现
 现在是2026.03.22，已经基本完成了step 1~3的所有内容。当前的项目是，已经实现了PL侧，硬件的MVM + bias + ReLU + Requantize, 软件侧实现了im2col, 当然也完全可以支持MaxPool等计算，还没考虑但是应该比较容易实现的是AveragePool, Dropout, BatchNorm, Softmax等。
 
 现在理论上已经可以跑所有由`Conv + FC + ReLU + MaxPool`组成的网络，已经覆盖了大多数CNN；当前的实际瓶颈是硬件尺寸限制导致输入不能够大于784x128，Conv 层 im2col 后 col_len = C_in × K × K 不能超过 784，C_out 不能超过 128。对于 MNIST 尺寸的网络完全够用，但跑 ImageNet 级别的模型就需要分块或扩容，这一点之前也有说过了(不过是时间上的之前，不是这个md的之前)。
+
+## checkpoint 2
+
+2026.03.31, PicoRV32代替ARM软核的集成设计完成。
+
+关于为什么做PicoRV32，step 1-3中的加速器是由 ARM PS 通过Python/MMIO控制的，任务指导书中要求实现软核设计，因此其实不应该直接使用ARM软核而是自己实现一个控制流程，这里选择的是直接利用PicoRV32实现对于ARM的替代，让CIM可以在纯PL中自主运行推理，不依赖PS控制。
+
+选择了PicoRV32（YosysHQ开源，MIT License）：单个文件`picrov32.v`, RV32IM, ~1500LUT，还有成熟的native memory interface，相对适合直接桥接到CIM CSR.
+
+### arch
+
+架构如下：
+
+```
+PicoRV32 ──bridge──┬── FW BRAM (32KB, 代码+数据)
+                    ├── CIM IP (via mini AXI master, 与 Step 2 完全相同的 slave)
+                    ├── UART TX (debug)
+                    └── Result BRAM (256B, 推理结果)
+
+PS (ARM) ──AXI────┬── FW BRAM port B (写入 firmware)
+                   ├── Result BRAM port B (读取结果)
+                   └── AXI GPIO (控制 cpu_rst_n)
+```
+
+### new goals
+
+最后的设计希望实现的是：
+
+- CIM IP 不做修改，让PicoRV32通过mini AXI master发送和ARM完全一样的AXI事务；
+
+- 双端口 FW BRAM:　希望实现firmware通过读取进入CIM_SoC而不是写死烧到板上（和最开始的weight/bias想法类似），每次重新运行不需要重新生成bitstream；
+- result in
+  BRAM，最后的计算结果写入BRAM代替UART读取（手边没有路由器的WIFI模块懒得折腾pyserial，还有一个问题是PL UART和PS USB等有连接性问题）
+
+- AXI GPIO，PS控制`cpu_rst_n`，实现 hold -> write firmware -> release的循环。
+
+### smplified model
+
+又回到了模型大小问题。因为如果换成用PicoRV32替换ARM控制的话，会额外占用LUT，为了让firmware放进32KB BRAM中，只能~再次~使用784->16->10的小模型（大约是14.5KB），INT8准确率90%+.
+
+### verification
+
+依旧是选择VCS仿真和PYNQ上板。
+
+VCS仿真时，通过逐个替换firmware.hex，testbench直接读取result BRAM port B检查；
+PYNQ上板，PS通过AXI加载firmware，计算之后读取pred/logits，和golden对比。
+
+更多详细设计过程见`docs/picorv32_design.md`.
 
 # 坑
 
@@ -146,3 +194,25 @@ _patch 2: 增加了新的流水，将compute切分成三段，Sat Mar 21 02:56:5
 
 _patch 3: 新的critial path是ST_STORE，写obuf，requantize都耗时很多。这次把ST_STORE分成ST_STORE(64-bit multiply + reg `prod_r`), ST_SHIFT_CLAMP(shift + rounding + clamp, reg `requant_r`), ST_WRITE_OBUF(write output buffer). 当前进度是16.2ns. 调整到62.5MHZ可以实现16ns的周期。
 布局之后的critial path: `w_tile_reg -> DSP48 -> CARRY4 -> tile_psum_reg`，如果想要在8ns之内完成，需要把16个元素拆成2x8再合并。cim_tile 做的是 16 列的 `Σ(x_eff[c] * w[r][c])`，这是一条 16 级串行加法链。需要把它拆成两拍：先算前 8 列，再算后 8 列。这样做的话改动量会比较大。这里选择降频到62.5MHZ，如果还不行的话再降一点（61.7MHZ或者是60MHZ）线完成任务再说。如果后面有时间的话，再做进一步优化。（到时候再开分支）_
+
+# 坑(pico篇)
+
+## UART
+
+经典问题。这个其实在上一个项目`MNIST-CIM-FPGA`中就出现了。简单说就是PYNQ的PS和PL是隔离的，UART是PL侧的输出,PS侧读不到，当时使用`USB-TTL`串口读取在PC上获取信息验证计算结果。
+
+PicoRV32的UART TXD输出到了PMOD-A pin（PL侧Y18），（PMOD-A pin -> TTL -> USB_PYNQ）但是PYNQ的micro USB连接的是PS UART（通过FTDI），就导致实际上在没有pyserial的情况下无法从PYNQ的USB端口获取PL UART的信息。
+
+所以最后还是选择了加上Result BRAM，让PicoRV32写到BRAM中。
+
+## 纯 PL 设计 bitstream 无法加载
+
+由于纯PL设计（没有 Zynq PS）vivado不会生成`.hwh`文件，就导致`Overlay()`实际上无法使用。暂时没有解决这个问题，当时采用了`pynq.Bitstream()`, `/dev/xdevcfg`, `fpgautil`都失败。
+
+这里选择改为PS + PL BLock Design的混合设计上板，PS只提供时钟和AXI读取，PicoRV32仍然自主运行。
+
+_如有兴趣尝试其他方法上板和串口调试，可以回退到Tue Mar 24 02:56:37 PM CST 2026及之前commit._
+
+## firmware.hex的格式问题
+
+这里要注意`$readmemh`是需要32位word的，之前写错过一个这里又弄错了，补充了`verilog_byte_to_word.py`进行修改。
