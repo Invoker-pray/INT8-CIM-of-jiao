@@ -1,41 +1,32 @@
 # ============================================================================
-# vivado_build.tcl — PicoRV32 + CIM SoC with PS-readable Result BRAM
+# vivado_build.tcl — PicoRV32 + CIM SoC: PS loads firmware at runtime
 # ============================================================================
-# Hybrid PS+PL: PicoRV32 runs inference in PL, PS reads results via AXI.
 #
-# Block Design:
-#   PS7 → AXI Interconnect → AXI BRAM Controller → Result BRAM port B
-#   cim_rv32_top (module ref) provides Result BRAM port B signals
+# PS AXI address map:
+#   0x4000_0000 (32KB) : FW BRAM port B    — PS writes firmware here
+#   0x4200_0000 (4KB)  : Result BRAM port B — PS reads inference results
+#   0x4300_0000 (4KB)  : AXI GPIO          — bit[0] = cpu_rst_n (0=hold,1=run)
 #
-# Usage: vivado -mode batch -source picorv32/hw/scripts/vivado_build.tcl
+# Workflow (PYNQ Python):
+#   gpio.write(0, 0)        # hold CPU
+#   fw_mmio.write(i*4, w)   # write firmware words
+#   gpio.write(0, 1)        # release CPU
+#   while res_mmio.read(0) != 0xC1AA0001: sleep
+#   pred = res_mmio.read(4) # read result
 # ============================================================================
 
 set PROJ_NAME  "cim_rv32_soc"
 set PART       "xc7z020clg400-1"
 set BOARD_PART "tul.com.tw:pynq-z2:part0:1.0"
 set N_JOBS     4
-
-set PROJ_ROOT  [pwd]
 set CIM_HW     "hw"
 set RV_HW      "picorv32/hw"
-set FW_DIR     "picorv32/fw"
 set OUT_DIR    "picorv32/vivado_proj"
 
-puts "============================================================"
-puts "PicoRV32 + CIM SoC — Hybrid PS+PL Build"
-puts "============================================================"
-
-# ============================================================================
-# 1. Create project
-# ============================================================================
 create_project ${PROJ_NAME} ./${OUT_DIR} -part ${PART} -force
-if {![catch {set_property board_part ${BOARD_PART} [current_project]}]} {
-    puts "INFO: Board part applied."
-}
+catch {set_property board_part ${BOARD_PART} [current_project]}
 
-# ============================================================================
-# 2. Add RTL
-# ============================================================================
+# ---- RTL ----
 set all_files [list \
     ${CIM_HW}/rtl/pkg/cim_pkg.sv \
     ${CIM_HW}/rtl/core/cim_tile.sv \
@@ -53,182 +44,145 @@ set all_files [list \
     ${RV_HW}/rtl/riscv/cim_rv32_top.sv \
     ${RV_HW}/rtl/riscv/cim_rv32_top_wrapper.v \
 ]
-
 add_files -norecurse ${all_files}
 add_files -fileset constrs_1 -norecurse ${RV_HW}/constraints/cim_rv32_pynq.xdc
-
 set_property file_type SystemVerilog [get_files *.sv]
 set_property file_type Verilog       [get_files *.v]
 
-# Firmware hex
-set fw_hex "${FW_DIR}/firmware.hex"
-if {[file exists ${fw_hex}]} {
-    add_files -norecurse ${fw_hex}
-    set_property file_type {Memory Initialization Files} [get_files firmware.hex]
-    puts "INFO: firmware.hex added."
-}
-
 # ============================================================================
-# 3. Block Design
+# Block Design
 # ============================================================================
 create_bd_design "system"
 
-# --- PS7 ---
+# ---- PS7 ----
 create_bd_cell -type ip -vlnv xilinx.com:ip:processing_system7:5.5 ps7
-if {![catch {apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 \
-    -config {make_external "FIXED_IO, DDR"} [get_bd_cells ps7]}]} {
-    puts "INFO: PS7 board automation applied."
-}
+catch {apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 \
+    -config {make_external "FIXED_IO, DDR"} [get_bd_cells ps7]}
 set_property -dict [list \
     CONFIG.PCW_USE_M_AXI_GP0 {1} \
     CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ {50} \
 ] [get_bd_cells ps7]
 
-# --- cim_rv32_top ---
-create_bd_cell -type module -reference cim_rv32_top_wrapper rv32_soc
+# ---- rv32_soc (module reference) ----
+create_bd_cell -type module -reference cim_rv32_top_wrapper rv32
 
-# --- Reset ---
+# ---- Reset ----
 create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_ps
-connect_bd_net [get_bd_pins ps7/FCLK_CLK0] [get_bd_pins rst_ps/slowest_sync_clk]
-connect_bd_net [get_bd_pins ps7/FCLK_RESET0_N] [get_bd_pins rst_ps/ext_reset_in]
+connect_bd_net [get_bd_pins ps7/FCLK_CLK0]      [get_bd_pins rst_ps/slowest_sync_clk]
+connect_bd_net [get_bd_pins ps7/FCLK_RESET0_N]  [get_bd_pins rst_ps/ext_reset_in]
+connect_bd_net [get_bd_pins ps7/FCLK_CLK0]      [get_bd_pins rv32/clk]
+connect_bd_net [get_bd_pins rst_ps/peripheral_aresetn] [get_bd_pins rv32/rst_n]
 
-# Connect clock + reset to rv32_soc
-connect_bd_net [get_bd_pins ps7/FCLK_CLK0] [get_bd_pins rv32_soc/clk]
-connect_bd_net [get_bd_pins rst_ps/peripheral_aresetn] [get_bd_pins rv32_soc/rst_n]
+# ---- AXI GPIO for cpu_rst_n ----
+create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio:2.0 gpio_cpu_rst
+set_property -dict [list \
+    CONFIG.C_GPIO_WIDTH {1} \
+    CONFIG.C_ALL_OUTPUTS {1} \
+    CONFIG.C_DOUT_DEFAULT {0x00000000} \
+] [get_bd_cells gpio_cpu_rst]
+# GPIO output bit[0] → cpu_rst_n
+connect_bd_net [get_bd_pins gpio_cpu_rst/gpio_io_o] [get_bd_pins rv32/cpu_rst_n]
 
-# --- AXI BRAM Controller ---
-# Reads result BRAM port B (64 words = 256 bytes)
-create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 bram_ctrl
+# ---- FW BRAM Controller (32KB, port B) ----
+create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 fw_bram_ctrl
 set_property -dict [list \
     CONFIG.SINGLE_PORT_BRAM {1} \
     CONFIG.DATA_WIDTH {32} \
-    CONFIG.ECC_TYPE {0} \
     CONFIG.PROTOCOL {AXI4LITE} \
-] [get_bd_cells bram_ctrl]
+] [get_bd_cells fw_bram_ctrl]
 
-# PS AXI GP0 → BRAM Controller
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 \
-    -config [list \
-        Clk_master {/ps7/FCLK_CLK0} \
-        Clk_slave  {Auto} \
-        Clk_xbar   {Auto} \
-        Master     {/ps7/M_AXI_GP0} \
-        Slave      {/bram_ctrl/S_AXI} \
-        ddr_seg    {Auto} \
-        intc_ip    {New AXI Interconnect} \
-        master_apm {0} \
-    ] [get_bd_intf_pins bram_ctrl/S_AXI]
+# Connect FW BRAM ctrl → rv32 fw_b_* ports
+connect_bd_net [get_bd_pins fw_bram_ctrl/bram_en_a]     [get_bd_pins rv32/fw_b_en]
+connect_bd_net [get_bd_pins fw_bram_ctrl/bram_we_a]     [get_bd_pins rv32/fw_b_we]
+connect_bd_net [get_bd_pins fw_bram_ctrl/bram_wrdata_a] [get_bd_pins rv32/fw_b_wdata]
+connect_bd_net [get_bd_pins fw_bram_ctrl/bram_rddata_a] [get_bd_pins rv32/fw_b_rdata]
 
-# --- Connect BRAM Controller BRAM port → rv32_soc result BRAM port B ---
-# AXI BRAM Controller exposes BRAM_PORTA intf with signals:
-#   bram_addr_a, bram_clk_a, bram_en_a, bram_rst_a, bram_we_a, bram_wrdata_a, bram_rddata_a
-# We connect these to rv32_soc's res_b_* ports manually.
-#
-# Note: bram_addr_a width from bram_ctrl may be wider than res_b_addr[7:0].
-# The controller generates byte addresses; we just connect the low bits.
+# Address slice for fw_b_addr (15-bit from wider BRAM ctrl addr)
+create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 fw_addr_slice
+set_property -dict [list CONFIG.DIN_WIDTH {32} CONFIG.DIN_FROM {14} CONFIG.DIN_TO {0} CONFIG.DOUT_WIDTH {15}] [get_bd_cells fw_addr_slice]
+connect_bd_net [get_bd_pins fw_bram_ctrl/bram_addr_a] [get_bd_pins fw_addr_slice/Din]
+connect_bd_net [get_bd_pins fw_addr_slice/Dout]       [get_bd_pins rv32/fw_b_addr]
 
-# First, disconnect the auto-generated BRAM port (if any)
-# The bram_ctrl has a BRAM_PORTA interface - we'll connect its individual signals
-
-connect_bd_net [get_bd_pins bram_ctrl/bram_en_a]     [get_bd_pins rv32_soc/res_b_en]
-connect_bd_net [get_bd_pins bram_ctrl/bram_we_a]     [get_bd_pins rv32_soc/res_b_we]
-connect_bd_net [get_bd_pins bram_ctrl/bram_wrdata_a] [get_bd_pins rv32_soc/res_b_wdata]
-connect_bd_net [get_bd_pins bram_ctrl/bram_rddata_a] [get_bd_pins rv32_soc/res_b_rdata]
-
-# Address: bram_ctrl outputs wider addr, rv32_soc expects [7:0]
-# We use a Slice IP to extract bits [7:0] from the BRAM controller address
-create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 addr_slice
+# ---- Result BRAM Controller (256B, port B) ----
+create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 res_bram_ctrl
 set_property -dict [list \
-    CONFIG.DIN_WIDTH {32} \
-    CONFIG.DIN_FROM {7} \
-    CONFIG.DIN_TO {0} \
-    CONFIG.DOUT_WIDTH {8} \
-] [get_bd_cells addr_slice]
+    CONFIG.SINGLE_PORT_BRAM {1} \
+    CONFIG.DATA_WIDTH {32} \
+    CONFIG.PROTOCOL {AXI4LITE} \
+] [get_bd_cells res_bram_ctrl]
 
-connect_bd_net [get_bd_pins bram_ctrl/bram_addr_a] [get_bd_pins addr_slice/Din]
-connect_bd_net [get_bd_pins addr_slice/Dout]       [get_bd_pins rv32_soc/res_b_addr]
+connect_bd_net [get_bd_pins res_bram_ctrl/bram_en_a]     [get_bd_pins rv32/res_b_en]
+connect_bd_net [get_bd_pins res_bram_ctrl/bram_we_a]     [get_bd_pins rv32/res_b_we]
+connect_bd_net [get_bd_pins res_bram_ctrl/bram_wrdata_a] [get_bd_pins rv32/res_b_wdata]
+connect_bd_net [get_bd_pins res_bram_ctrl/bram_rddata_a] [get_bd_pins rv32/res_b_rdata]
 
-# --- External pins ---
-make_bd_pins_external [get_bd_pins rv32_soc/uart_txd]
-make_bd_pins_external [get_bd_pins rv32_soc/cim_done_irq]
+create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 res_addr_slice
+set_property -dict [list CONFIG.DIN_WIDTH {32} CONFIG.DIN_FROM {7} CONFIG.DIN_TO {0} CONFIG.DOUT_WIDTH {8}] [get_bd_cells res_addr_slice]
+connect_bd_net [get_bd_pins res_bram_ctrl/bram_addr_a] [get_bd_pins res_addr_slice/Din]
+connect_bd_net [get_bd_pins res_addr_slice/Dout]       [get_bd_pins rv32/res_b_addr]
 
-# --- Address map: PS sees BRAM Controller at 0x4000_0000 ---
-assign_bd_address -offset 0x40000000 -range 4K \
-    [get_bd_addr_segs {bram_ctrl/S_AXI/Mem0}]
+# ---- AXI connections (PS GP0 → all 3 slaves) ----
+apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config [list \
+    Clk_master {/ps7/FCLK_CLK0} Clk_slave {Auto} Clk_xbar {Auto} \
+    Master {/ps7/M_AXI_GP0} Slave {/fw_bram_ctrl/S_AXI} \
+    intc_ip {New AXI Interconnect} master_apm {0}] \
+    [get_bd_intf_pins fw_bram_ctrl/S_AXI]
+
+apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config [list \
+    Clk_master {/ps7/FCLK_CLK0} Clk_slave {Auto} Clk_xbar {Auto} \
+    Master {/ps7/M_AXI_GP0} Slave {/res_bram_ctrl/S_AXI} \
+    intc_ip {/ps7_axi_periph} master_apm {0}] \
+    [get_bd_intf_pins res_bram_ctrl/S_AXI]
+
+apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config [list \
+    Clk_master {/ps7/FCLK_CLK0} Clk_slave {Auto} Clk_xbar {Auto} \
+    Master {/ps7/M_AXI_GP0} Slave {/gpio_cpu_rst/S_AXI} \
+    intc_ip {/ps7_axi_periph} master_apm {0}] \
+    [get_bd_intf_pins gpio_cpu_rst/S_AXI]
+
+# ---- External pins ----
+make_bd_pins_external [get_bd_pins rv32/uart_txd]
+make_bd_pins_external [get_bd_pins rv32/cim_done_irq]
+
+# ---- Address map ----
+assign_bd_address -offset 0x40000000 -range 32K [get_bd_addr_segs {fw_bram_ctrl/S_AXI/Mem0}]
+assign_bd_address -offset 0x42000000 -range 4K  [get_bd_addr_segs {res_bram_ctrl/S_AXI/Mem0}]
+assign_bd_address -offset 0x43000000 -range 4K  [get_bd_addr_segs {gpio_cpu_rst/S_AXI/Reg}]
 
 validate_bd_design
 save_bd_design
-puts "INFO: Block Design complete."
 
-# ============================================================================
-# 4. Wrapper + Synth + Impl
-# ============================================================================
+# ---- Build ----
 make_wrapper -files [get_files system.bd] -top
-set wrapper_file [glob -nocomplain ${OUT_DIR}/${PROJ_NAME}.gen/sources_1/bd/system/hdl/system_wrapper.v]
-if {$wrapper_file eq ""} {
-    set wrapper_file [glob ${OUT_DIR}/${PROJ_NAME}.srcs/sources_1/bd/system/hdl/system_wrapper.v]
-}
-add_files -norecurse ${wrapper_file}
+set wf [glob -nocomplain ${OUT_DIR}/${PROJ_NAME}.gen/sources_1/bd/system/hdl/system_wrapper.v]
+if {$wf eq ""} { set wf [glob ${OUT_DIR}/${PROJ_NAME}.srcs/sources_1/bd/system/hdl/system_wrapper.v] }
+add_files -norecurse $wf
 set_property top system_wrapper [current_fileset]
 update_compile_order -fileset sources_1
 
-# Copy firmware.hex
-if {[file exists ${fw_hex}]} {
-    file copy -force ${fw_hex} ${OUT_DIR}/firmware.hex
-}
-
-puts "INFO: Launching synthesis..."
-launch_runs synth_1 -jobs ${N_JOBS}
+launch_runs synth_1 -jobs $N_JOBS
 wait_on_run synth_1
 
-if {[get_property STATUS [get_runs synth_1]] ne "synth_design Complete!"} {
-    puts "ERROR: Synthesis failed!"
-    exit 1
-}
-
-# Copy firmware.hex to run dirs
-set impl_dir "${OUT_DIR}/${PROJ_NAME}.runs/impl_1"
-set synth_dir "${OUT_DIR}/${PROJ_NAME}.runs/synth_1"
-file mkdir ${impl_dir}
-if {[file exists ${fw_hex}]} {
-    file copy -force ${fw_hex} ${impl_dir}/firmware.hex
-    file copy -force ${fw_hex} ${synth_dir}/firmware.hex
-}
-
-puts "INFO: Launching implementation + bitstream..."
-launch_runs impl_1 -to_step write_bitstream -jobs ${N_JOBS}
+launch_runs impl_1 -to_step write_bitstream -jobs $N_JOBS
 wait_on_run impl_1
 
-if {[get_property STATUS [get_runs impl_1]] ne "write_bitstream Complete!"} {
-    puts "ERROR: Implementation/bitstream failed!"
-    exit 1
-}
-
-# ============================================================================
-# 5. Export .bit + .hwh
-# ============================================================================
-set bit_file [glob ${impl_dir}/*.bit]
+# ---- Export ----
 file mkdir ${OUT_DIR}/deploy
-file copy -force ${bit_file} ${OUT_DIR}/deploy/cim_rv32_soc.bit
-
-# Generate .hwh via XSA
+set bf [glob ${OUT_DIR}/${PROJ_NAME}.runs/impl_1/*.bit]
+file copy -force $bf ${OUT_DIR}/deploy/cim_rv32_soc.bit
 write_hw_platform -fixed -include_bit -force ${OUT_DIR}/deploy/cim_rv32_soc.xsa
 catch {exec unzip -o -j ${OUT_DIR}/deploy/cim_rv32_soc.xsa *.hwh -d ${OUT_DIR}/deploy/}
+foreach h [glob -nocomplain ${OUT_DIR}/deploy/*.hwh] { file rename -force $h ${OUT_DIR}/deploy/cim_rv32_soc.hwh; break }
 
-# Rename hwh
-foreach hwh [glob -nocomplain ${OUT_DIR}/deploy/*.hwh] {
-    file rename -force $hwh ${OUT_DIR}/deploy/cim_rv32_soc.hwh
-    break
-}
-
-puts "============================================================"
-puts "BUILD COMPLETE"
-puts "  Bitstream: ${OUT_DIR}/deploy/cim_rv32_soc.bit"
-puts "  HWH:       ${OUT_DIR}/deploy/cim_rv32_soc.hwh"
-puts "============================================================"
-
-# Reports
 open_run impl_1
 report_utilization -file ${OUT_DIR}/utilization_report.txt
 report_timing_summary -file ${OUT_DIR}/timing_report.txt
 close_design
+
+puts "============================================================"
+puts "DONE: ${OUT_DIR}/deploy/cim_rv32_soc.{bit,hwh}"
+puts "PS address map:"
+puts "  0x4000_0000 (32KB) : FW BRAM"
+puts "  0x4200_0000 (4KB)  : Result BRAM"
+puts "  0x4300_0000 (4KB)  : GPIO (bit0=cpu_rst_n)"
+puts "============================================================"
