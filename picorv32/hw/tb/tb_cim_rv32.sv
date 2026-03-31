@@ -52,6 +52,13 @@ module tb_cim_rv32;
   logic [31:0] res_b_wdata;
   logic [31:0] res_b_rdata;
 
+  // Port B of FW BRAM: unused in sim (firmware loaded via $readmemh)
+  logic        fw_b_en    = 0;
+  logic [ 3:0] fw_b_we    = 0;
+  logic [14:0] fw_b_addr  = 0;
+  logic [31:0] fw_b_wdata = 0;
+  logic [31:0] fw_b_rdata;
+
   cim_rv32_top #(
       .CLK_FREQ (50_000_000),
       .BAUD_RATE(115200),
@@ -59,8 +66,16 @@ module tb_cim_rv32;
   ) u_dut (
       .clk(clk),
       .rst_n(rst_n),
+      .cpu_rst_n(rst_n),         // run CPU when global reset deasserts
       .uart_txd(uart_txd),
       .cim_done_irq(cim_done_irq),
+      // FW BRAM port B (not used in sim, firmware via $readmemh)
+      .fw_b_en(fw_b_en),
+      .fw_b_we(fw_b_we),
+      .fw_b_addr(fw_b_addr),
+      .fw_b_wdata(fw_b_wdata),
+      .fw_b_rdata(fw_b_rdata),
+      // Result BRAM port B
       .res_b_en(res_b_en),
       .res_b_we(res_b_we),
       .res_b_addr(res_b_addr),
