@@ -138,7 +138,6 @@ else
   apt-get install -y python3.12-venv python3-cffi libssl-dev libcurl4-openssl-dev \
     portaudio19-dev libcairo2-dev python3-opencv graphviz i2c-tools \
     fswebcam libboost-all-dev python3-dev python3-pip
-  #apt-get install -y libdrm-xlnx-dev  libopencv-dev
 fi
 
 # Create venv
@@ -179,27 +178,23 @@ fi
 
 echo -e "${GREEN}In venv: $VIRTUAL_ENV (Python $(python3 --version))${NC}"
 
-# Pip Constraints
+# Pip Constraints — 24.04 uses NO constraints to avoid version conflicts
 if [ "$DISTRIB_RELEASE" == "24.04" ]; then
-cat > /tmp/pynq_3.0.1_constraints.txt <<EOT
-typing-extensions>=4.6.0
-pynqmetadata==0.1.2
-pynqutils==0.1.1
-EOT
+  unset PIP_CONSTRAINT
+  rm -f /tmp/pynq_3.0.1_constraints.txt
+  echo -e "${YELLOW}24.04: pip constraints disabled${NC}"
 else
-cat > /tmp/pynq_3.0.1_constraints.txt <<EOT
-numpy==1.26.4
+  cat > /tmp/pynq_3.0.1_constraints.txt <<EOT
 typing-extensions>=4.6.0
 pynqmetadata==0.1.2
 pynqutils==0.1.1
 pynq==3.0.1
 EOT
+  export PIP_CONSTRAINT=/tmp/pynq_3.0.1_constraints.txt
 fi
-export PIP_CONSTRAINT=/tmp/pynq_3.0.1_constraints.txt
 
-python3 -m pip install "numpy<2"
-python3 -m pip install pynqmetadata 
-python3 -m pip install pynqutils 
+python3 -m pip install pynqmetadata
+python3 -m pip install pynqutils
 
 # PYNQ JUPYTER
 pushd pynq/sdbuild/packages/jupyter
