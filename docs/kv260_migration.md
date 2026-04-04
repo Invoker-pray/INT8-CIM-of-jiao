@@ -184,8 +184,14 @@ _这里有个问题，我安装22.04失败了才换成的24.04，结果脚本只
 
 ![compatible](../img/compatible.png "有时候，一定要舍弃一些什么...")
 
+还有很多问题，比如说还需要把所有`install.sh`的`python3.10`换成`python3.12`，因为新的镜像自带的是3.12...
+
+可以把`/kv260/install.sh`用`scp -r install.sh ubuntu@192.168.2.100:~/`传到kv260.
+
 _install 总归有一些pip和apt操作，所以可以换一下国内源进行加速。
 当然这个也很基础，就不讲了。_
+
+硬等也是可以完成安装的，除此之外，还可以把之前的`git clone`换成`git clone --recursive https://github.com/Xilinx/Kria-PYNQ.git`稍微加快一下。如果这样的话，通过`:%s/git clone/#git clone/g`屏蔽所有kv260 上的脚本的git clone节省时间。
 
 在安装完成之后，可以访问JupyterLab，在浏览器中输入`http://<kv260_ip>:9090/lab`，密码是`xilinx`.
 
