@@ -49,6 +49,8 @@ set rtl_files [list \
 add_files -norecurse ${rtl_files}
 set_property file_type SystemVerilog [get_files *.sv]
 set_property file_type Verilog       [get_files *.v]
+# Ensure cim_pkg.sv compiles first
+update_compile_order -fileset sources_1
 
 # Constraints
 add_files -fileset constrs_1 -norecurse kv260/hw/constraints/cim_kv260.xdc
@@ -103,13 +105,9 @@ connect_bd_net [get_bd_pins cim_0/irq_done] [get_bd_pins ps_e/pl_ps_irq0]
 # ---- Address mapping ----
 # Note: MPSoC M_AXI_HPM0_FPD default base is 0xA000_0000
 # We assign CIM at 0xA000_0000, 16KB range
-# The addr_seg name varies by Vivado version; use catch for robustness
-if {[catch {assign_bd_address -offset 0xA0000000 -range 16K \
-    [get_bd_addr_segs {cim_0/S_AXI/reg0}]}]} {
-    # Try alternative segment name
-    assign_bd_address -offset 0xA0000000 -range 16K \
-        [get_bd_addr_segs {cim_0/S_AXI/Reg}]
-}
+# Use wildcard — segment name varies across Vivado versions for module references
+assign_bd_address -offset 0xA0000000 -range 16K \
+    [get_bd_addr_segs cim_0/S_AXI/*]
 
 # ---- Validate ----
 validate_bd_design
@@ -129,13 +127,27 @@ set_property top system_wrapper [current_fileset]
 update_compile_order -fileset sources_1
 
 puts "INFO: Launching synthesis..."
+set_property strategy Flow_PerfOptimized_high [get_runs synth_1]
 launch_runs synth_1 -jobs $N_JOBS
 wait_on_run synth_1
 if {[get_property STATUS [get_runs synth_1]] ne "synth_design Complete!"} {
     puts "ERROR: Synthesis failed!"; exit 1
 }
+puts "INFO: Synthesis complete."
+
+# Check BRAM inference
+open_run synth_1
+set bram_count [llength [get_cells -hierarchical -filter {PRIMITIVE_TYPE =~ BMEM.*}]]
+puts "INFO: BRAM primitives inferred: ${bram_count}"
+if {${bram_count} == 0} {
+    puts "WARN: No BRAM inferred! Weight/bias SRAM may have fallen back to registers."
+    puts "      Check synthesis warnings for 'RAM mapped to registers'."
+}
+close_design
 
 puts "INFO: Launching implementation + bitstream..."
+set_property STEPS.PLACE_DESIGN.ARGS.DIRECTIVE ExtraNetDelay_high [get_runs impl_1]
+set_property STEPS.ROUTE_DESIGN.ARGS.DIRECTIVE AggressiveExplore  [get_runs impl_1]
 launch_runs impl_1 -to_step write_bitstream -jobs $N_JOBS
 wait_on_run impl_1
 if {[get_property STATUS [get_runs impl_1]] ne "write_bitstream Complete!"} {
@@ -160,6 +172,15 @@ foreach h [glob -nocomplain ${OUT_DIR}/deploy/*.hwh] {
 open_run impl_1
 report_utilization -file ${OUT_DIR}/utilization_report.txt
 report_timing_summary -file ${OUT_DIR}/timing_report.txt
+
+set wns [get_property STATS.WNS [get_runs impl_1]]
+set tns [get_property STATS.TNS [get_runs impl_1]]
+puts "INFO: WNS = ${wns} ns, TNS = ${tns} ns"
+if {$wns < 0} {
+    puts "WARN: Timing violation detected! WNS=${wns}ns"
+    puts "      Consider reducing FCLK_MHZ or adding pipeline stages."
+    puts "      See ${OUT_DIR}/timing_report.txt for details."
+}
 close_design
 
 puts "============================================================"
@@ -167,6 +188,8 @@ puts "DONE"
 puts "  Bitstream: ${OUT_DIR}/deploy/cim_soc_kv260.bit"
 puts "  HWH:       ${OUT_DIR}/deploy/cim_soc_kv260.hwh"
 puts "  FCLK:      ${FCLK_MHZ} MHz"
+puts "  BRAM:      ${bram_count}"
+puts "  WNS:       ${wns} ns"
 puts ""
 puts "  Upload to KV260 PYNQ Jupyter, then:"
 puts "    ol = Overlay('cim_soc_kv260.bit')"

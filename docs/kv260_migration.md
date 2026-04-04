@@ -96,20 +96,96 @@ create_bd_cell -type ip -vlnv xilinx.com:ip:zynq_ultra_ps_e:3.5 ps_e
 
 首先去官网下载Ubuntu和PYNQ镜像。
 
-Ubuntu镜像可以在[这里](https://people.canonical.com/~platform/images/xilinx/kria-ubuntu-22.04/)下载，文件名类似`iot-limerick-kria-classic-desktop-2204-****.img.xz`，下载完成之后可以用balenaetcher或者其他工具写入SD卡。
+Ubuntu镜像可以在[这里](https://people.canonical.com/~platform/images/xilinx/kria-ubuntu-22.04/) 或者[这里](https://ubuntu.com/download/amd#kria-k26)下载，文件名类似`iot-limerick-kria-classic-desktop-2204-****.img.xz`，下载完成之后可以用balenaetcher或者其他工具写入SD卡。
+
+我下载的镜像叫：`iot-limerick-kria-classic-server-2404-classic-24.04-x07-20250423.img.xz`.
 
 准备完镜像SD卡之后，将SD卡插入Kria KV260，连接电源和网线开机。
 
 如果需要登录，默认用户名和密码都是`ubuntu`.
 
+![kv260 login](../img/kv260-login.png)
+
+这个系统默认是`NetworkManager`管理网络。
+
+不过在没有路由器的环境中，可以先不进行Kria的联网。
+
+首先我们把本地网卡设置为`192.168.2.1/24`，然后在串口中把Kria ip设置为`192.168.2.100/24`，pc修改具体方法可见`onboard_guide_PYNW-Z2.md`，kv260修改方式如下：
+
+```bash
+sudo ip addr add 192.168.2.100/24 dev eth0
+sudo ip route add default via 192.168.2.1
+echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
+```
+
+这样就实现了本地联通：
+
+![ping1](../img/ping1.png)
+
+```bash
+ping 192.168.2.100 # pc
+ping -c 2 8.8.8.8 # kv260
+
+```
+
+如果第二个ping不通，就需要让pc做NAT转发。
+
+首先确认电脑网口名：
+
+```bash
+ip -br addr
+```
+
+由于我实际上用wifi联网，所以选择wlpxxx转发。此时有两个端口需要注意，wlpxxx用来转发网络，enpyyy也就是被改成`192.168.2.1`和kv260连接的网口接收转发的网络，命令如下:
+
+```bash
+sudo sysctl -w net.ipv4.ip_forward=1
+sudo iptables -t nat -A POSTROUTING -o wlpxxx -j MASQUERADE
+sudo iptables -A FORWARD -j ACCEPT
+```
+
+![ping2](../img/ping2.png)
+
+在kv260内部可以ping通，则说明kv260已经通过网线借用了pc的网络。（和virtualbox有"**_同曲同工_**"之妙。）
+
 然后我们需要进入ubuntu系统，在系统中安装`Kria-PYNQ`：
 
 ```bash
-ssh ubuntu@<kv260_ip> #ip可以通过之前在PYNQ-Z2中讲过的方法获得
 git clone https://github.com/Xilinx/Kria-PYNQ.git
 cd Kria-PYNQ
 sudo bash install.sh -b KV260
 ```
+
+_有人可能会问了，不配置proxy要怎么git clone？
+当然要配proxy，不过这个知识太基础了，简单略过。如果不会，也可往下看。_
+
+_还会有人问，这个下载好慢，我可以下完传过去吗？
+当然是可以的，本地都ping通了。_
+
+首先在pc上：
+
+```bash
+git clone https://github.com/Xilinx/Kria-PYNQ.git
+scp -r Kria-PYNQ ubuntu@192.168.2.100:~/
+```
+
+这样就传过去了。（其实和`onboard_guide_PYNW-Z2.md`中的jupyter download有"**_同曲同工_**"之妙。简单的计算机网络知识。）
+
+然后在kv260上：
+
+```bash
+cd ~/Kria-PYNQ
+sudo bash install.sh -b KV260
+```
+
+进行安装。
+
+_这里有个问题，我安装22.04失败了才换成的24.04，结果脚本只支持到22.04，所以我只好进行一次危险的操作：把脚本的22.04改成24.04._
+
+![compatible](../img/compatible.png "有时候，一定要舍弃一些什么...")
+
+_install 总归有一些pip和apt操作，所以可以换一下国内源进行加速。
+当然这个也很基础，就不讲了。_
 
 在安装完成之后，可以访问JupyterLab，在浏览器中输入`http://<kv260_ip>:9090/lab`，密码是`xilinx`.
 
