@@ -187,5 +187,8 @@ puts "============================================================"
 open_run impl_1
 report_utilization -file ${OUT_DIR}/utilization_report.txt
 report_timing_summary -file ${OUT_DIR}/timing_report.txt
+report_power -file ${OUT_DIR}/power_report.txt
 puts "INFO: Reports saved to ${OUT_DIR}/"
 close_design
+
+

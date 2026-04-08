@@ -6,3 +6,4 @@ cd picorv32/fw
 make clean
 cd ../../
 rm -rf clean_onlycode.sh
+rm -rf img
