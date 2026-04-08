@@ -1,0 +1,695 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="1100"
+   height="750"
+   viewBox="0 0 1100 750"
+   version="1.1"
+   id="svg31"
+   sodipodi:docname="4.svg"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview31"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="1.036"
+     inkscape:cx="549.71042"
+     inkscape:cy="375"
+     inkscape:window-width="1920"
+     inkscape:window-height="991"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g17" />
+  <!-- 定义渐变和箭头 -->
+  <defs
+     id="defs5">
+    <!-- 箭头定义：尺寸精致 -->
+    <marker
+       id="arrow"
+       markerWidth="6"
+       markerHeight="6"
+       refX="5"
+       refY="3"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L0,6 L6,3 z"
+         fill="#333"
+         id="path1" />
+    </marker>
+    <marker
+       id="arrowBlue"
+       markerWidth="6"
+       markerHeight="6"
+       refX="5"
+       refY="3"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L0,6 L6,3 z"
+         fill="#1565c0"
+         id="path2" />
+    </marker>
+    <marker
+       id="arrowGreen"
+       markerWidth="6"
+       markerHeight="6"
+       refX="5"
+       refY="3"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L0,6 L6,3 z"
+         fill="#2e7d32"
+         id="path3" />
+    </marker>
+    <marker
+       id="arrowOrange"
+       markerWidth="6"
+       markerHeight="6"
+       refX="5"
+       refY="3"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L0,6 L6,3 z"
+         fill="#e65100"
+         id="path4" />
+    </marker>
+    <!-- 阴影滤镜 -->
+    <filter
+       id="shadow"
+       x="-0.03625"
+       y="-0.096666667"
+       width="1.07875"
+       height="1.21">
+      <feGaussianBlur
+         in="SourceAlpha"
+         stdDeviation="2"
+         id="feGaussianBlur4" />
+      <feOffset
+         dx="1"
+         dy="1"
+         result="offsetblur"
+         id="feOffset4" />
+      <feComponentTransfer
+         id="feComponentTransfer4">
+        <feFuncA
+           type="linear"
+           slope="0.2"
+           id="feFuncA4" />
+      </feComponentTransfer>
+      <feMerge
+         id="feMerge5">
+        <feMergeNode
+           in="offsetblur"
+           id="feMergeNode4" />
+        <feMergeNode
+           in="SourceGraphic"
+           id="feMergeNode5" />
+      </feMerge>
+    </filter>
+    <!-- 统一字体样式：使用系统UI字体栈，确保圆滑 -->
+    <style
+       id="style5">
+      text {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      }
+    </style>
+  </defs>
+  <!-- 背景 -->
+  <rect
+     width="1100"
+     height="750"
+     fill="#ffffff"
+     id="rect5" />
+  <!-- 主标题 -->
+  <text
+     x="550"
+     y="50"
+     font-size="28"
+     font-weight="600"
+     text-anchor="middle"
+     fill="#333"
+     id="text5">
+    图4：基于数字 SRAM-CIM 的边缘智能计算总体架构
+  </text>
+  <!-- ================================================================================== -->
+  <!-- 第1层：应用与映射层 (Application & Mapping Layer) -->
+  <!-- ================================================================================== -->
+  <g
+     transform="translate(50, 90)"
+     id="g13">
+    <!-- 虚线背景框 -->
+    <rect
+       x="0"
+       y="0"
+       width="1000"
+       height="150"
+       rx="15"
+       ry="15"
+       fill="#fff3e0"
+       stroke="#ff9800"
+       stroke-width="2"
+       stroke-dasharray="8,4"
+       id="rect6" />
+    <text
+       x="30"
+       y="40"
+       font-size="22"
+       font-weight="600"
+       fill="#e65100"
+       id="text6">
+      应用与映射层 (Algorithm  SW)
+    </text>
+    <!-- 内部模块容器 -->
+    <g
+       transform="translate(80, 60)"
+       id="g12">
+      <!-- 模块1: 算法模型 -->
+      <rect
+         x="0"
+         y="0"
+         width="220"
+         height="70"
+         rx="8"
+         ry="8"
+         fill="#fff"
+         stroke="#ff9800"
+         stroke-width="2"
+         filter="url(#shadow)"
+         id="rect7" />
+      <text
+         x="110"
+         y="30"
+         font-size="18"
+         font-weight="600"
+         text-anchor="middle"
+         fill="#333"
+         id="text7">目标检测算法</text>
+      <text
+         x="110"
+         y="55"
+         font-size="16"
+         text-anchor="middle"
+         fill="#555"
+         id="text8">YOLO / SSD</text>
+      <!-- 箭头 -->
+      <line
+         x1="220"
+         y1="35"
+         x2="280"
+         y2="35"
+         stroke="#ff9800"
+         stroke-width="2"
+         marker-end="url(#arrowOrange)"
+         id="line8" />
+      <!-- 模块2: 量化与转换 -->
+      <rect
+         x="280"
+         y="0"
+         width="240"
+         height="70"
+         rx="8"
+         ry="8"
+         fill="#fff"
+         stroke="#ff9800"
+         stroke-width="2"
+         filter="url(#shadow)"
+         id="rect8" />
+      <text
+         x="400"
+         y="30"
+         font-size="18"
+         font-weight="600"
+         text-anchor="middle"
+         fill="#333"
+         id="text9">量化与数据流转换</text>
+      <text
+         x="400"
+         y="55"
+         font-size="16"
+         text-anchor="middle"
+         fill="#555"
+         id="text10">FP32 → INT8 / Layout</text>
+      <!-- 箭头 -->
+      <line
+         x1="520"
+         y1="35"
+         x2="580"
+         y2="35"
+         stroke="#ff9800"
+         stroke-width="2"
+         marker-end="url(#arrowOrange)"
+         id="line10" />
+      <!-- 模块3: 配置生成 -->
+      <rect
+         x="580"
+         y="0"
+         width="240"
+         height="70"
+         rx="8"
+         ry="8"
+         fill="#fff"
+         stroke="#ff9800"
+         stroke-width="2"
+         filter="url(#shadow)"
+         id="rect10" />
+      <text
+         x="700"
+         y="30"
+         font-size="18"
+         font-weight="600"
+         text-anchor="middle"
+         fill="#333"
+         id="text11">指令/配置生成</text>
+      <text
+         x="700"
+         y="55"
+         font-size="16"
+         text-anchor="middle"
+         fill="#555"
+         id="text12">Weights Load / Control</text>
+    </g>
+  </g>
+  <!-- 层间连接箭头 (SW -> HW) -->
+  <g
+     transform="translate(550, 240)"
+     id="g14">
+    <line
+       x1="0"
+       y1="0"
+       x2="0"
+       y2="40"
+       stroke="#333"
+       stroke-width="3"
+       marker-end="url(#arrow)"
+       id="line13" />
+    <text
+       x="15"
+       y="25"
+       font-size="16"
+       fill="#555"
+       id="text13">配置参数  权重数据流</text>
+  </g>
+  <!-- ================================================================================== -->
+  <!-- 第2层：硬件架构层 (Hardware Architecture Layer) - 核心部分 -->
+  <!-- ================================================================================== -->
+  <g
+     transform="translate(50, 280)"
+     id="g25">
+    <!-- 蓝色背景框 -->
+    <rect
+       x="0"
+       y="0"
+       width="1000"
+       height="280"
+       rx="15"
+       ry="15"
+       fill="#e3f2fd"
+       stroke="#1565c0"
+       stroke-width="3"
+       id="rect14" />
+    <text
+       x="30"
+       y="40"
+       font-size="24"
+       font-weight="600"
+       fill="#0d47a1"
+       id="text14">
+      硬件架构层 (Digital SRAM-CIM Architecture)
+    </text>
+    <!-- 左侧：全局控制与输入 -->
+    <g
+       transform="translate(50, 70)"
+       id="g17">
+      <rect
+         x="0"
+         y="0"
+         width="180"
+         height="180"
+         fill="#fff"
+         stroke="#1565c0"
+         stroke-width="2"
+         rx="8"
+         filter="url(#shadow)"
+         id="rect15" />
+      <text
+         x="90"
+         y="35"
+         font-size="18"
+         font-weight="600"
+         text-anchor="middle"
+         fill="#333"
+         id="text15">全局控制器</text>
+      <line
+         x1="10"
+         y1="50"
+         x2="170"
+         y2="50"
+         stroke="#ccc"
+         stroke-width="1"
+         id="line15" />
+      <text
+         x="90"
+         y="80"
+         font-size="16"
+         text-anchor="middle"
+         fill="#555"
+         id="text16">FSM 状态机</text>
+      <rect
+         x="20"
+         y="110"
+         width="140"
+         height="50"
+         fill="#bbdefb"
+         stroke="none"
+         rx="4"
+         id="rect16" />
+      <text
+         x="91.162819"
+         y="143.81873"
+         font-size="20.9094px"
+         font-weight="600"
+         text-anchor="middle"
+         fill="#0d47a1"
+         id="text17"
+         transform="scale(0.99772868,1.0022765)"
+         style="stroke-width:1.30683">输入缓存</text>
+    </g>
+    <!-- 中间：SRAM-CIM 核心阵列 (高亮) -->
+    <g
+       transform="translate(280, 60)"
+       id="g21">
+      <!-- 虚线框表示阵列边界 -->
+      <rect
+         x="0"
+         y="0"
+         width="440"
+         height="200"
+         fill="#fff"
+         stroke="#1565c0"
+         stroke-width="2"
+         stroke-dasharray="6,4"
+         rx="8"
+         id="rect17" />
+      <text
+         x="220"
+         y="30"
+         font-size="20"
+         font-weight="600"
+         text-anchor="middle"
+         fill="#0d47a1"
+         id="text18">
+          数字 SRAM-CIM 计算阵列 (Core)
+        </text>
+      <!-- 阵列内部示意 -->
+      <g
+         transform="translate(40, 50)"
+         id="g20">
+        <!-- 权重存储 -->
+        <rect
+           x="0"
+           y="0"
+           width="360"
+           height="90"
+           fill="#e1f5fe"
+           stroke="#0288d1"
+           stroke-width="2"
+           rx="4"
+           id="rect18" />
+        <text
+           x="180"
+           y="50"
+           font-size="18"
+           font-weight="600"
+           text-anchor="middle"
+           fill="#01579b"
+           id="text19">
+              Weight Storage (SRAM Cells)
+            </text>
+        <!-- 计算逻辑 (紧贴存储) -->
+        <rect
+           x="0"
+           y="95"
+           width="360"
+           height="40"
+           fill="#b3e5fc"
+           stroke="#0288d1"
+           stroke-width="2"
+           rx="4"
+           id="rect19" />
+        <text
+           x="180"
+           y="120"
+           font-size="18"
+           font-weight="600"
+           text-anchor="middle"
+           fill="#01579b"
+           id="text20">
+              In-Memory Logic (MAC)
+            </text>
+      </g>
+    </g>
+    <!-- 右侧：累加与输出 -->
+    <g
+       transform="translate(770, 70)"
+       id="g23">
+      <rect
+         x="0"
+         y="0"
+         width="180"
+         height="180"
+         fill="#fff"
+         stroke="#1565c0"
+         stroke-width="2"
+         rx="8"
+         filter="url(#shadow)"
+         id="rect21" />
+      <text
+         x="90"
+         y="35"
+         font-size="18"
+         font-weight="600"
+         text-anchor="middle"
+         fill="#333"
+         id="text21">后处理单元</text>
+      <line
+         x1="10"
+         y1="50"
+         x2="170"
+         y2="50"
+         stroke="#ccc"
+         stroke-width="1"
+         id="line21" />
+      <rect
+         x="20"
+         y="70"
+         width="140"
+         height="40"
+         fill="#bbdefb"
+         stroke="none"
+         rx="4"
+         id="rect22" />
+      <text
+         x="91.787231"
+         y="99.037399"
+         font-size="20.0585px"
+         font-weight="600"
+         text-anchor="middle"
+         fill="#0d47a1"
+         id="text22"
+         transform="scale(1.0081102,0.99195505)"
+         style="stroke-width:1.25365">累加树 (Adder)</text>
+      <rect
+         x="20"
+         y="120"
+         width="140"
+         height="40"
+         fill="#bbdefb"
+         stroke="none"
+         rx="4"
+         id="rect23" />
+      <text
+         x="89.978806"
+         y="149.74268"
+         font-size="20.2895px"
+         font-weight="600"
+         text-anchor="middle"
+         fill="#0d47a1"
+         id="text23"
+         transform="scale(1.0162267,0.98403242)"
+         style="stroke-width:1.2681">输出缓存</text>
+    </g>
+    <!-- 内部连接箭头 -->
+    <line
+       x1="230"
+       y1="160"
+       x2="280"
+       y2="160"
+       stroke="#1565c0"
+       stroke-width="3"
+       marker-end="url(#arrowBlue)"
+       id="line23" />
+    <text
+       x="255"
+       y="150"
+       font-size="14"
+       fill="#1565c0"
+       text-anchor="middle"
+       id="text24">Input</text>
+    <line
+       x1="720"
+       y1="160"
+       x2="770"
+       y2="160"
+       stroke="#1565c0"
+       stroke-width="3"
+       marker-end="url(#arrowBlue)"
+       id="line24" />
+    <text
+       x="745"
+       y="150"
+       font-size="14"
+       fill="#1565c0"
+       text-anchor="middle"
+       id="text25">P-Sum</text>
+  </g>
+  <!-- 层间连接箭头 (HW -> Verify) -->
+  <g
+     transform="translate(550, 560)"
+     id="g26">
+    <line
+       x1="0"
+       y1="0"
+       x2="0"
+       y2="40"
+       stroke="#333"
+       stroke-width="3"
+       marker-end="url(#arrow)"
+       id="line25" />
+    <text
+       x="15"
+       y="25"
+       font-size="16"
+       fill="#555"
+       id="text26">RTL 综合  映射</text>
+  </g>
+  <!-- ================================================================================== -->
+  <!-- 第3层：实现与验证层 (Implementation & Verification Layer) -->
+  <!-- ================================================================================== -->
+  <g
+     transform="translate(50, 600)"
+     id="g31">
+    <!-- 绿色虚线背景框 -->
+    <rect
+       x="0"
+       y="0"
+       width="1000"
+       height="120"
+       rx="15"
+       ry="15"
+       fill="#f1f8e9"
+       stroke="#558b2f"
+       stroke-width="2"
+       stroke-dasharray="8,4"
+       id="rect26" />
+    <text
+       x="11.660232"
+       y="27.451738"
+       font-size="22px"
+       font-weight="600"
+       fill="#33691e"
+       id="text27">实现与验证层 (FPGA Prototype)</text>
+    <!-- 内部流程容器 -->
+    <g
+       transform="translate(180, 30)"
+       id="g30">
+      <!-- 步骤1 -->
+      <rect
+         x="0"
+         y="0"
+         width="160"
+         height="60"
+         fill="#fff"
+         stroke="#558b2f"
+         stroke-width="2"
+         rx="8"
+         filter="url(#shadow)"
+         id="rect27" />
+      <text
+         x="80"
+         y="35"
+         font-size="18"
+         text-anchor="middle"
+         fill="#333"
+         id="text28">Verilog RTL</text>
+      <line
+         x1="160"
+         y1="30"
+         x2="220"
+         y2="30"
+         stroke="#558b2f"
+         stroke-width="2"
+         marker-end="url(#arrowGreen)"
+         id="line28" />
+      <!-- 步骤2 -->
+      <rect
+         x="220"
+         y="0"
+         width="160"
+         height="60"
+         fill="#fff"
+         stroke="#558b2f"
+         stroke-width="2"
+         rx="8"
+         filter="url(#shadow)"
+         id="rect28" />
+      <text
+         x="300"
+         y="35"
+         font-size="18"
+         text-anchor="middle"
+         fill="#333"
+         id="text29">Vivado 综合</text>
+      <line
+         x1="380"
+         y1="30"
+         x2="440"
+         y2="30"
+         stroke="#558b2f"
+         stroke-width="2"
+         marker-end="url(#arrowGreen)"
+         id="line29" />
+      <!-- 步骤3 -->
+      <rect
+         x="440"
+         y="0"
+         width="200"
+         height="60"
+         fill="#dcedc8"
+         stroke="#558b2f"
+         stroke-width="2"
+         rx="8"
+         filter="url(#shadow)"
+         id="rect29" />
+      <text
+         x="540"
+         y="35"
+         font-size="18"
+         font-weight="600"
+         text-anchor="middle"
+         fill="#33691e"
+         id="text30">FPGA 开发板验证</text>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,692 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="1050"
+   height="600"
+   viewBox="0 0 1050 600"
+   version="1.1"
+   id="svg40"
+   sodipodi:docname="5.svg"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview40"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="1.295"
+     inkscape:cx="551.73745"
+     inkscape:cy="300"
+     inkscape:window-width="1920"
+     inkscape:window-height="991"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg40" />
+  <!-- 定义渐变、滤镜和箭头 -->
+  <defs
+     id="defs3">
+    <!-- 柔和的阴影滤镜 -->
+    <filter
+       id="shadow"
+       x="-0.058571429"
+       y="-0.058571429"
+       width="1.1385714"
+       height="1.1385714">
+      <feGaussianBlur
+         in="SourceAlpha"
+         stdDeviation="3"
+         id="feGaussianBlur1" />
+      <feOffset
+         dx="3"
+         dy="3"
+         result="offsetblur"
+         id="feOffset1" />
+      <feComponentTransfer
+         id="feComponentTransfer1">
+        <feFuncA
+           type="linear"
+           slope="0.2"
+           id="feFuncA1" />
+      </feComponentTransfer>
+      <feMerge
+         id="feMerge2">
+        <feMergeNode
+           in="offsetblur"
+           id="feMergeNode1" />
+        <feMergeNode
+           in="SourceGraphic"
+           id="feMergeNode2" />
+      </feMerge>
+    </filter>
+    <!-- 箭头定义：尺寸缩小，更精致 -->
+    <marker
+       id="arrow"
+       markerWidth="6"
+       markerHeight="6"
+       refX="5"
+       refY="3"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L0,6 L6,3 z"
+         fill="#333"
+         id="path2" />
+    </marker>
+    <marker
+       id="arrowBlue"
+       markerWidth="6"
+       markerHeight="6"
+       refX="5"
+       refY="3"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L0,6 L6,3 z"
+         fill="#1565c0"
+         id="path3" />
+    </marker>
+    <!-- 统一字体样式：圆滑系统字体 -->
+    <style
+       id="style3">
+      text {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      }
+    </style>
+  </defs>
+  <!-- 背景 -->
+  <rect
+     width="1050"
+     height="600"
+     fill="#ffffff"
+     id="rect3"
+     x="64.864868"
+     y="-5.4054055" />
+  <!-- 主标题 -->
+  <text
+     x="589.09265"
+     y="50"
+     font-size="26px"
+     font-weight="600"
+     text-anchor="middle"
+     fill="#333333"
+     id="text3">图5：卷积运算到存算阵列的映射流程 (Mapping Flow)</text>
+  <!-- ================================================================================== -->
+  <!-- 左侧：原始卷积操作 (Convolution) - 3D 增强版 -->
+  <!-- ================================================================================== -->
+  <g
+     transform="translate(-1.7760618,231.85328)"
+     id="g12">
+    <text
+       x="120"
+       y="-30"
+       font-size="20px"
+       font-weight="600"
+       text-anchor="middle"
+       fill="#1565c0"
+       id="text4">1. 原始卷积 (3D)</text>
+    <!-- Input Feature Map (立体块示意) -->
+    <!-- 后层（暗示多通道） -->
+    <path
+       d="m 40,10 h 120 l 30,-30 H 70 Z"
+       fill="#bbdefb"
+       stroke="#1565c0"
+       stroke-width="1"
+       stroke-dasharray="4, 4"
+       opacity="0.5"
+       id="path4" />
+    <path
+       d="m 160,10 v 120 l 30,-30 V -20 Z"
+       fill="#bbdefb"
+       stroke="#1565c0"
+       stroke-width="1"
+       stroke-dasharray="4, 4"
+       opacity="0.5"
+       id="path5" />
+    <!-- 前层主体 (Front Face) -->
+    <rect
+       x="20"
+       y="30"
+       width="140"
+       height="140"
+       fill="#e3f2fd"
+       stroke="#1565c0"
+       stroke-width="2"
+       filter="url(#shadow)"
+       id="rect5" />
+    <!-- 顶面 (Top Face) -->
+    <path
+       d="M 20,30 60,-10 H 200 L 160,30 Z"
+       fill="#bbdefb"
+       stroke="#1565c0"
+       stroke-width="2"
+       id="path6" />
+    <!-- 侧面 (Side Face) -->
+    <path
+       d="m 160,30 40,-40 v 140 l -40,40 z"
+       fill="#90caf9"
+       stroke="#1565c0"
+       stroke-width="2"
+       id="path7" />
+    <text
+       x="90"
+       y="195"
+       font-size="16px"
+       text-anchor="middle"
+       fill="#555555"
+       font-weight="bold"
+       id="text7">Input Feature Map</text>
+    <text
+       x="210"
+       y="150"
+       font-size="14px"
+       fill="#1565c0"
+       transform="rotate(-90,210,150)"
+       id="text8">Channels (C)</text>
+    <!-- 3D 滑窗 (Sliding Window) - 红色虚线框 -->
+    <g
+       transform="translate(30,40)"
+       id="g9">
+      <!-- 前框 -->
+      <rect
+         x="0"
+         y="0"
+         width="50"
+         height="50"
+         fill="none"
+         stroke="#e65100"
+         stroke-width="3"
+         stroke-dasharray="5, 3"
+         id="rect8" />
+      <!-- 后框线 -->
+      <path
+         d="M 0,0 40,-40 M 50,0 90,-40 M 50,50 90,10 M 0,50 40,10"
+         stroke="#e65100"
+         stroke-width="2"
+         stroke-dasharray="5, 3"
+         id="path8" />
+      <!-- 后框 -->
+      <rect
+         x="40"
+         y="-40"
+         width="50"
+         height="50"
+         fill="none"
+         stroke="#e65100"
+         stroke-width="2"
+         stroke-dasharray="5, 3"
+         id="rect9" />
+      <text
+         x="25"
+         y="70"
+         font-size="14px"
+         fill="#e65100"
+         font-weight="bold"
+         text-anchor="middle"
+         id="text9">3x3xC Window</text>
+    </g>
+    <!-- Convolution Kernel (立体卷积核) -->
+    <g
+       transform="translate(240,60)"
+       id="g11">
+      <!-- 前面 -->
+      <rect
+         x="0"
+         y="20"
+         width="50"
+         height="50"
+         fill="#ffe0b2"
+         stroke="#e65100"
+         stroke-width="2"
+         id="rect10" />
+      <!-- 顶面 -->
+      <path
+         d="M 0,20 30,-10 H 80 L 50,20 Z"
+         fill="#ffcc80"
+         stroke="#e65100"
+         stroke-width="2"
+         id="path10" />
+      <!-- 侧面 -->
+      <path
+         d="M 50,20 80,-10 V 40 L 50,70 Z"
+         fill="#ffb74d"
+         stroke="#e65100"
+         stroke-width="2"
+         id="path11" />
+      <text
+         x="40"
+         y="95"
+         font-size="16px"
+         text-anchor="middle"
+         fill="#e65100"
+         font-weight="bold"
+         id="text11">Kernel</text>
+    </g>
+    <!-- 运算符号 -->
+    <text
+       x="210"
+       y="110"
+       font-size="36px"
+       font-weight="bold"
+       fill="#333333"
+       id="text12">∗</text>
+  </g>
+  <!-- 转换箭头 1 (缩短距离) -->
+  <g
+     transform="translate(318.30116,313.43629)"
+     id="g13">
+    <line
+       x1="0"
+       y1="0"
+       x2="50"
+       y2="0"
+       stroke="#333333"
+       stroke-width="3"
+       marker-end="url(#arrow)"
+       id="line12" />
+    <text
+       x="25"
+       y="-15"
+       font-size="14px"
+       text-anchor="middle"
+       fill="#555555"
+       font-weight="bold"
+       id="text13">im2col</text>
+  </g>
+  <!-- ================================================================================== -->
+  <!-- 中间：矩阵乘法转化 (Matrix Multiplication) - 紧凑布局 -->
+  <!-- ================================================================================== -->
+  <g
+     transform="translate(372.04633,204.05405)"
+     id="g23">
+    <text
+       x="160"
+       y="-30"
+       font-size="20px"
+       font-weight="600"
+       text-anchor="middle"
+       fill="#1565c0"
+       id="text14">2. 矩阵乘法转化</text>
+    <!-- Input Matrix (展开后的输入) -->
+    <g
+       transform="translate(0,40)"
+       id="g17">
+      <!-- 每一列代表一个滑窗展开 -->
+      <rect
+         x="0"
+         y="0"
+         width="30"
+         height="160"
+         fill="#e3f2fd"
+         stroke="#1565c0"
+         stroke-width="2"
+         id="rect14" />
+      <rect
+         x="35"
+         y="0"
+         width="30"
+         height="160"
+         fill="#e3f2fd"
+         stroke="#1565c0"
+         stroke-width="2"
+         id="rect15" />
+      <rect
+         x="70"
+         y="0"
+         width="30"
+         height="160"
+         fill="#e3f2fd"
+         stroke="#1565c0"
+         stroke-width="2"
+         id="rect16" />
+      <text
+         x="50"
+         y="185"
+         font-size="16px"
+         text-anchor="middle"
+         fill="#555555"
+         font-weight="bold"
+         id="text16">Input Matrix</text>
+      <text
+         x="50"
+         y="205"
+         font-size="14px"
+         text-anchor="middle"
+         fill="#777777"
+         id="text17">(Vectors)</text>
+    </g>
+    <!-- 乘号 -->
+    <text
+       x="120"
+       y="120"
+       font-size="30px"
+       font-weight="bold"
+       fill="#333333"
+       id="text18">×</text>
+    <!-- Weight Matrix (展开后的权重) -->
+    <g
+       transform="translate(150,20)"
+       id="g22">
+      <!-- 横向长条代表展开的卷积核 -->
+      <rect
+         x="0"
+         y="0"
+         width="160"
+         height="35"
+         fill="#ffe0b2"
+         stroke="#e65100"
+         stroke-width="2"
+         id="rect18" />
+      <rect
+         x="0"
+         y="40"
+         width="160"
+         height="35"
+         fill="#ffe0b2"
+         stroke="#e65100"
+         stroke-width="2"
+         id="rect19" />
+      <rect
+         x="0"
+         y="80"
+         width="160"
+         height="35"
+         fill="#ffe0b2"
+         stroke="#e65100"
+         stroke-width="2"
+         id="rect20" />
+      <rect
+         x="0"
+         y="120"
+         width="160"
+         height="35"
+         fill="#ffe0b2"
+         stroke="#e65100"
+         stroke-width="2"
+         id="rect21" />
+      <text
+         x="80"
+         y="185"
+         font-size="16px"
+         text-anchor="middle"
+         fill="#555555"
+         font-weight="bold"
+         id="text21">Weight Matrix</text>
+      <text
+         x="80"
+         y="205"
+         font-size="14px"
+         text-anchor="middle"
+         fill="#e65100"
+         id="text22">Signed-INT8</text>
+    </g>
+  </g>
+  <!-- 转换箭头 2 (缩短距离) -->
+  <!-- ================================================================================== -->
+  <!-- 右侧：CIM 阵列映射 (Array Mapping) - 紧凑布局 -->
+  <!-- ================================================================================== -->
+  <g
+     transform="translate(775.09652,163.24325)"
+     id="g40">
+    <text
+       x="100"
+       y="-10"
+       font-size="20px"
+       font-weight="600"
+       text-anchor="middle"
+       fill="#1565c0"
+       id="text24">3. 存算阵列映射</text>
+    <!-- 阵列外框 -->
+    <rect
+       x="-20"
+       y="20"
+       width="260"
+       height="260"
+       rx="8"
+       fill="#f9f9f9"
+       stroke="#999999"
+       stroke-width="2"
+       filter="url(#shadow)"
+       id="rect24" />
+    <!-- 左侧输入：Wordlines (广播) -->
+    <g
+       transform="translate(-50,50)"
+       id="g27">
+      <!-- 箭头指向每一行 -->
+      <line
+         x1="-10"
+         y1="15"
+         x2="30"
+         y2="15"
+         stroke="#1565c0"
+         stroke-width="3"
+         marker-end="url(#arrowBlue)"
+         id="line24" />
+      <line
+         x1="-10"
+         y1="65"
+         x2="30"
+         y2="65"
+         stroke="#1565c0"
+         stroke-width="3"
+         marker-end="url(#arrowBlue)"
+         id="line25" />
+      <line
+         x1="-10"
+         y1="115"
+         x2="30"
+         y2="115"
+         stroke="#1565c0"
+         stroke-width="3"
+         marker-end="url(#arrowBlue)"
+         id="line26" />
+      <line
+         x1="-10"
+         y1="165"
+         x2="30"
+         y2="165"
+         stroke="#1565c0"
+         stroke-width="3"
+         marker-end="url(#arrowBlue)"
+         id="line27" />
+      <text
+         x="-25"
+         y="90"
+         font-size="14px"
+         text-anchor="middle"
+         fill="#1565c0"
+         font-weight="bold"
+         transform="rotate(-90,-25,90)"
+         id="text27">Broadcast</text>
+    </g>
+    <!-- 内部存储单元：Bitcells (存储权重) -->
+    <g
+       transform="translate(10,50)"
+       id="g36">
+      <!-- 第一行 -->
+      <rect
+         x="0"
+         y="0"
+         width="50"
+         height="30"
+         fill="#ffe0b2"
+         stroke="#e65100"
+         stroke-width="1.5"
+         id="rect27" />
+      <text
+         x="25"
+         y="20"
+         font-size="14px"
+         text-anchor="middle"
+         fill="#e65100"
+         id="text28">W0</text>
+      <rect
+         x="60"
+         y="0"
+         width="50"
+         height="30"
+         fill="#ffe0b2"
+         stroke="#e65100"
+         stroke-width="1.5"
+         id="rect28" />
+      <text
+         x="85"
+         y="20"
+         font-size="14px"
+         text-anchor="middle"
+         fill="#e65100"
+         id="text29">W1</text>
+      <rect
+         x="120"
+         y="0"
+         width="50"
+         height="30"
+         fill="#ffe0b2"
+         stroke="#e65100"
+         stroke-width="1.5"
+         id="rect29" />
+      <text
+         x="145"
+         y="20"
+         font-size="14px"
+         text-anchor="middle"
+         fill="#e65100"
+         id="text30">W2</text>
+      <!-- 第二行 -->
+      <rect
+         x="0"
+         y="50"
+         width="50"
+         height="30"
+         fill="#ffe0b2"
+         stroke="#e65100"
+         stroke-width="1.5"
+         id="rect30" />
+      <rect
+         x="60"
+         y="50"
+         width="50"
+         height="30"
+         fill="#ffe0b2"
+         stroke="#e65100"
+         stroke-width="1.5"
+         id="rect31" />
+      <rect
+         x="120"
+         y="50"
+         width="50"
+         height="30"
+         fill="#ffe0b2"
+         stroke="#e65100"
+         stroke-width="1.5"
+         id="rect32" />
+      <!-- 省略号 -->
+      <circle
+         cx="25"
+         cy="100"
+         r="3"
+         fill="#999999"
+         id="circle32" />
+      <circle
+         cx="85"
+         cy="100"
+         r="3"
+         fill="#999999"
+         id="circle33" />
+      <circle
+         cx="145"
+         cy="100"
+         r="3"
+         fill="#999999"
+         id="circle34" />
+      <!-- 第四行 -->
+      <rect
+         x="0"
+         y="150"
+         width="50"
+         height="30"
+         fill="#ffe0b2"
+         stroke="#e65100"
+         stroke-width="1.5"
+         id="rect34" />
+      <rect
+         x="60"
+         y="150"
+         width="50"
+         height="30"
+         fill="#ffe0b2"
+         stroke="#e65100"
+         stroke-width="1.5"
+         id="rect35" />
+      <rect
+         x="120"
+         y="150"
+         width="50"
+         height="30"
+         fill="#ffe0b2"
+         stroke="#e65100"
+         stroke-width="1.5"
+         id="rect36" />
+    </g>
+    <!-- 底部输出：Bitlines (累加) -->
+    <g
+       transform="translate(10,290)"
+       id="g38">
+      <line
+         x1="25"
+         y1="-15"
+         x2="25"
+         y2="15"
+         stroke="#333333"
+         stroke-width="3"
+         marker-end="url(#arrow)"
+         id="line36" />
+      <line
+         x1="85"
+         y1="-15"
+         x2="85"
+         y2="15"
+         stroke="#333333"
+         stroke-width="3"
+         marker-end="url(#arrow)"
+         id="line37" />
+      <line
+         x1="145"
+         y1="-15"
+         x2="145"
+         y2="15"
+         stroke="#333333"
+         stroke-width="3"
+         marker-end="url(#arrow)"
+         id="line38" />
+      <text
+         x="85"
+         y="40"
+         font-size="16px"
+         font-weight="bold"
+         text-anchor="middle"
+         fill="#333333"
+         id="text38">Partial Sums</text>
+    </g>
+    <!-- 标注：权重存储 -->
+    <text
+       x="210"
+       y="140"
+       font-size="14px"
+       fill="#e65100"
+       font-weight="bold"
+       id="text39">Weights</text>
+    <text
+       x="210"
+       y="160"
+       font-size="14px"
+       fill="#e65100"
+       id="text40">in Array</text>
+  </g>
+</svg>

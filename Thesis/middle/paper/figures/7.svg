@@ -1,0 +1,638 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="1150"
+   height="650"
+   viewBox="0 0 1150 650"
+   version="1.1"
+   id="svg32"
+   sodipodi:docname="7.svg"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview32"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="1.1953846"
+     inkscape:cx="575.1287"
+     inkscape:cy="325"
+     inkscape:window-width="1920"
+     inkscape:window-height="991"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg32" />
+  <!-- 定义箭头、滤镜和图案 -->
+  <defs
+     id="defs5">
+    <!-- 箭头定义：尺寸缩小至 5，更精致 -->
+    <marker
+       id="arrow"
+       markerWidth="5"
+       markerHeight="5"
+       refX="4"
+       refY="2.5"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L0,5 L5,2.5 z"
+         fill="#333"
+         id="path1" />
+    </marker>
+    <marker
+       id="arrowBlue"
+       markerWidth="5"
+       markerHeight="5"
+       refX="4"
+       refY="2.5"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L0,5 L5,2.5 z"
+         fill="#1565c0"
+         id="path2" />
+    </marker>
+    <marker
+       id="arrowGreen"
+       markerWidth="5"
+       markerHeight="5"
+       refX="4"
+       refY="2.5"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L0,5 L5,2.5 z"
+         fill="#2e7d32"
+         id="path3" />
+    </marker>
+    <marker
+       id="arrowRed"
+       markerWidth="5"
+       markerHeight="5"
+       refX="4"
+       refY="2.5"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L0,5 L5,2.5 z"
+         fill="#d32f2f"
+         id="path4" />
+    </marker>
+    <!-- 阴影滤镜 -->
+    <filter
+       id="shadow"
+       x="-0.034166667"
+       y="-0.027333333"
+       width="1.0766667"
+       height="1.0613333">
+      <feGaussianBlur
+         in="SourceAlpha"
+         stdDeviation="3"
+         id="feGaussianBlur4" />
+      <feOffset
+         dx="2"
+         dy="2"
+         result="offsetblur"
+         id="feOffset4" />
+      <feComponentTransfer
+         id="feComponentTransfer4">
+        <feFuncA
+           type="linear"
+           slope="0.2"
+           id="feFuncA4" />
+      </feComponentTransfer>
+      <feMerge
+         id="feMerge5">
+        <feMergeNode
+           in="offsetblur"
+           id="feMergeNode4" />
+        <feMergeNode
+           in="SourceGraphic"
+           id="feMergeNode5" />
+      </feMerge>
+    </filter>
+    <!-- 阵列点阵图案 -->
+    <pattern
+       id="gridPattern"
+       width="25"
+       height="25"
+       patternUnits="userSpaceOnUse">
+      <circle
+         cx="12.5"
+         cy="12.5"
+         r="3"
+         fill="#e0e0e0"
+         id="circle5" />
+    </pattern>
+    <!-- 统一字体样式：圆滑系统字体 -->
+    <style
+       id="style5">
+      text {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      }
+    </style>
+  </defs>
+  <!-- 背景 -->
+  <rect
+     width="1150"
+     height="650"
+     fill="#ffffff"
+     id="rect5" />
+  <!-- 主标题 -->
+  <text
+     x="575"
+     y="50"
+     font-size="28"
+     font-weight="600"
+     text-anchor="middle"
+     fill="#333"
+     id="text5">
+    图7：可配置阵列 (Tile) 组织结构与并行度参数化设计
+  </text>
+  <!-- ================================================================================== -->
+  <!-- 左侧：单个 CIM Tile 内部结构 (Detail View) -->
+  <!-- ================================================================================== -->
+  <g
+     transform="translate(60, 100)"
+     id="g20">
+    <!-- Tile 外框 -->
+    <rect
+       x="0"
+       y="0"
+       width="450"
+       height="500"
+       fill="#fcfcfc"
+       stroke="#777"
+       stroke-width="2"
+       stroke-dasharray="6,4"
+       rx="15"
+       id="rect6" />
+    <text
+       x="199.90347"
+       y="26.615187"
+       font-size="22px"
+       font-weight="600"
+       text-anchor="middle"
+       fill="#333333"
+       id="text6">Single CIM Tile</text>
+    <text
+       x="225"
+       y="65"
+       font-size="16"
+       text-anchor="middle"
+       fill="#777"
+       id="text7">(Basic Building Block)</text>
+    <!-- 内部 CIM Array (M x N) -->
+    <g
+       transform="translate(120, 100)"
+       id="g13">
+      <!-- 阵列主体 -->
+      <rect
+         x="0"
+         y="0"
+         width="240"
+         height="300"
+         fill="url(#gridPattern)"
+         stroke="#1565c0"
+         stroke-width="2"
+         filter="url(#shadow)"
+         id="rect7" />
+      <rect
+         x="0"
+         y="0"
+         width="240"
+         height="300"
+         fill="#e3f2fd"
+         fill-opacity="0.2"
+         id="rect8" />
+      <!-- 淡蓝叠加 -->
+      <text
+         x="120"
+         y="140"
+         font-size="20"
+         font-weight="700"
+         text-anchor="middle"
+         fill="#0d47a1"
+         id="text8">M × N Array</text>
+      <text
+         x="120"
+         y="165"
+         font-size="16"
+         text-anchor="middle"
+         fill="#1565c0"
+         id="text9">Weight Storage</text>
+      <!-- M 维度标注 (高度) -->
+      <line
+         x1="-20"
+         y1="0"
+         x2="-20"
+         y2="300"
+         stroke="#d32f2f"
+         stroke-width="2"
+         marker-start="url(#arrowRed)"
+         marker-end="url(#arrowRed)"
+         id="line9" />
+      <text
+         x="-150"
+         y="-64.279282"
+         font-size="18px"
+         font-weight="700"
+         fill="#d32f2f"
+         text-anchor="middle"
+         transform="rotate(-90)"
+         id="text10">Param: &lt;M&gt;</text>
+      <text
+         x="-152.50966"
+         y="-84.279282"
+         font-size="14px"
+         fill="#555555"
+         text-anchor="middle"
+         transform="rotate(-90)"
+         id="text11">Output Parallelism</text>
+      <!-- N 维度标注 (宽度) -->
+      <line
+         x1="0"
+         y1="-20"
+         x2="240"
+         y2="-20"
+         stroke="#d32f2f"
+         stroke-width="2"
+         marker-start="url(#arrowRed)"
+         marker-end="url(#arrowRed)"
+         id="line11" />
+      <text
+         x="192.77992"
+         y="-50.057915"
+         font-size="18px"
+         font-weight="700"
+         fill="#d32f2f"
+         text-anchor="middle"
+         id="text12">Param: &lt;N&gt;</text>
+      <text
+         x="-42.290863"
+         y="-53.326897"
+         font-size="14px"
+         fill="#555555"
+         text-anchor="middle"
+         id="text13">Input Parallelism</text>
+    </g>
+    <!-- 左侧：激活输入广播 -->
+    <g
+       transform="translate(18.288288,107.52896)"
+       id="g16">
+      <text
+         x="0"
+         y="150"
+         font-size="16px"
+         fill="#1565c0"
+         font-weight="700"
+         transform="rotate(-90,0,150)"
+         id="text14">Broadcast Net</text>
+      <!-- 广播箭头 -->
+      <line
+         x1="40"
+         y1="50"
+         x2="100"
+         y2="50"
+         stroke="#1565c0"
+         stroke-width="3"
+         marker-end="url(#arrowBlue)"
+         id="line14" />
+      <line
+         x1="40"
+         y1="150"
+         x2="100"
+         y2="150"
+         stroke="#1565c0"
+         stroke-width="3"
+         marker-end="url(#arrowBlue)"
+         id="line15" />
+      <line
+         x1="40"
+         y1="250"
+         x2="100"
+         y2="250"
+         stroke="#1565c0"
+         stroke-width="3"
+         marker-end="url(#arrowBlue)"
+         id="line16" />
+    </g>
+    <!-- 底部：局部累加器 (Local Accumulator) -->
+    <g
+       transform="translate(120, 420)"
+       id="g19">
+      <rect
+         x="0"
+         y="0"
+         width="240"
+         height="50"
+         fill="#e8f5e9"
+         stroke="#2e7d32"
+         stroke-width="2"
+         rx="8"
+         id="rect16" />
+      <text
+         x="120"
+         y="32"
+         font-size="16"
+         font-weight="700"
+         text-anchor="middle"
+         fill="#1b5e20"
+         id="text16">Local Accumulator</text>
+      <!-- 收集箭头 -->
+      <line
+         x1="40"
+         y1="-20"
+         x2="40"
+         y2="-5"
+         stroke="#2e7d32"
+         stroke-width="3"
+         marker-end="url(#arrowGreen)"
+         id="line17" />
+      <line
+         x1="120"
+         y1="-20"
+         x2="120"
+         y2="-5"
+         stroke="#2e7d32"
+         stroke-width="3"
+         marker-end="url(#arrowGreen)"
+         id="line18" />
+      <line
+         x1="200"
+         y1="-20"
+         x2="200"
+         y2="-5"
+         stroke="#2e7d32"
+         stroke-width="3"
+         marker-end="url(#arrowGreen)"
+         id="line19" />
+    </g>
+  </g>
+  <!-- 中间连接箭头 -->
+  <g
+     transform="translate(531.63449,319.16345)"
+     id="g21">
+    <line
+       x1="0"
+       y1="0"
+       x2="60"
+       y2="0"
+       stroke="#333333"
+       stroke-width="5"
+       marker-end="url(#arrow)"
+       id="line20" />
+    <text
+       x="30"
+       y="-20"
+       font-size="18px"
+       font-weight="700"
+       text-anchor="middle"
+       fill="#333333"
+       id="text20">Stitching</text>
+    <text
+       x="30"
+       y="25"
+       font-size="16px"
+       text-anchor="middle"
+       fill="#555555"
+       id="text21">Scale Up</text>
+  </g>
+  <!-- ================================================================================== -->
+  <!-- 右侧：多 Tile 系统级拼接 (System Level View) -->
+  <!-- ================================================================================== -->
+  <g
+     transform="translate(609.08623,99.163449)"
+     id="g32">
+    <!-- 系统外框 -->
+    <rect
+       x="0"
+       y="0"
+       width="480"
+       height="500"
+       fill="#ffffff"
+       stroke="#333333"
+       stroke-width="3"
+       rx="15"
+       id="rect21" />
+    <text
+       x="241.6731"
+       y="24.942085"
+       font-size="22px"
+       font-weight="600"
+       text-anchor="middle"
+       fill="#333333"
+       id="text22">Multi-Tile System</text>
+    <!-- Tile 阵列 (2x2 示意) -->
+    <g
+       transform="translate(60,80)"
+       id="g28">
+      <!-- Tile 0 -->
+      <rect
+         x="0"
+         y="0"
+         width="160"
+         height="160"
+         fill="#e3f2fd"
+         stroke="#1565c0"
+         stroke-width="2"
+         rx="8"
+         id="rect22" />
+      <text
+         x="80"
+         y="85"
+         font-size="18px"
+         font-weight="700"
+         text-anchor="middle"
+         fill="#0d47a1"
+         id="text23">Tile [0,0]</text>
+      <!-- Tile 1 -->
+      <rect
+         x="200"
+         y="0"
+         width="160"
+         height="160"
+         fill="#e3f2fd"
+         stroke="#1565c0"
+         stroke-width="2"
+         rx="8"
+         id="rect23" />
+      <text
+         x="280"
+         y="85"
+         font-size="18px"
+         font-weight="700"
+         text-anchor="middle"
+         fill="#0d47a1"
+         id="text24">Tile [0,1]</text>
+      <!-- Tile 2 -->
+      <rect
+         x="0"
+         y="200"
+         width="160"
+         height="160"
+         fill="#e3f2fd"
+         stroke="#1565c0"
+         stroke-width="2"
+         rx="8"
+         id="rect24" />
+      <text
+         x="80"
+         y="285"
+         font-size="18px"
+         font-weight="700"
+         text-anchor="middle"
+         fill="#0d47a1"
+         id="text25">Tile [1,0]</text>
+      <!-- Tile 3 -->
+      <rect
+         x="200"
+         y="200"
+         width="160"
+         height="160"
+         fill="#e3f2fd"
+         stroke="#1565c0"
+         stroke-width="2"
+         rx="8"
+         id="rect25" />
+      <text
+         x="280"
+         y="285"
+         font-size="18px"
+         font-weight="700"
+         text-anchor="middle"
+         fill="#0d47a1"
+         id="text26">Tile [1,1]</text>
+      <!-- Tile 数量参数 -->
+      <line
+         x1="390"
+         y1="0"
+         x2="390"
+         y2="360"
+         stroke="#d32f2f"
+         stroke-width="2"
+         marker-start="url(#arrowRed)"
+         marker-end="url(#arrowRed)"
+         id="line26" />
+      <text
+         x="159.08623"
+         y="-400.79794"
+         font-size="18px"
+         font-weight="700"
+         fill="#d32f2f"
+         text-anchor="middle"
+         transform="rotate(90)"
+         id="text27">Param: &lt;Tile_Y&gt;</text>
+      <line
+         x1="0"
+         y1="-25"
+         x2="360"
+         y2="-25"
+         stroke="#d32f2f"
+         stroke-width="2"
+         marker-start="url(#arrowRed)"
+         marker-end="url(#arrowRed)"
+         id="line27" />
+      <text
+         x="180"
+         y="-35"
+         font-size="18px"
+         font-weight="700"
+         fill="#d32f2f"
+         text-anchor="middle"
+         id="text28">Param: &lt;Tile_X&gt;</text>
+    </g>
+    <!-- 全局累加与收集网络 (Global Accumulate) -->
+    <g
+       transform="translate(60,450)"
+       id="g29">
+      <!-- 纵向收集线 -->
+      <line
+         x1="80"
+         y1="-20"
+         x2="80"
+         y2="10"
+         stroke="#2e7d32"
+         stroke-width="3"
+         marker-end="url(#arrowGreen)"
+         id="line28" />
+      <line
+         x1="280"
+         y1="-20"
+         x2="280"
+         y2="10"
+         stroke="#2e7d32"
+         stroke-width="3"
+         marker-end="url(#arrowGreen)"
+         id="line29" />
+      <!-- 累加模块 -->
+      <rect
+         x="0"
+         y="10"
+         width="360"
+         height="40"
+         fill="#c8e6c9"
+         stroke="#2e7d32"
+         stroke-width="2"
+         rx="8"
+         id="rect29" />
+      <text
+         x="180"
+         y="35"
+         font-size="16px"
+         font-weight="700"
+         text-anchor="middle"
+         fill="#1b5e20"
+         id="text29">Global Accumulator</text>
+    </g>
+    <!-- 顶层输入分发 (Bus 示意) -->
+    <g
+       transform="translate(20,80)"
+       id="g31">
+      <!-- 粗总线 -->
+      <rect
+         x="0"
+         y="0"
+         width="20"
+         height="360"
+         fill="#e3f2fd"
+         stroke="none"
+         rx="5"
+         id="rect30" />
+      <text
+         x="-221.82755"
+         y="15.836551"
+         font-size="14px"
+         fill="#1565c0"
+         font-weight="700"
+         transform="rotate(-90)"
+         id="text30">Global Act Bus</text>
+      <!-- 分发箭头 -->
+      <line
+         x1="10"
+         y1="80"
+         x2="50"
+         y2="80"
+         stroke="#1565c0"
+         stroke-width="3"
+         marker-end="url(#arrowBlue)"
+         id="line30" />
+      <line
+         x1="10"
+         y1="280"
+         x2="50"
+         y2="280"
+         stroke="#1565c0"
+         stroke-width="3"
+         marker-end="url(#arrowBlue)"
+         id="line31" />
+    </g>
+  </g>
+</svg>

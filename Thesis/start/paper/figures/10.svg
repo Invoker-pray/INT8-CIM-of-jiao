@@ -1,0 +1,525 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="1000"
+   height="500"
+   viewBox="0 0 1000 500"
+   version="1.1"
+   id="svg38"
+   sodipodi:docname="10.svg"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview38"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="1.554"
+     inkscape:cx="499.67825"
+     inkscape:cy="250"
+     inkscape:window-width="1920"
+     inkscape:window-height="991"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg38" />
+  <!-- 定义字体和滤镜 -->
+  <defs
+     id="defs2">
+    <style
+       id="style1">
+      text {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      }
+    </style>
+    <filter
+       id="shadow"
+       x="-0.058888889"
+       y="-0.17666667"
+       width="1.14"
+       height="1.42">
+      <feGaussianBlur
+         in="SourceAlpha"
+         stdDeviation="2"
+         id="feGaussianBlur1" />
+      <feOffset
+         dx="2"
+         dy="2"
+         result="offsetblur"
+         id="feOffset1" />
+      <feComponentTransfer
+         id="feComponentTransfer1">
+        <feFuncA
+           type="linear"
+           slope="0.3"
+           id="feFuncA1" />
+      </feComponentTransfer>
+      <feMerge
+         id="feMerge2">
+        <feMergeNode
+           in="offsetblur"
+           id="feMergeNode1" />
+        <feMergeNode
+           in="SourceGraphic"
+           id="feMergeNode2" />
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- 背景 -->
+  <rect
+     width="1000"
+     height="500"
+     fill="#ffffff"
+     id="rect2" />
+  <!-- 主标题 -->
+  <text
+     x="521.87903"
+     y="24.555984"
+     font-size="24px"
+     font-weight="600"
+     text-anchor="middle"
+     fill="#333333"
+     id="text2">图10：课题研究计划与进度安排 (16 Weeks)</text>
+  <!-- ================================================================================== -->
+  <!-- 网格系统 (Grid System) -->
+  <!-- ================================================================================== -->
+  <g
+     transform="translate(220, 80)"
+     id="g21">
+    <!-- 垂直网格线 (每两周一条) -->
+    <line
+       x1="0"
+       y1="0"
+       x2="0"
+       y2="380"
+       stroke="#eee"
+       stroke-width="1"
+       id="line2" />
+    <line
+       x1="90"
+       y1="0"
+       x2="90"
+       y2="380"
+       stroke="#eee"
+       stroke-width="1"
+       id="line3" />
+    <line
+       x1="180"
+       y1="0"
+       x2="180"
+       y2="380"
+       stroke="#eee"
+       stroke-width="1"
+       id="line4" />
+    <line
+       x1="270"
+       y1="0"
+       x2="270"
+       y2="380"
+       stroke="#eee"
+       stroke-width="1"
+       id="line5" />
+    <line
+       x1="360"
+       y1="0"
+       x2="360"
+       y2="380"
+       stroke="#eee"
+       stroke-width="1"
+       id="line6" />
+    <line
+       x1="450"
+       y1="0"
+       x2="450"
+       y2="380"
+       stroke="#eee"
+       stroke-width="1"
+       id="line7" />
+    <line
+       x1="540"
+       y1="0"
+       x2="540"
+       y2="380"
+       stroke="#eee"
+       stroke-width="1"
+       id="line8" />
+    <line
+       x1="630"
+       y1="0"
+       x2="630"
+       y2="380"
+       stroke="#eee"
+       stroke-width="1"
+       id="line9" />
+    <line
+       x1="720"
+       y1="0"
+       x2="720"
+       y2="380"
+       stroke="#eee"
+       stroke-width="1"
+       id="line10" />
+    <!-- 顶部时间轴文字 -->
+    <text
+       x="45"
+       y="-10"
+       font-size="14"
+       fill="#555"
+       text-anchor="middle"
+       id="text10">W1-2</text>
+    <text
+       x="135"
+       y="-10"
+       font-size="14"
+       fill="#555"
+       text-anchor="middle"
+       id="text11">W3-4</text>
+    <text
+       x="225"
+       y="-10"
+       font-size="14"
+       fill="#555"
+       text-anchor="middle"
+       id="text12">W5-6</text>
+    <text
+       x="315"
+       y="-10"
+       font-size="14"
+       fill="#555"
+       text-anchor="middle"
+       id="text13">W7-8</text>
+    <text
+       x="405"
+       y="-10"
+       font-size="14"
+       fill="#555"
+       text-anchor="middle"
+       id="text14">W9-10</text>
+    <text
+       x="495"
+       y="-10"
+       font-size="14"
+       fill="#555"
+       text-anchor="middle"
+       id="text15">W11</text>
+    <text
+       x="585"
+       y="-10"
+       font-size="14"
+       fill="#555"
+       text-anchor="middle"
+       id="text16">W12-13</text>
+    <text
+       x="675"
+       y="-10"
+       font-size="14"
+       fill="#555"
+       text-anchor="middle"
+       id="text17">W14-16</text>
+    <!-- 月份辅助线 -->
+    <line
+       x1="0"
+       y1="-30"
+       x2="180"
+       y2="-30"
+       stroke="#1565c0"
+       stroke-width="2"
+       id="line17" />
+    <text
+       x="90"
+       y="-40"
+       font-size="14"
+       fill="#1565c0"
+       font-weight="bold"
+       text-anchor="middle"
+       id="text18">Month 1</text>
+    <line
+       x1="180"
+       y1="-30"
+       x2="360"
+       y2="-30"
+       stroke="#2e7d32"
+       stroke-width="2"
+       id="line18" />
+    <text
+       x="270"
+       y="-40"
+       font-size="14"
+       fill="#2e7d32"
+       font-weight="bold"
+       text-anchor="middle"
+       id="text19">Month 2</text>
+    <line
+       x1="360"
+       y1="-30"
+       x2="540"
+       y2="-30"
+       stroke="#ef6c00"
+       stroke-width="2"
+       id="line19" />
+    <text
+       x="450"
+       y="-40"
+       font-size="14"
+       fill="#ef6c00"
+       font-weight="bold"
+       text-anchor="middle"
+       id="text20">Month 3</text>
+    <line
+       x1="540"
+       y1="-30"
+       x2="720"
+       y2="-30"
+       stroke="#c62828"
+       stroke-width="2"
+       id="line20" />
+    <text
+       x="630"
+       y="-40"
+       font-size="14"
+       fill="#c62828"
+       font-weight="bold"
+       text-anchor="middle"
+       id="text21">Month 4</text>
+  </g>
+  <!-- ================================================================================== -->
+  <!-- 任务条 (Task Bars) -->
+  <!-- ================================================================================== -->
+  <!-- Task 1: 文献调研与方案 -->
+  <g
+     transform="translate(20, 100)"
+     id="g23">
+    <text
+       x="180"
+       y="25"
+       font-size="16"
+       font-weight="bold"
+       text-anchor="end"
+       fill="#333"
+       id="text22">1. 调研与方案</text>
+    <rect
+       x="200"
+       y="5"
+       width="90"
+       height="30"
+       rx="5"
+       fill="#bbdefb"
+       stroke="#1565c0"
+       stroke-width="1"
+       filter="url(#shadow)"
+       id="rect22" />
+    <text
+       x="245"
+       y="25"
+       font-size="12"
+       text-anchor="middle"
+       fill="#0d47a1"
+       id="text23">架构草图  论证</text>
+  </g>
+  <!-- Task 2: 软件模型构建 -->
+  <g
+     transform="translate(20, 160)"
+     id="g25">
+    <text
+       x="180"
+       y="25"
+       font-size="16"
+       font-weight="bold"
+       text-anchor="end"
+       fill="#333"
+       id="text24">2. 软件模型构建</text>
+    <rect
+       x="290"
+       y="5"
+       width="90"
+       height="30"
+       rx="5"
+       fill="#c8e6c9"
+       stroke="#2e7d32"
+       stroke-width="1"
+       filter="url(#shadow)"
+       id="rect24" />
+    <text
+       x="335"
+       y="25"
+       font-size="12"
+       text-anchor="middle"
+       fill="#1b5e20"
+       id="text25">Golden Model</text>
+  </g>
+  <!-- Task 3: RTL 开发 (跨度长) -->
+  <g
+     transform="translate(20, 220)"
+     id="g27">
+    <text
+       x="180"
+       y="25"
+       font-size="16"
+       font-weight="bold"
+       text-anchor="end"
+       fill="#333"
+       id="text26">3. RTL 开发与验证</text>
+    <!-- W5-W8: 设计 -->
+    <rect
+       x="380"
+       y="5"
+       width="180"
+       height="30"
+       rx="5"
+       fill="#e1bee7"
+       stroke="#7b1fa2"
+       stroke-width="1"
+       filter="url(#shadow)"
+       id="rect26" />
+    <text
+       x="470"
+       y="25"
+       font-size="12"
+       text-anchor="middle"
+       fill="#4a148c"
+       id="text27">CIM Array, FSM, Adder Tree</text>
+  </g>
+  <!-- Task 4: 系统集成与优化 -->
+  <g
+     transform="translate(20, 280)"
+     id="g29">
+    <text
+       x="180"
+       y="25"
+       font-size="16"
+       font-weight="bold"
+       text-anchor="end"
+       fill="#333"
+       id="text28">4. 集成与时序优化</text>
+    <!-- W9-W11 -->
+    <rect
+       x="560"
+       y="5"
+       width="135"
+       height="30"
+       rx="5"
+       fill="#fff9c4"
+       stroke="#fbc02d"
+       stroke-width="1"
+       filter="url(#shadow)"
+       id="rect28" />
+    <text
+       x="627"
+       y="25"
+       font-size="12"
+       text-anchor="middle"
+       fill="#f57f17"
+       id="text29">Top Sim  Fmax Opt</text>
+  </g>
+  <!-- Task 5: FPGA 部署与评估 -->
+  <g
+     transform="translate(20, 340)"
+     id="g31">
+    <text
+       x="180"
+       y="25"
+       font-size="16"
+       font-weight="bold"
+       text-anchor="end"
+       fill="#333"
+       id="text30">5. FPGA 部署评估</text>
+    <!-- W12-W14 -->
+    <rect
+       x="695"
+       y="5"
+       width="135"
+       height="30"
+       rx="5"
+       fill="#ffcc80"
+       stroke="#ef6c00"
+       stroke-width="1"
+       filter="url(#shadow)"
+       id="rect30" />
+    <text
+       x="762"
+       y="25"
+       font-size="12"
+       text-anchor="middle"
+       fill="#e65100"
+       id="text31">Board Debug  Report</text>
+  </g>
+  <!-- Task 6: 论文撰写 -->
+  <g
+     transform="translate(20, 400)"
+     id="g33">
+    <text
+       x="180"
+       y="25"
+       font-size="16"
+       font-weight="bold"
+       text-anchor="end"
+       fill="#333"
+       id="text32">6. 论文与交付</text>
+    <!-- W15-W16 -->
+    <rect
+       x="830"
+       y="5"
+       width="90"
+       height="30"
+       rx="5"
+       fill="#ffcdd2"
+       stroke="#c62828"
+       stroke-width="1"
+       filter="url(#shadow)"
+       id="rect32" />
+    <text
+       x="875"
+       y="25"
+       font-size="12"
+       text-anchor="middle"
+       fill="#b71c1c"
+       id="text33">Thesis  Defense</text>
+  </g>
+  <!-- 连接线与里程碑点 (可选) -->
+  <g
+     transform="translate(220, 80)"
+     id="g38">
+    <circle
+       cx="90"
+       cy="45"
+       r="4"
+       fill="#1565c0"
+       id="circle33" />
+    <circle
+       cx="180"
+       cy="105"
+       r="4"
+       fill="#2e7d32"
+       id="circle34" />
+    <circle
+       cx="360"
+       cy="165"
+       r="4"
+       fill="#7b1fa2"
+       id="circle35" />
+    <circle
+       cx="495"
+       cy="225"
+       r="4"
+       fill="#fbc02d"
+       id="circle36" />
+    <circle
+       cx="630"
+       cy="285"
+       r="4"
+       fill="#ef6c00"
+       id="circle37" />
+    <circle
+       cx="720"
+       cy="345"
+       r="4"
+       fill="#c62828"
+       id="circle38" />
+  </g>
+</svg>

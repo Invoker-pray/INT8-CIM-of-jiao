@@ -1,0 +1,671 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="1100"
+   height="600"
+   viewBox="0 0 1100 600"
+   version="1.1"
+   id="svg28"
+   sodipodi:docname="6.svg"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview28"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="1.295"
+     inkscape:cx="550.19305"
+     inkscape:cy="300"
+     inkscape:window-width="1920"
+     inkscape:window-height="991"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg28" />
+  <!-- 定义箭头、滤镜和逻辑门 -->
+  <defs
+     id="defs5">
+    <!-- 箭头 -->
+    <marker
+       id="arrow"
+       markerWidth="8"
+       markerHeight="8"
+       refX="7"
+       refY="4"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L0,8 L8,4 z"
+         fill="#333"
+         id="path1" />
+    </marker>
+    <marker
+       id="arrowBlue"
+       markerWidth="8"
+       markerHeight="8"
+       refX="7"
+       refY="4"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L0,8 L8,4 z"
+         fill="#1565c0"
+         id="path2" />
+    </marker>
+    <marker
+       id="arrowRed"
+       markerWidth="8"
+       markerHeight="8"
+       refX="7"
+       refY="4"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L0,8 L8,4 z"
+         fill="#c62828"
+         id="path3" />
+    </marker>
+    <!-- 逻辑门形状：AND Gate (放大版) -->
+    <path
+       id="andGate"
+       d="M0,0 L20,0 Q40,15 20,30 L0,30 Z"
+       fill="#fff"
+       stroke="#333"
+       stroke-width="2" />
+    <!-- 逻辑门形状：NAND Gate (放大版) -->
+    <g
+       id="nandGate">
+      <path
+         d="M0,0 L20,0 Q40,15 20,30 L0,30 Z"
+         fill="#fff"
+         stroke="#c62828"
+         stroke-width="2"
+         id="path4" />
+      <circle
+         cx="40"
+         cy="15"
+         r="4"
+         fill="#fff"
+         stroke="#c62828"
+         stroke-width="2"
+         id="circle4" />
+    </g>
+    <!-- 阴影 -->
+    <filter
+       id="shadow"
+       x="-0.082"
+       y="-0.13666667"
+       width="1.184"
+       height="1.3066667">
+      <feGaussianBlur
+         in="SourceAlpha"
+         stdDeviation="3"
+         id="feGaussianBlur4" />
+      <feOffset
+         dx="2"
+         dy="2"
+         result="offsetblur"
+         id="feOffset4" />
+      <feComponentTransfer
+         id="feComponentTransfer4">
+        <feFuncA
+           type="linear"
+           slope="0.2"
+           id="feFuncA4" />
+      </feComponentTransfer>
+      <feMerge
+         id="feMerge5">
+        <feMergeNode
+           in="offsetblur"
+           id="feMergeNode4" />
+        <feMergeNode
+           in="SourceGraphic"
+           id="feMergeNode5" />
+      </feMerge>
+    </filter>
+    <!-- 统一字体 -->
+    <style
+       id="style5">
+      text {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      }
+    </style>
+  </defs>
+  <!-- 背景 -->
+  <rect
+     width="1100"
+     height="600"
+     fill="#ffffff"
+     id="rect5" />
+  <!-- 主标题 -->
+  <text
+     x="550"
+     y="50"
+     font-size="28"
+     font-weight="600"
+     text-anchor="middle"
+     fill="#333"
+     id="text5">
+    图6：Signed-INT8 存算基本单元与部分积生成逻辑
+  </text>
+  <!-- ================================================================================== -->
+  <!-- 左侧：输入广播 (Activation Input) -->
+  <!-- ================================================================================== -->
+  <g
+     transform="translate(16.023166,104.6332)"
+     id="g9">
+    <!-- 外框 -->
+    <rect
+       x="0"
+       y="0"
+       width="140"
+       height="450"
+       fill="#e3f2fd"
+       stroke="#1565c0"
+       stroke-width="2"
+       rx="10"
+       filter="url(#shadow)"
+       id="rect6" />
+    <text
+       x="70"
+       y="40"
+       font-size="20px"
+       font-weight="600"
+       text-anchor="middle"
+       fill="#0d47a1"
+       id="text6">Input Act</text>
+    <text
+       x="70"
+       y="65"
+       font-size="16px"
+       text-anchor="middle"
+       fill="#1565c0"
+       id="text7">(Bit-Serial)</text>
+    <!-- 输入位示意 -->
+    <g
+       transform="translate(40,200)"
+       id="g8">
+      <rect
+         x="0"
+         y="0"
+         width="60"
+         height="60"
+         fill="#ffffff"
+         stroke="#1565c0"
+         stroke-width="2"
+         id="rect7" />
+      <text
+         x="30"
+         y="38"
+         font-size="24px"
+         font-weight="bold"
+         text-anchor="middle"
+         fill="#333333"
+         id="text8">Ai</text>
+    </g>
+    <!-- 广播线 -->
+    <line
+       x1="100"
+       y1="230"
+       x2="220"
+       y2="230"
+       stroke="#1565c0"
+       stroke-width="4"
+       marker-end="url(#arrowBlue)"
+       id="line8" />
+    <text
+       x="180.84943"
+       y="203.78378"
+       font-size="16px"
+       fill="#1565c0"
+       text-anchor="middle"
+       font-weight="600"
+       id="text9">Broadcast</text>
+  </g>
+  <!-- ================================================================================== -->
+  <!-- 中间：SRAM 存储与逻辑生成 (Weight Storage & Logic) -->
+  <!-- ================================================================================== -->
+  <g
+     transform="translate(241.5444,87.722008)"
+     id="g18">
+    <!-- 外框 -->
+    <rect
+       x="0"
+       y="0"
+       width="300"
+       height="490"
+       fill="#f9f9f9"
+       stroke="#999999"
+       stroke-width="2"
+       stroke-dasharray="8, 4"
+       rx="10"
+       id="rect9" />
+    <text
+       x="150"
+       y="40"
+       font-size="20px"
+       font-weight="600"
+       text-anchor="middle"
+       fill="#555555"
+       id="text10">CIM Unit (8-bit Weight)</text>
+    <!-- 内部垂直总线 (广播信号) -->
+    <line
+       x1="40"
+       y1="60"
+       x2="40"
+       y2="440"
+       stroke="#1565c0"
+       stroke-width="3"
+       id="line10" />
+    <!-- ===== Row 0 (LSB) ===== -->
+    <g
+       transform="translate(60,80)"
+       id="g12">
+      <!-- SRAM Cell -->
+      <rect
+         x="0"
+         y="0"
+         width="60"
+         height="40"
+         fill="#ffe0b2"
+         stroke="#e65100"
+         stroke-width="2"
+         id="rect10" />
+      <text
+         x="30"
+         y="25"
+         font-size="16px"
+         font-weight="bold"
+         text-anchor="middle"
+         fill="#e65100"
+         id="text11">W[0]</text>
+      <!-- AND Gate -->
+      <use
+         href="#andGate"
+         x="100"
+         y="5"
+         id="use11" />
+      <!-- 连线 -->
+      <line
+         x1="60"
+         y1="20"
+         x2="100"
+         y2="20"
+         stroke="#333333"
+         stroke-width="2"
+         id="line11" />
+      <!-- Weight to AND -->
+      <path
+         d="M -20,20 V 10 h 120"
+         fill="none"
+         stroke="#1565c0"
+         stroke-width="2"
+         id="path11" />
+      <!-- Act to AND -->
+      <circle
+         cx="-20"
+         cy="20"
+         r="4"
+         fill="#1565c0"
+         id="circle11" />
+      <!-- 连接点 -->
+      <!-- 输出线 -->
+      <line
+         x1="140"
+         y1="20"
+         x2="180"
+         y2="20"
+         stroke="#333333"
+         stroke-width="2"
+         marker-end="url(#arrow)"
+         id="line12" />
+      <text
+         x="210"
+         y="25"
+         font-size="16px"
+         fill="#333333"
+         id="text12">PP[0]</text>
+    </g>
+    <!-- 省略号 -->
+    <circle
+       cx="150"
+       cy="180"
+       r="3"
+       fill="#999999"
+       id="circle12" />
+    <circle
+       cx="150"
+       cy="200"
+       r="3"
+       fill="#999999"
+       id="circle13" />
+    <circle
+       cx="150"
+       cy="220"
+       r="3"
+       fill="#999999"
+       id="circle14" />
+    <!-- ===== Row 6 ===== -->
+    <g
+       transform="translate(60,260)"
+       id="g15">
+      <!-- SRAM Cell -->
+      <rect
+         x="0"
+         y="0"
+         width="60"
+         height="40"
+         fill="#ffe0b2"
+         stroke="#e65100"
+         stroke-width="2"
+         id="rect14" />
+      <text
+         x="30"
+         y="25"
+         font-size="16px"
+         font-weight="bold"
+         text-anchor="middle"
+         fill="#e65100"
+         id="text14">W[6]</text>
+      <!-- AND Gate -->
+      <use
+         href="#andGate"
+         x="100"
+         y="5"
+         id="use14" />
+      <!-- 连线 -->
+      <line
+         x1="60"
+         y1="20"
+         x2="100"
+         y2="20"
+         stroke="#333333"
+         stroke-width="2"
+         id="line14" />
+      <path
+         d="M -20,-10 V 10 H 100"
+         fill="none"
+         stroke="#1565c0"
+         stroke-width="2"
+         id="path14" />
+      <circle
+         cx="-20"
+         cy="-10"
+         r="4"
+         fill="#1565c0"
+         id="circle15" />
+      <!-- 输出线 -->
+      <line
+         x1="140"
+         y1="20"
+         x2="180"
+         y2="20"
+         stroke="#333333"
+         stroke-width="2"
+         marker-end="url(#arrow)"
+         id="line15" />
+      <text
+         x="210"
+         y="25"
+         font-size="16px"
+         fill="#333333"
+         id="text15">PP[6]</text>
+    </g>
+    <!-- ===== Row 7 (Sign Bit) ===== -->
+    <g
+       transform="translate(60,360)"
+       id="g17">
+      <!-- SRAM Cell (红色表示符号位) -->
+      <rect
+         x="0"
+         y="0"
+         width="60"
+         height="40"
+         fill="#ffcdd2"
+         stroke="#c62828"
+         stroke-width="2"
+         id="rect15" />
+      <text
+         x="30"
+         y="25"
+         font-size="16px"
+         font-weight="bold"
+         text-anchor="middle"
+         fill="#c62828"
+         id="text16">W[7]</text>
+      <!-- NAND Gate (红色表示特殊逻辑) -->
+      <use
+         href="#nandGate"
+         x="100"
+         y="5"
+         id="use16" />
+      <!-- 连线 -->
+      <line
+         x1="60"
+         y1="20"
+         x2="100"
+         y2="20"
+         stroke="#c62828"
+         stroke-width="2"
+         id="line16" />
+      <path
+         d="M -20,-110 V 10 h 120"
+         fill="none"
+         stroke="#1565c0"
+         stroke-width="2"
+         id="path16" />
+      <circle
+         cx="-20"
+         cy="-110"
+         r="4"
+         fill="#1565c0"
+         id="circle16" />
+      <!-- 输出线 -->
+      <line
+         x1="145"
+         y1="20"
+         x2="180"
+         y2="20"
+         stroke="#c62828"
+         stroke-width="2"
+         marker-end="url(#arrowRed)"
+         id="line17" />
+      <text
+         x="210"
+         y="25"
+         font-size="16px"
+         fill="#c62828"
+         font-weight="bold"
+         id="text17">PP[7]</text>
+    </g>
+  </g>
+  <!-- ================================================================================== -->
+  <!-- 右侧：移位累加与输出 (Shift & Add) -->
+  <!-- ================================================================================== -->
+  <g
+     transform="translate(559.84556,85.405405)"
+     id="g28">
+    <!-- 移位逻辑块 (Shift Logic) -->
+    <g
+       transform="translate(-3.0888031,76.138996)"
+       id="g21">
+      <text
+         x="60"
+         y="-20"
+         font-size="18px"
+         font-weight="600"
+         text-anchor="middle"
+         fill="#333333"
+         id="text18">Shift Logic</text>
+      <!-- Shift 0 -->
+      <rect
+         x="0"
+         y="0"
+         width="120"
+         height="40"
+         fill="#ffffff"
+         stroke="#333333"
+         stroke-width="2"
+         rx="5"
+         id="rect18" />
+      <text
+         x="60"
+         y="25"
+         font-size="16px"
+         text-anchor="middle"
+         fill="#333333"
+         id="text19">&lt;&lt; 0</text>
+      <!-- Shift 6 -->
+      <rect
+         x="0"
+         y="180"
+         width="120"
+         height="40"
+         fill="#ffffff"
+         stroke="#333333"
+         stroke-width="2"
+         rx="5"
+         id="rect19" />
+      <text
+         x="60"
+         y="205"
+         font-size="16px"
+         text-anchor="middle"
+         fill="#333333"
+         id="text20">&lt;&lt; 6</text>
+      <!-- Shift 7 (Sign Extension) -->
+      <rect
+         x="0"
+         y="280"
+         width="140"
+         height="40"
+         fill="#ffebee"
+         stroke="#c62828"
+         stroke-width="2"
+         rx="5"
+         id="rect20" />
+      <text
+         x="70"
+         y="305"
+         font-size="16px"
+         font-weight="bold"
+         text-anchor="middle"
+         fill="#c62828"
+         id="text21">Sign Ext &lt;&lt; 7</text>
+    </g>
+    <!-- 累加器 (Adder Tree) -->
+    <g
+       transform="translate(234.67181,0.77220054)"
+       id="g26">
+      <rect
+         x="-44.015446"
+         y="13.899614"
+         width="180"
+         height="450"
+         fill="#e8f5e9"
+         stroke="#2e7d32"
+         stroke-width="2"
+         rx="10"
+         filter="url(#shadow)"
+         id="rect21" />
+      <text
+         x="42.895752"
+         y="50.038609"
+         font-size="20px"
+         font-weight="600"
+         text-anchor="middle"
+         fill="#1b5e20"
+         id="text22">Adder Tree</text>
+      <text
+         x="46.756756"
+         y="77.355209"
+         font-size="16px"
+         text-anchor="middle"
+         fill="#2e7d32"
+         id="text23">Accumulator</text>
+      <!-- 加法符号 -->
+      <circle
+         cx="45.212357"
+         cy="230.40541"
+         r="30"
+         fill="#ffffff"
+         stroke="#2e7d32"
+         stroke-width="3"
+         id="circle23" />
+      <text
+         x="44.440155"
+         y="243.4942"
+         font-size="36px"
+         font-weight="bold"
+         text-anchor="middle"
+         fill="#2e7d32"
+         id="text24">+</text>
+      <!-- 连接线 (从移位逻辑进来) -->
+      <path
+         d="m -117.76062,95.366795 h 68.960559"
+         stroke="#333333"
+         stroke-width="1.66085"
+         marker-end="url(#arrow)"
+         id="path24" />
+      <path
+         d="m -115.44402,275.3668 h 71.9888"
+         stroke="#333333"
+         stroke-width="1.69692"
+         marker-end="url(#arrow)"
+         id="path25" />
+      <path
+         d="m -96.216217,374.59459 h 52.157"
+         stroke="#c62828"
+         stroke-width="1.61489"
+         marker-end="url(#arrowRed)"
+         id="path26" />
+    </g>
+    <!-- 最终输出 -->
+    <g
+       transform="translate(417.60618,192.6834)"
+       id="g27">
+      <line
+         x1="-40"
+         y1="30"
+         x2="10"
+         y2="30"
+         stroke="#333333"
+         stroke-width="4"
+         marker-end="url(#arrow)"
+         id="line26" />
+      <rect
+         x="10"
+         y="0"
+         width="100"
+         height="60"
+         fill="#fff3e0"
+         stroke="#ef6c00"
+         stroke-width="2"
+         rx="5"
+         filter="url(#shadow)"
+         id="rect26" />
+      <text
+         x="60"
+         y="25"
+         font-size="18px"
+         font-weight="bold"
+         text-anchor="middle"
+         fill="#e65100"
+         id="text26">P-Sum</text>
+      <text
+         x="60"
+         y="45"
+         font-size="14px"
+         text-anchor="middle"
+         fill="#ef6c00"
+         id="text27">(INT20+)</text>
+    </g>
+  </g>
+</svg>

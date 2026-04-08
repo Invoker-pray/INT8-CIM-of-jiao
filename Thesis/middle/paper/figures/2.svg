@@ -1,0 +1,486 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="850"
+   height="500"
+   viewBox="0 0 850 500"
+   version="1.1"
+   id="svg27"
+   sodipodi:docname="2.svg"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview27"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="1.554"
+     inkscape:cx="424.71042"
+     inkscape:cy="250"
+     inkscape:window-width="1920"
+     inkscape:window-height="991"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg27" />
+  <!-- 定义渐变和箭头 -->
+  <defs
+     id="defs5">
+    <linearGradient
+       id="bgGradient"
+       x1="0%"
+       y1="0%"
+       x2="0%"
+       y2="100%">
+      <stop
+         offset="0%"
+         style="stop-color:#f9f9f9;stop-opacity:1"
+         id="stop1" />
+      <stop
+         offset="100%"
+         style="stop-color:#ffffff;stop-opacity:1"
+         id="stop2" />
+    </linearGradient>
+    <linearGradient
+       id="highlightGradient"
+       x1="0%"
+       y1="0%"
+       x2="100%"
+       y2="100%">
+      <stop
+         offset="0%"
+         style="stop-color:#e3f2fd;stop-opacity:1"
+         id="stop3" />
+      <stop
+         offset="100%"
+         style="stop-color:#bbdefb;stop-opacity:1"
+         id="stop4" />
+    </linearGradient>
+    <marker
+       id="arrow"
+       markerWidth="10"
+       markerHeight="10"
+       refX="9"
+       refY="3"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L0,6 L9,3 z"
+         fill="#555"
+         id="path4" />
+    </marker>
+    <marker
+       id="arrowGreen"
+       markerWidth="10"
+       markerHeight="10"
+       refX="9"
+       refY="3"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L0,6 L9,3 z"
+         fill="#2e7d32"
+         id="path5" />
+    </marker>
+  </defs>
+  <!-- 背景 -->
+  <rect
+     width="850"
+     height="500"
+     fill="url(#bgGradient)"
+     id="rect5" />
+  <!-- 标题 -->
+  <text
+     x="425"
+     y="40"
+     font-family="Arial, Helvetica, sans-serif"
+     font-size="24"
+     font-weight="bold"
+     text-anchor="middle"
+     fill="#333"
+     id="text5">
+    图2：存算一体 (CIM) 技术全谱系分类框架
+  </text>
+  <!-- 顶部标注：能效趋势 (位置上移，避免重叠) -->
+  <path
+     d="M150,70 Q425,20 700,70"
+     fill="none"
+     stroke="#4caf50"
+     stroke-width="2"
+     stroke-dasharray="6,4"
+     marker-end="url(#arrowGreen)"
+     id="path6" />
+  <text
+     x="430.7915"
+     y="69.25354"
+     font-family="Arial, Helvetica, sans-serif"
+     font-size="14px"
+     text-anchor="middle"
+     fill="#2e7d32"
+     font-weight="bold"
+     id="text6">能效比 (TOPS/W) 与 吞吐率 提升趋势</text>
+  <!-- 横坐标轴：计算与存储的融合程度 -->
+  <line
+     x1="50"
+     y1="440"
+     x2="800"
+     y2="440"
+     stroke="#555"
+     stroke-width="2"
+     marker-end="url(#arrow)"
+     id="line6" />
+  <!-- 底部文字加大 -->
+  <text
+     x="425"
+     y="475"
+     font-family="Arial, Helvetica, sans-serif"
+     font-size="18px"
+     font-weight="bold"
+     text-anchor="middle"
+     fill="#333333"
+     id="text7">计算与存储融合程度加深 / 数据搬运距离缩短</text>
+  <!-- 分类 1: 近存计算 (Near-Memory Computing) -->
+  <g
+     transform="translate(50, 120)"
+     id="g11">
+    <rect
+       x="0"
+       y="0"
+       width="180"
+       height="280"
+       rx="10"
+       ry="10"
+       fill="#fff"
+       stroke="#9e9e9e"
+       stroke-width="2"
+       stroke-dasharray="5,5"
+       id="rect7" />
+    <text
+       x="90"
+       y="35"
+       font-family="Arial, Helvetica, sans-serif"
+       font-size="16"
+       font-weight="bold"
+       text-anchor="middle"
+       fill="#616161"
+       id="text8">
+      近存计算 (NMC)
+    </text>
+    <!-- 示意图 -->
+    <rect
+       x="25"
+       y="70"
+       width="130"
+       height="80"
+       fill="#e0e0e0"
+       stroke="#757575"
+       id="rect8" />
+    <text
+       x="90"
+       y="115"
+       font-family="Arial, Helvetica, sans-serif"
+       font-size="14"
+       text-anchor="middle"
+       fill="#333"
+       id="text9">存储阵列</text>
+    <rect
+       x="25"
+       y="190"
+       width="130"
+       height="40"
+       fill="#b3e5fc"
+       stroke="#0288d1"
+       id="rect9" />
+    <text
+       x="90"
+       y="215"
+       font-family="Arial, Helvetica, sans-serif"
+       font-size="14"
+       text-anchor="middle"
+       fill="#01579b"
+       id="text10">专用逻辑</text>
+    <!-- 连接线 -->
+    <line
+       x1="90"
+       y1="150"
+       x2="90"
+       y2="190"
+       stroke="#333"
+       stroke-width="2"
+       marker-end="url(#arrow)"
+       id="line10" />
+    <text
+       x="105"
+       y="175"
+       font-size="12px"
+       fill="#d32f2f"
+       font-family="Arial, Helvetica, sans-serif"
+       id="text11"><tspan
+         sodipodi:role="line"
+         id="tspan28"
+         x="105"
+         y="175">短总线</tspan></text>
+  </g>
+  <!-- 分类 2: 存内处理 (In-Memory Processing) -->
+  <g
+     transform="translate(260, 120)"
+     id="g15">
+    <rect
+       x="0"
+       y="0"
+       width="180"
+       height="280"
+       rx="10"
+       ry="10"
+       fill="#fff"
+       stroke="#9e9e9e"
+       stroke-width="2"
+       stroke-dasharray="5,5"
+       id="rect11" />
+    <text
+       x="90"
+       y="35"
+       font-family="Arial, Helvetica, sans-serif"
+       font-size="16"
+       font-weight="bold"
+       text-anchor="middle"
+       fill="#616161"
+       id="text12">
+      存内处理 (ISP)
+    </text>
+    <!-- 示意图 -->
+    <rect
+       x="25"
+       y="70"
+       width="130"
+       height="160"
+       fill="#e0e0e0"
+       stroke="#757575"
+       id="rect12" />
+    <text
+       x="90"
+       y="115"
+       font-family="Arial, Helvetica, sans-serif"
+       font-size="14"
+       text-anchor="middle"
+       fill="#333"
+       id="text13">存储阵列</text>
+    <!-- 底部嵌入计算 -->
+    <rect
+       x="25"
+       y="200"
+       width="130"
+       height="30"
+       fill="#81d4fa"
+       stroke="#0277bd"
+       id="rect13" />
+    <text
+       x="90"
+       y="220"
+       font-family="Arial, Helvetica, sans-serif"
+       font-size="13"
+       text-anchor="middle"
+       fill="#01579b"
+       id="text14">外围逻辑/ADC</text>
+    <text
+       x="90"
+       y="255"
+       font-family="Arial, Helvetica, sans-serif"
+       font-size="12"
+       text-anchor="middle"
+       fill="#555"
+       id="text15">利用外围电路计算</text>
+  </g>
+  <!-- 分类 3: 存内计算 (In-Memory Computing) - 放大并高亮 -->
+  <g
+     transform="translate(470, 90)"
+     id="g27">
+    <!-- 强调框 (尺寸放大) -->
+    <rect
+       x="0"
+       y="0"
+       width="330"
+       height="330"
+       rx="15"
+       ry="15"
+       fill="url(#highlightGradient)"
+       stroke="#1565c0"
+       stroke-width="3"
+       id="rect15" />
+    <text
+       x="165"
+       y="40"
+       font-family="Arial, Helvetica, sans-serif"
+       font-size="22"
+       font-weight="bold"
+       text-anchor="middle"
+       fill="#0d47a1"
+       id="text16">
+      存内计算 (CIM)
+    </text>
+    <text
+       x="165"
+       y="65"
+       font-family="Arial, Helvetica, sans-serif"
+       font-size="14"
+       text-anchor="middle"
+       fill="#1565c0"
+       id="text17">
+      (本课题重点研究方向)
+    </text>
+    <!-- 示意图背景 -->
+    <rect
+       x="40"
+       y="80"
+       width="250"
+       height="130"
+       fill="#fff"
+       stroke="#1565c0"
+       stroke-dasharray="3,3"
+       rx="5"
+       id="rect17" />
+    <!-- Bitcell 示意 (放大) -->
+    <circle
+       cx="100"
+       cy="130"
+       r="20"
+       fill="#bbdefb"
+       stroke="#1565c0"
+       stroke-width="2"
+       id="circle17" />
+    <text
+       x="100"
+       y="135"
+       font-family="Arial, Helvetica, sans-serif"
+       font-size="12"
+       text-anchor="middle"
+       fill="#0d47a1"
+       id="text18">Cell</text>
+    <circle
+       cx="230"
+       cy="130"
+       r="20"
+       fill="#bbdefb"
+       stroke="#1565c0"
+       stroke-width="2"
+       id="circle18" />
+    <text
+       x="230"
+       y="135"
+       font-family="Arial, Helvetica, sans-serif"
+       font-size="12"
+       text-anchor="middle"
+       fill="#0d47a1"
+       id="text19">Cell</text>
+    <!-- 模拟线运算 (加粗) -->
+    <line
+       x1="100"
+       y1="150"
+       x2="100"
+       y2="190"
+       stroke="#f57f17"
+       stroke-width="3"
+       id="line19" />
+    <line
+       x1="230"
+       y1="150"
+       x2="230"
+       y2="190"
+       stroke="#f57f17"
+       stroke-width="3"
+       id="line20" />
+    <line
+       x1="60"
+       y1="190"
+       x2="270"
+       y2="190"
+       stroke="#f57f17"
+       stroke-width="3"
+       id="line21" />
+    <text
+       x="165"
+       y="175"
+       font-family="Arial, Helvetica, sans-serif"
+       font-size="16"
+       font-weight="bold"
+       fill="#ef6c00"
+       text-anchor="middle"
+       id="text21">Analog MAC</text>
+    <text
+       x="165"
+       y="205"
+       font-family="Arial, Helvetica, sans-serif"
+       font-size="13"
+       fill="#555"
+       text-anchor="middle"
+       id="text22">Bitline Current Sum</text>
+    <!-- 下方分支：SRAM vs 新型存储 (放大) -->
+    <g
+       transform="translate(20, 230)"
+       id="g26">
+      <!-- SRAM 分支 (高亮，尺寸加大) -->
+      <rect
+         x="0"
+         y="0"
+         width="130"
+         height="80"
+         rx="8"
+         ry="8"
+         fill="#1565c0"
+         stroke="none"
+         id="rect22" />
+      <text
+         x="65"
+         y="35"
+         font-family="Arial, Helvetica, sans-serif"
+         font-size="20"
+         font-weight="bold"
+         text-anchor="middle"
+         fill="#fff"
+         id="text23">SRAM</text>
+      <text
+         x="65"
+         y="60"
+         font-family="Arial, Helvetica, sans-serif"
+         font-size="14"
+         text-anchor="middle"
+         fill="#e3f2fd"
+         id="text24">成熟工艺/快速</text>
+      <!-- 新型存储分支 (灰色，尺寸加大) -->
+      <rect
+         x="160"
+         y="0"
+         width="130"
+         height="80"
+         rx="8"
+         ry="8"
+         fill="#e0e0e0"
+         stroke="#9e9e9e"
+         stroke-width="1"
+         id="rect24" />
+      <text
+         x="225"
+         y="35"
+         font-family="Arial, Helvetica, sans-serif"
+         font-size="18"
+         font-weight="bold"
+         text-anchor="middle"
+         fill="#616161"
+         id="text25">RRAM/MRAM</text>
+      <text
+         x="225"
+         y="60"
+         font-family="Arial, Helvetica, sans-serif"
+         font-size="14"
+         text-anchor="middle"
+         fill="#757575"
+         id="text26">非易失/高密度</text>
+    </g>
+  </g>
+</svg>
