@@ -96,3 +96,15 @@ sw/fw_hex_batch/**
 sw/fw_hex_batch.zip
 
 tree.txt
+
+lenet5_data/
+lenet5_data/**
+lenet5_data.zip
+
+
+mlp_data/
+mlp_data/**
+mlp_data.zip
+
+2026-04-08-1.txt
+

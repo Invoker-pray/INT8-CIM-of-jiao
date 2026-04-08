@@ -277,6 +277,7 @@ foreach h [glob -nocomplain ${OUT_DIR}/deploy/*.hwh] {
 open_run impl_1
 report_utilization -file ${OUT_DIR}/utilization_report.txt
 report_timing_summary -file ${OUT_DIR}/timing_report.txt
+report_power -file ${OUT_DIR}/power_report.txt
 
 # Print timing summary to console
 set wns [get_property STATS.WNS [get_runs impl_1]]
