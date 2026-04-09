@@ -182,7 +182,7 @@ sudo bash install.sh -b KV260
 
 _这里有个问题，我安装22.04失败了才换成的24.04，结果脚本只支持到22.04，所以我只好进行一次危险的操作：把脚本的22.04改成24.04._
 
-![compatible](../img/compatible.png "有时候，一定要舍弃一些什么...")
+![compatible](../img/compatible.png)
 
 还有很多问题，比如说还需要把所有`install.sh`的`python3.10`换成`python3.12`，因为新的镜像自带的是3.12...
 
