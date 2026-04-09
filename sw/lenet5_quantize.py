@@ -586,6 +586,20 @@ def main():
     zp_lines = [f"{l['zp'] & 0xFFFFFFFF:08x}" for l in compute_layers]
     save_hex(zp_lines, f"{args.output_dir}/zero_points.hex")
 
+    # Save raw numpy arrays for CIMModel (packed conv needs original weight_int8)
+    npz_data = {}
+    for l in qparams["layers"]:
+        name = l["name"]
+        if l["type"] in ("conv", "fc"):
+            npz_data[f"{name}_weight"] = l["weight"]
+            npz_data[f"{name}_bias"] = l["bias"]
+            npz_data[f"{name}_mult"] = np.int32(l["mult"])
+            npz_data[f"{name}_shift"] = np.int32(l["shift"])
+            npz_data[f"{name}_zp"] = np.int32(l["zp"])
+    npz_path = f"{args.output_dir}/lenet5_qparams.npz"
+    np.savez(npz_path, **npz_data)
+    print(f"  NumPy params saved to {npz_path}")
+
     # Layer info
     with open(f"{args.output_dir}/layer_info.txt", "w") as f:
         for l in qparams["layers"]:

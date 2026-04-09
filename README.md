@@ -103,6 +103,124 @@ _RTL本身没有Conv专用硬件，这里用了python的im2col + 硬件MVM实现
 - [] Phase 2: Zynq UltraScale+ 的 PS 是 Cortex-A53（AXI 接口兼容，驱动几乎不改），综合 + 时序收敛 + 上板验证
 - [] Phase 3: 性能对比报告：PYNQ-Z2 vs KV260（资源、频率、吞吐）
 
+### [] step 6: 师兄 `cim_wzy` 启发下的改进
+
+> 阅读师兄 `cim_wzy/` 的 bit-serial CIM + NCNN 协同平台后，梳理出三条增量式、低风险的改进。详见 `docs/cim_wzy_comparison.md`。
+> 希望在尽量不动 RTL，只改 Python 软件栈和论文写作，用最小工作量获得最大答辩/论文价值。
+
+#### Phase 1: 逐层 bit-exact 验证基础设施 (低难度, 高调试价值)
+
+目标：在 `cim_driver.py` 加一个 `--verify-per-layer` 选项，每一层执行后把 `x_int8 / w_int8 / psum_int32 / y_int8` dump 到 `sw/logs/<layer_i>/`，并与 `golden_model.py` 的纯 Python 结果逐元素比对，打印 `[MATCH] / [UNMATCH]` 表格。
+
+- [] 在 `sw/cim_driver.py::CIMModel.predict()` 增加 `verify=False` 参数
+- [] 新建 `sw/logs/` 目录约定: `sw/logs/<run_id>/layer_<i>_<type>/{x.hex,y.hex,golden_y.hex,diff.txt}`
+- [] 利用已有 `golden_model.py` 的 `infer_layer()` 算参考, 逐层 `assert np.array_equal(y_hw, y_golden)`
+- [] 在 `full_cim_test_pynq.ipynb` 最后一个 cell 加一个开关做一次 demo run
+
+**为什么先做这个**：不改 RTL，不破坏现有测试，立即获得论文"bit-accurate验证"的素材。师兄项目里的 `SIM-MATCH/UNMATCH` 打印就是同一思路。
+
+#### Phase 2: SQ-mapping 启发的小核权重复制 (中等难度, 量化论文数据)
+
+目标：借鉴 `cim_wzy/simulation/csrc/layer/convolution.cpp` 的 `SQ_MAPPING`，在 `cim_driver.py::im2col` 后增加"权重复制打包"路径：当 `col_len = K*K*C_in` 远小于 `MAX_IN_DIM=784` 时，把多个输出像素的 im2col 列并排塞进同一次 MVM。
+
+**理论加速比（LeNet-5）**：
+
+- **Conv1** (`col_len=5*5*1=25`, `C_out=6`): 打包系数 `min(784/25, 128/6) = 21`，784 次 MVM 降为 38 次 → **≈20×**
+- **Conv2** (`col_len=5*5*6=150`, `C_out=16`): 打包系数 `min(784/150, 128/16) = 5`，100 次 MVM 降为 20 次 → **≈5×**
+
+- [] 在 `cim_driver.py` 新增 `infer_conv_packed()` 方法，接收当前 `layer["w_chunks"]` 和打包系数 `k_pack`
+- [] Python 侧构造"块对角"权重矩阵：`W_packed = block_diag(W, W, ..., W)`，行 `k_pack*col_len`，列 `k_pack*C_out`
+- [] 输入也按 `k_pack` 像素拼接成长向量
+- [] 一次 `start_and_wait()` 拿回 `k_pack * C_out` 个输出，再拆回 `k_pack` 组
+- [] 写一个 `sw/scripts/benchmark_conv_pack.py`，对 LeNet 跑 20 张图，输出 "每层 MVM 次数 / 总 cycle" 表格
+- [] 在论文"实验结果"章节加一个子节《软件映射优化》引用这些数据
+
+**注意**：不需要动硬件，只是把原来 `for p in range(n_pixels): infer_fc()` 的循环合并。正确性验证直接复用 Phase 1 的 `--verify-per-layer`。
+
+#### Phase 3: 论文架构对比章节 (纯写作, 高论文价值)
+
+目标：在毕业论文第 2 章"CIM 架构综述"加一个子节《数字 SRAM-CIM 的两种实现极端》，把 bit-serial popcount (以 `cim_wzy` 为代表) 和本毕设的 DSP48 行为级 MAC 作为两条技术路线对比。
+
+- [] 写作素材已整理在 `docs/cim_wzy_comparison.md` 第 1.4、2、3.2 节
+- [] 论文里要如实声明借鉴关系 (代码放在 `cim_wzy/` 独立目录, 与本毕设 `hw/` `sw/` 划清界限)
+- [] 在"未来工作"章节提出两条扩展路径: (a) NCNN runtime 集成、(b) Chisel 参数化重构
+
+### [] step 7: 工程化与性能优化（全面改进菜单）
+
+> 超出 step 6 范围的增量改进菜单，覆盖软件栈、RTL 时序优化、KV260 扩展、论文素材、工程健康度。
+> 按 "投入产出比" 分五档 A/B/C/D/E，详细方案与 rationale 见 `docs/cim_wzy_comparison.md` 第 6 节。
+> **Top 3 推荐**（合计 2 天，零 RTL 风险）：**A2 + B3** 延迟分解 + batch benchmark → **B1** 资源/时序 CSV → **A1** 权重常驻。一次性补齐论文第 4、5 章数据。
+
+#### Phase A: 立刻可做（<半天，纯 Python，零 RTL 风险）
+
+- [] **A1 权重常驻 + 批推理模式**
+  `CIMModel` 每个 layer 加 `w_loaded` 标志，连续同模型推理跳过 `load_weights/load_bias`，只 `load_input + start`。
+  _收益_：批测 MNIST 吞吐翻几倍，论文能给出 "N FPS / image" 数字。
+- [] **A2 端到端延迟分解 profiler**
+  `time.perf_counter()` 包住 `im2col / load_w / load_x / hw_compute / read_out / py_overhead`，`predict()` 返回 dict + 画 pie chart。
+  _收益_：告诉你下一步该优化哪里（很可能是 `load_weights` 或 Python 循环），论文 benchmark 章节核心支撑图。
+- [] **A3 Bitstream + driver + git commit 三位一体指纹**
+  `hashlib.sha256(bit) + git rev-parse --short HEAD` 写入 step 6 Phase 1 的 dump 目录。
+  _收益_：实验可追溯，答辩能秒答"这张图来自哪次运行"。
+
+#### Phase B: 本周可做（1-2 天，高论文价值）
+
+- [] **B1 资源/时序/功耗自动提取 CSV**
+  `hw/scripts/extract_report.py` 跑完 `vivado_build.sh` 后 grep `utilization_*.rpt / timing_summary.rpt / power.rpt`，append 一行到 `hw/build_history.csv` (`commit, freq_mhz, wns_ns, lut, ff, bram, dsp, power_w`)。
+  _收益_：论文"硬件资源与性能"表直接用 + patch1/2/3 三次流水优化的趋势线，故事直观。
+- [] **B2 Pytest 回归**（golden_model + cim_driver 离线）
+  `sw/tests/test_golden_bit_exact.py` snapshot-based + `test_quantize_roundtrip.py`。笔记本直接 `pytest sw/tests/` 10 秒。
+  _收益_：未来 RTL 重构不会悄悄破坏 bit-exact；论文可写"CI 覆盖率"。
+- [] **B3 多图 batch benchmark 脚本**
+  `sw/scripts/benchmark_e2e.py --n_images 1000 --batch_mode {single,resident}`，输出表格 (Model / n_img / total_s / ms_per_img / fps / accuracy)。
+  _收益_：论文第 5 章 benchmark 数据表。
+
+#### Phase C: 时间充裕再做（RTL 改动，显著加速）
+
+- [] **C1 拆 cim_tile 16→2×8 打破 critical path** ⚠️ RTL 核心改动
+  `坑` 章节 patch 3 明确 critical path 是 `w_tile_reg → DSP48 → CARRY4 → tile_psum_reg`，16-element 串行加法链。拆成前 8 + 后 8 两拍流水，`cim_accel_core` compute 段多加一个 pipeline stage。
+  _收益_：125 MHz unlock → 吞吐 2×；论文硬件章节"流水线优化四阶段"故事完整 (patch1/2/3 + 这步 = 4 次迭代)。
+  _风险_：动 `cim_tile.sv` 核心，需重跑全部 VCS 回归 (`run_regression.sh`)。
+- [] **C2 Weight / Input SRAM 双缓冲** ⚠️ RTL 中等改动
+  双 bank + `active_bank` 寄存器，Python 侧预加载 layer N+1 weight 到另一个 bank。
+  _收益_：多层网络层间延迟隐藏，吞吐再提升 20%~40%。
+  _风险_：BRAM 占用翻倍，PYNQ-Z2 可能放不下 —— 放到 KV260 phase 一起做更合理。
+- [] **C3 AXI4-Full burst 代替 AXI4-Lite 逐字** ⚠️ 接口重写
+  换 AXI4-Full slave + DMA engine（PYNQ `pynq.lib.dma`），单次 burst 几 KB。
+  _收益_：weight load 从 ms 级降到 μs 级。
+  _风险_：改动最大。**不建议毕设阶段做**，论文"未来工作"提。
+
+#### Phase D: KV260 专属（与 step 5 合并推进）
+
+- [] **D1 UltraRAM 替代 BRAM 放大权重尺寸**
+  UltraScale+ URAM (288 Kb/block vs BRAM 36 Kb) → `MAX_IN_DIM` 从 784 拉到 1024~2048。
+- [] **D2 PAR_OB = 4 或 8 真并行**
+  KV260 资源充足，吞吐 4-8×。
+- [] **D3 200 MHz 目标时序**（配合 C1）
+  UltraScale+ 时序容易收敛。
+  **三条组合**：凑出论文"跨平台对比表" PYNQ-Z2 (62.5 MHz, PAR=1) vs KV260 (200 MHz, PAR=4)，吞吐/面积/功耗效率全对比。
+
+#### Phase E: 论文素材与工程健康度
+
+- [] **E1 层级 latency timeline 可视化** (matplotlib Gantt)
+  从 step 6 Phase 1 dump 出发，画"Figure X: LeNet-5 逐层延迟分布"。
+- [] **E2 统一 CLI 入口** `sw/scripts/cim.py run --model lenet5 --input foo.png --verify`
+  替代散落 notebook，答辩 demo 干净。
+- [] **E3 架构图自动生成** (`graphviz` 驱动 `cim_pkg.sv` 参数)
+  改参数不用手画。
+- [] **E4 ONNX import 路径**
+  `onnxruntime` EP 注册 `CIMExecutionProvider`。**只在论文"未来工作"提，不实现**。
+
+#### 推进顺序建议
+
+```
+step 6 Phase 1 (verify)  ──┐
+step 6 Phase 2 (SQ pack) ──┼──→ Top 3 (A1+A2+B1+B3) ──→ C1 critical path ──→ D1+D2+D3 KV260
+step 6 Phase 3 (thesis)  ──┘
+```
+
+原则：**不贪多**。完成 step 6 Phase 1+2 + Top 3 已经是扎实的毕设工作量。剩下的放进论文"未来工作"章节。答辩委员看到一个能讲清楚"下一步该往哪走"的候选人，永远比看到一个"啥都做了一半"的候选人印象好。
+
 # 进展记录
 
 ## checkpoint 1
