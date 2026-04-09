@@ -17,12 +17,14 @@
 \abx@aux@segm{0}{0}{4}
 \abx@aux@cite{0}{5}
 \abx@aux@segm{0}{0}{5}
+\@writefile{toc}{\contentsline {section}{\numberline {1}绪论}{6}{section.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}选题背景}{6}{subsection.1.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces 传统冯·诺依曼架构与存算一体架构对比}}{6}{figure.1}\protected@file@percent }
+\newlabel{fig:vonneumann_vs_cim}{{1}{6}{传统冯·诺依曼架构与存算一体架构对比}{figure.1}{}}
 \abx@aux@cite{0}{6}
 \abx@aux@segm{0}{0}{6}
 \abx@aux@cite{0}{8}
 \abx@aux@segm{0}{0}{8}
-\@writefile{toc}{\contentsline {section}{\numberline {1}绪论}{6}{section.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}选题背景}{6}{subsection.1.1}\protected@file@percent }
 \abx@aux@cite{0}{Sun2023AFS}
 \abx@aux@segm{0}{0}{Sun2023AFS}
 \abx@aux@cite{0}{5}
@@ -63,6 +65,7 @@
 \abx@aux@segm{0}{0}{26}
 \abx@aux@cite{0}{27}
 \abx@aux@segm{0}{0}{27}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2}国内外现状及发展趋势}{7}{subsection.1.2}\protected@file@percent }
 \abx@aux@cite{0}{6}
 \abx@aux@segm{0}{0}{6}
 \abx@aux@cite{0}{28}
@@ -73,66 +76,89 @@
 \abx@aux@segm{0}{0}{12}
 \abx@aux@cite{0}{16}
 \abx@aux@segm{0}{0}{16}
-\@writefile{toc}{\contentsline {subsection}{\numberline {1.2}国内外现状及发展趋势}{7}{subsection.1.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {1.3}本文主要工作与贡献}{7}{subsection.1.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {2}INT8 CIM阵列架构设计}{8}{section.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}整体架构}{8}{subsection.2.1}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces CIM SoC整体架构}}{8}{figure.1}\protected@file@percent }
-\newlabel{fig:arch}{{1}{8}{CIM SoC整体架构}{figure.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}CIM Tile设计}{9}{subsection.2.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}存储子系统}{10}{subsection.2.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.3.1}权重SRAM的BRAM推断问题与bank拆分方案}{10}{subsubsection.2.3.1}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces 权重SRAM设计参数}}{10}{table.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.3.2}偏置SRAM与输入缓冲}{10}{subsubsection.2.3.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces CIM技术全谱系分类框架与本课题定位}}{8}{figure.2}\protected@file@percent }
+\newlabel{fig:cim_taxonomy}{{2}{8}{CIM技术全谱系分类框架与本课题定位}{figure.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.3}本文主要工作与贡献}{8}{subsection.1.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}INT8 CIM阵列架构设计}{9}{section.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}整体架构}{9}{subsection.2.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces INT8 CIM加速器完整数据通路：从输入准备到量化输出的6级流水}}{9}{figure.3}\protected@file@percent }
+\newlabel{fig:arch}{{3}{9}{INT8 CIM加速器完整数据通路：从输入准备到量化输出的6级流水}{figure.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}CIM Tile设计}{10}{subsection.2.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces 16$\times $16 CIM Tile内部架构：输入广播、权重列与链式累加}}{11}{figure.4}\protected@file@percent }
+\newlabel{fig:cim_tile}{{4}{11}{16$\times $16 CIM Tile内部架构：输入广播、权重列与链式累加}{figure.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}存储子系统}{11}{subsection.2.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.3.1}权重SRAM的BRAM推断问题与bank拆分方案}{11}{subsubsection.2.3.1}\protected@file@percent }
 \abx@aux@cite{0}{6}
 \abx@aux@segm{0}{0}{6}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}量化与重定标}{11}{subsection.2.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}AXI4-Lite接口}{11}{subsection.2.5}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces CSR地址映射}}{12}{table.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.6}7级流水线状态机}{12}{subsection.2.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {3}PicoRV32 RISC-V软核集成}{13}{section.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}设计动机}{13}{subsection.3.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}系统架构}{13}{subsection.3.2}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces PicoRV32 + CIM SoC架构}}{13}{figure.2}\protected@file@percent }
-\newlabel{fig:rv32_arch}{{2}{13}{PicoRV32 + CIM SoC架构}{figure.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Bus Bridge与地址映射}{14}{subsection.3.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces PicoRV32地址映射}}{14}{table.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}模型规模约束}{14}{subsection.3.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {4}FPGA验证与性能评估}{15}{section.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}验证方法学}{15}{subsection.4.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}PYNQ-Z2综合结果}{15}{subsection.4.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces CIM SoC资源占用（ARM控制模式，PAR\_OB=1，PYNQ-Z2）}}{15}{table.4}\protected@file@percent }
-\newlabel{tab:util_arm}{{4}{15}{CIM SoC资源占用（ARM控制模式，PAR\_OB=1，PYNQ-Z2）}{table.4}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces 时序与功耗（ARM控制模式）}}{16}{table.5}\protected@file@percent }
-\newlabel{tab:timing_arm}{{5}{16}{时序与功耗（ARM控制模式）}{table.5}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}MLP网络推理验证}{16}{subsection.4.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces MLP推理性能（PAR\_OB=1，60MHz）}}{16}{table.6}\protected@file@percent }
-\newlabel{tab:mlp_perf}{{6}{16}{MLP推理性能（PAR\_OB=1，60MHz）}{table.6}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}LeNet-5 CNN推理验证}{17}{subsection.4.4}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces LeNet-5各层推理周期数（PAR\_OB=1，60MHz）}}{17}{table.7}\protected@file@percent }
-\newlabel{tab:lenet5_perf}{{7}{17}{LeNet-5各层推理周期数（PAR\_OB=1，60MHz）}{table.7}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}加速比分析}{17}{subsection.4.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.5.1}理论分析}{17}{subsubsection.4.5.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.5.2}硬件推理时间}{18}{subsubsection.4.5.2}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces CIM硬件推理延迟}}{18}{table.8}\protected@file@percent }
-\newlabel{tab:hw_latency}{{8}{18}{CIM硬件推理延迟}{table.8}{}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.5.3}软件基线与加速比}{18}{subsubsection.4.5.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces SW基线与HW推理延迟对比（ARM Cortex-A9 @ 650MHz vs CIM @ 60MHz）}}{18}{table.9}\protected@file@percent }
-\newlabel{tab:speedup}{{9}{18}{SW基线与HW推理延迟对比（ARM Cortex-A9 @ 650MHz vs CIM @ 60MHz）}{table.9}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}PicoRV32验证结果}{19}{subsection.4.6}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces PicoRV32模式资源占用（PYNQ-Z2）}}{19}{table.10}\protected@file@percent }
-\newlabel{tab:util_rv32}{{10}{19}{PicoRV32模式资源占用（PYNQ-Z2）}{table.10}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {11}{\ignorespaces PicoRV32模式时序与功耗}}{19}{table.11}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.6.1}PicoRV32功能验证}{19}{subsubsection.4.6.1}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {12}{\ignorespaces PicoRV32推理验证结果（784→16→10 MLP，200张MNIST图片）}}{20}{table.12}\protected@file@percent }
-\newlabel{tab:rv32_verify}{{12}{20}{PicoRV32推理验证结果（784→16→10 MLP，200张MNIST图片）}{table.12}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.7}两种控制模式对比}{20}{subsection.4.7}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {13}{\ignorespaces ARM控制 vs PicoRV32控制模式对比}}{20}{table.13}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {5}总结与展望}{20}{section.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}工作总结}{20}{subsection.5.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces 权重SRAM的bank拆分方案：从BRAM推断失败到成功}}{12}{figure.5}\protected@file@percent }
+\newlabel{fig:weight_sram_bank}{{5}{12}{权重SRAM的bank拆分方案：从BRAM推断失败到成功}{figure.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces 权重SRAM设计参数}}{12}{table.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {2.3.2}偏置SRAM与输入缓冲}{12}{subsubsection.2.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}量化与重定标}{12}{subsection.2.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}AXI4-Lite接口}{13}{subsection.2.5}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces CSR地址映射}}{13}{table.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.6}7级流水线状态机}{13}{subsection.2.6}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces 17状态FSM状态转移图：初始化、计算流水线与输出流水线}}{14}{figure.6}\protected@file@percent }
+\newlabel{fig:fsm_states}{{6}{14}{17状态FSM状态转移图：初始化、计算流水线与输出流水线}{figure.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces 流水线时序图：多个input-block迭代的重叠执行}}{15}{figure.7}\protected@file@percent }
+\newlabel{fig:pipeline_timing}{{7}{15}{流水线时序图：多个input-block迭代的重叠执行}{figure.7}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}PicoRV32 RISC-V软核集成}{15}{section.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}设计动机}{15}{subsection.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}系统架构}{15}{subsection.3.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces PicoRV32 + CIM SoC系统架构：PL侧RISC-V软核与CIM IP集成}}{16}{figure.8}\protected@file@percent }
+\newlabel{fig:rv32_arch}{{8}{16}{PicoRV32 + CIM SoC系统架构：PL侧RISC-V软核与CIM IP集成}{figure.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Bus Bridge与地址映射}{16}{subsection.3.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces PicoRV32地址映射}}{16}{table.3}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces PicoRV32地址空间映射与Bridge译码逻辑}}{17}{figure.9}\protected@file@percent }
+\newlabel{fig:rv32_addr_map}{{9}{17}{PicoRV32地址空间映射与Bridge译码逻辑}{figure.9}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}模型规模约束}{17}{subsection.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4}FPGA验证与性能评估}{17}{section.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}验证方法学}{17}{subsection.4.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces 三层验证方法学流程：Python Golden Model → VCS RTL仿真 → PYNQ板级验证}}{18}{figure.10}\protected@file@percent }
+\newlabel{fig:verification_flow}{{10}{18}{三层验证方法学流程：Python Golden Model → VCS RTL仿真 → PYNQ板级验证}{figure.10}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}PYNQ-Z2综合结果}{18}{subsection.4.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces CIM SoC资源占用（ARM控制模式，PAR\_OB=1，PYNQ-Z2）}}{19}{table.4}\protected@file@percent }
+\newlabel{tab:util_arm}{{4}{19}{CIM SoC资源占用（ARM控制模式，PAR\_OB=1，PYNQ-Z2）}{table.4}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces 时序与功耗（ARM控制模式）}}{19}{table.5}\protected@file@percent }
+\newlabel{tab:timing_arm}{{5}{19}{时序与功耗（ARM控制模式）}{table.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces FPGA资源占用率对比：ARM控制模式与PicoRV32模式}}{20}{figure.11}\protected@file@percent }
+\newlabel{fig:resource_util}{{11}{20}{FPGA资源占用率对比：ARM控制模式与PicoRV32模式}{figure.11}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces Vivado布局布线结果：Zynq-7020芯片上CIM SoC各模块物理分布}}{20}{figure.12}\protected@file@percent }
+\newlabel{fig:floorplan}{{12}{20}{Vivado布局布线结果：Zynq-7020芯片上CIM SoC各模块物理分布}{figure.12}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}MLP网络推理验证}{20}{subsection.4.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces MLP推理性能（PAR\_OB=1，60MHz）}}{20}{table.6}\protected@file@percent }
+\newlabel{tab:mlp_perf}{{6}{20}{MLP推理性能（PAR\_OB=1，60MHz）}{table.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}LeNet-5 CNN推理验证}{21}{subsection.4.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces LeNet-5各层推理周期数（PAR\_OB=1，60MHz）}}{21}{table.7}\protected@file@percent }
+\newlabel{tab:lenet5_perf}{{7}{21}{LeNet-5各层推理周期数（PAR\_OB=1，60MHz）}{table.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {13}{\ignorespaces LeNet-5硬件推理MNIST分类结果：200张手写数字图片}}{22}{figure.13}\protected@file@percent }
+\newlabel{fig:mnist_results}{{13}{22}{LeNet-5硬件推理MNIST分类结果：200张手写数字图片}{figure.13}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}加速比分析}{22}{subsection.4.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.5.1}理论分析}{22}{subsubsection.4.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.5.2}硬件推理时间}{23}{subsubsection.4.5.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces CIM硬件推理延迟}}{23}{table.8}\protected@file@percent }
+\newlabel{tab:hw_latency}{{8}{23}{CIM硬件推理延迟}{table.8}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.5.3}软件基线与加速比}{23}{subsubsection.4.5.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces SW基线与HW推理延迟对比（ARM Cortex-A9 @ 650MHz vs CIM @ 60MHz）}}{23}{table.9}\protected@file@percent }
+\newlabel{tab:speedup}{{9}{23}{SW基线与HW推理延迟对比（ARM Cortex-A9 @ 650MHz vs CIM @ 60MHz）}{table.9}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {14}{\ignorespaces 软件基线与CIM硬件推理延迟对比及加速比}}{24}{figure.14}\protected@file@percent }
+\newlabel{fig:speedup}{{14}{24}{软件基线与CIM硬件推理延迟对比及加速比}{figure.14}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}PicoRV32验证结果}{24}{subsection.4.6}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces PicoRV32模式资源占用（PYNQ-Z2）}}{24}{table.10}\protected@file@percent }
+\newlabel{tab:util_rv32}{{10}{24}{PicoRV32模式资源占用（PYNQ-Z2）}{table.10}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {11}{\ignorespaces PicoRV32模式时序与功耗}}{24}{table.11}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.6.1}PicoRV32功能验证}{25}{subsubsection.4.6.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {12}{\ignorespaces PicoRV32推理验证结果（784→16→10 MLP，200张MNIST图片）}}{25}{table.12}\protected@file@percent }
+\newlabel{tab:rv32_verify}{{12}{25}{PicoRV32推理验证结果（784→16→10 MLP，200张MNIST图片）}{table.12}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.7}两种控制模式对比}{25}{subsection.4.7}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {13}{\ignorespaces ARM控制 vs PicoRV32控制模式对比}}{25}{table.13}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {15}{\ignorespaces ARM控制与PicoRV32控制模式多维对比雷达图}}{26}{figure.15}\protected@file@percent }
+\newlabel{fig:arm_vs_rv32}{{15}{26}{ARM控制与PicoRV32控制模式多维对比雷达图}{figure.15}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}总结与展望}{26}{section.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}工作总结}{26}{subsection.5.1}\protected@file@percent }
 \abx@aux@nociteall
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}不足与展望}{21}{subsection.5.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {6}参考文献}{21}{section.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}不足与展望}{27}{subsection.5.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}参考文献}{27}{section.6}\protected@file@percent }
 \abx@aux@read@bbl@mdfivesum{4B56A3A89AD46A5D5032E8D7237EF2F4}
 \abx@aux@defaultrefcontext{0}{10}{none/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{11}{none/global//global/global/global}
@@ -161,4 +187,4 @@
 \abx@aux@defaultrefcontext{0}{29}{none/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{16}{none/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{23}{none/global//global/global/global}
-\gdef \@abspage@last{24}
+\gdef \@abspage@last{30}

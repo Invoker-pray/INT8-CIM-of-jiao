@@ -1,34 +1,34 @@
 \contentsline {section}{\numberline {1}绪论}{6}{section.1}%
 \contentsline {subsection}{\numberline {1.1}选题背景}{6}{subsection.1.1}%
 \contentsline {subsection}{\numberline {1.2}国内外现状及发展趋势}{7}{subsection.1.2}%
-\contentsline {subsection}{\numberline {1.3}本文主要工作与贡献}{7}{subsection.1.3}%
-\contentsline {section}{\numberline {2}INT8 CIM阵列架构设计}{8}{section.2}%
-\contentsline {subsection}{\numberline {2.1}整体架构}{8}{subsection.2.1}%
-\contentsline {subsection}{\numberline {2.2}CIM Tile设计}{9}{subsection.2.2}%
-\contentsline {subsection}{\numberline {2.3}存储子系统}{10}{subsection.2.3}%
-\contentsline {subsubsection}{\numberline {2.3.1}权重SRAM的BRAM推断问题与bank拆分方案}{10}{subsubsection.2.3.1}%
-\contentsline {subsubsection}{\numberline {2.3.2}偏置SRAM与输入缓冲}{10}{subsubsection.2.3.2}%
-\contentsline {subsection}{\numberline {2.4}量化与重定标}{11}{subsection.2.4}%
-\contentsline {subsection}{\numberline {2.5}AXI4-Lite接口}{11}{subsection.2.5}%
-\contentsline {subsection}{\numberline {2.6}7级流水线状态机}{12}{subsection.2.6}%
-\contentsline {section}{\numberline {3}PicoRV32 RISC-V软核集成}{13}{section.3}%
-\contentsline {subsection}{\numberline {3.1}设计动机}{13}{subsection.3.1}%
-\contentsline {subsection}{\numberline {3.2}系统架构}{13}{subsection.3.2}%
-\contentsline {subsection}{\numberline {3.3}Bus Bridge与地址映射}{14}{subsection.3.3}%
-\contentsline {subsection}{\numberline {3.4}模型规模约束}{14}{subsection.3.4}%
-\contentsline {section}{\numberline {4}FPGA验证与性能评估}{15}{section.4}%
-\contentsline {subsection}{\numberline {4.1}验证方法学}{15}{subsection.4.1}%
-\contentsline {subsection}{\numberline {4.2}PYNQ-Z2综合结果}{15}{subsection.4.2}%
-\contentsline {subsection}{\numberline {4.3}MLP网络推理验证}{16}{subsection.4.3}%
-\contentsline {subsection}{\numberline {4.4}LeNet-5 CNN推理验证}{17}{subsection.4.4}%
-\contentsline {subsection}{\numberline {4.5}加速比分析}{17}{subsection.4.5}%
-\contentsline {subsubsection}{\numberline {4.5.1}理论分析}{17}{subsubsection.4.5.1}%
-\contentsline {subsubsection}{\numberline {4.5.2}硬件推理时间}{18}{subsubsection.4.5.2}%
-\contentsline {subsubsection}{\numberline {4.5.3}软件基线与加速比}{18}{subsubsection.4.5.3}%
-\contentsline {subsection}{\numberline {4.6}PicoRV32验证结果}{19}{subsection.4.6}%
-\contentsline {subsubsection}{\numberline {4.6.1}PicoRV32功能验证}{19}{subsubsection.4.6.1}%
-\contentsline {subsection}{\numberline {4.7}两种控制模式对比}{20}{subsection.4.7}%
-\contentsline {section}{\numberline {5}总结与展望}{20}{section.5}%
-\contentsline {subsection}{\numberline {5.1}工作总结}{20}{subsection.5.1}%
-\contentsline {subsection}{\numberline {5.2}不足与展望}{21}{subsection.5.2}%
-\contentsline {section}{\numberline {6}参考文献}{21}{section.6}%
+\contentsline {subsection}{\numberline {1.3}本文主要工作与贡献}{8}{subsection.1.3}%
+\contentsline {section}{\numberline {2}INT8 CIM阵列架构设计}{9}{section.2}%
+\contentsline {subsection}{\numberline {2.1}整体架构}{9}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}CIM Tile设计}{10}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}存储子系统}{11}{subsection.2.3}%
+\contentsline {subsubsection}{\numberline {2.3.1}权重SRAM的BRAM推断问题与bank拆分方案}{11}{subsubsection.2.3.1}%
+\contentsline {subsubsection}{\numberline {2.3.2}偏置SRAM与输入缓冲}{12}{subsubsection.2.3.2}%
+\contentsline {subsection}{\numberline {2.4}量化与重定标}{12}{subsection.2.4}%
+\contentsline {subsection}{\numberline {2.5}AXI4-Lite接口}{13}{subsection.2.5}%
+\contentsline {subsection}{\numberline {2.6}7级流水线状态机}{13}{subsection.2.6}%
+\contentsline {section}{\numberline {3}PicoRV32 RISC-V软核集成}{15}{section.3}%
+\contentsline {subsection}{\numberline {3.1}设计动机}{15}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}系统架构}{15}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Bus Bridge与地址映射}{16}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}模型规模约束}{17}{subsection.3.4}%
+\contentsline {section}{\numberline {4}FPGA验证与性能评估}{17}{section.4}%
+\contentsline {subsection}{\numberline {4.1}验证方法学}{17}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}PYNQ-Z2综合结果}{18}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}MLP网络推理验证}{20}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}LeNet-5 CNN推理验证}{21}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}加速比分析}{22}{subsection.4.5}%
+\contentsline {subsubsection}{\numberline {4.5.1}理论分析}{22}{subsubsection.4.5.1}%
+\contentsline {subsubsection}{\numberline {4.5.2}硬件推理时间}{23}{subsubsection.4.5.2}%
+\contentsline {subsubsection}{\numberline {4.5.3}软件基线与加速比}{23}{subsubsection.4.5.3}%
+\contentsline {subsection}{\numberline {4.6}PicoRV32验证结果}{24}{subsection.4.6}%
+\contentsline {subsubsection}{\numberline {4.6.1}PicoRV32功能验证}{25}{subsubsection.4.6.1}%
+\contentsline {subsection}{\numberline {4.7}两种控制模式对比}{25}{subsection.4.7}%
+\contentsline {section}{\numberline {5}总结与展望}{26}{section.5}%
+\contentsline {subsection}{\numberline {5.1}工作总结}{26}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}不足与展望}{27}{subsection.5.2}%
+\contentsline {section}{\numberline {6}参考文献}{27}{section.6}%
