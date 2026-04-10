@@ -78,11 +78,15 @@ cd sw && python3 golden_model.py --mnist-e2e --output-dir <dir>   # generate hex
 
 ### Software (`sw/`)
 
+See **`docs/sw_usage.md`** for full file descriptions, CLI usage, and Python API reference. Summary:
+
 - `golden_model.py` — Bit-accurate INT8 reference model; generates hex files for testbenches.
 - `golden_model_torch.py` — PyTorch cross-validation.
-- `cim_driver.py` — PYNQ Python driver (`CIMModel` class) for layer-by-layer inference with im2col support.
-- `lenet5_quantize.py` / `model_zoo.py` — Quantization and model definitions.
-- Jupyter notebooks (`*_pynq.ipynb`) — On-board verification scripts.
+- `mnist_quantize.py` — Train/quantize/export MLP (784→128→10) for real MNIST testing.
+- `lenet5_quantize.py` — Train/quantize/export LeNet-5 with im2col support.
+- `model_zoo.py` — Unified multi-model API: `build_model`, `train`, `quantize`, `int8_infer`, `export_hex`.
+- `cim_driver.py` — PYNQ Python driver (`CIMDriver` low-level MMIO, `CIMModel` high-level multi-layer inference with im2col and SQ-mapping packed MVM).
+- Jupyter notebooks (`*_pynq.ipynb`) — On-board verification scripts; `generate_*.ipynb` run on host.
 
 ## Key Constraints
 
