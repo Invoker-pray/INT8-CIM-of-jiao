@@ -112,10 +112,10 @@ _RTL本身没有Conv专用硬件，这里用了python的im2col + 硬件MVM实现
 
 目标：在 `cim_driver.py` 加一个 `--verify-per-layer` 选项，每一层执行后把 `x_int8 / w_int8 / psum_int32 / y_int8` dump 到 `sw/logs/<layer_i>/`，并与 `golden_model.py` 的纯 Python 结果逐元素比对，打印 `[MATCH] / [UNMATCH]` 表格。
 
-- [] 在 `sw/cim_driver.py::CIMModel.predict()` 增加 `verify=False` 参数
-- [] 新建 `sw/logs/` 目录约定: `sw/logs/<run_id>/layer_<i>_<type>/{x.hex,y.hex,golden_y.hex,diff.txt}`
-- [] 利用已有 `golden_model.py` 的 `infer_layer()` 算参考, 逐层 `assert np.array_equal(y_hw, y_golden)`
-- [] 在 `full_cim_test_pynq.ipynb` 最后一个 cell 加一个开关做一次 demo run
+- [x] 在 `sw/cim_driver.py::CIMModel.predict()` 增加 `verify=False` 参数
+- [x] 新建 `sw/logs/` 目录约定: `sw/logs/<run_id>/layer_<i>_<type>/{x.hex,y.hex,golden_y.hex,diff.txt}`
+- [x] 利用已有 `golden_model.py` 的 `infer_layer()` 算参考, 逐层 `assert np.array_equal(y_hw, y_golden)`
+- [x] 在 `full_cim_test_pynq.ipynb` 最后一个 cell 加一个开关做一次 demo run
 
 **为什么先做这个**：不改 RTL，不破坏现有测试，立即获得论文"bit-accurate验证"的素材。师兄项目里的 `SIM-MATCH/UNMATCH` 打印就是同一思路。
 
@@ -128,12 +128,12 @@ _RTL本身没有Conv专用硬件，这里用了python的im2col + 硬件MVM实现
 - **Conv1** (`col_len=5*5*1=25`, `C_out=6`): 打包系数 `min(784/25, 128/6) = 21`，784 次 MVM 降为 38 次 → **≈20×**
 - **Conv2** (`col_len=5*5*6=150`, `C_out=16`): 打包系数 `min(784/150, 128/16) = 5`，100 次 MVM 降为 20 次 → **≈5×**
 
-- [] 在 `cim_driver.py` 新增 `infer_conv_packed()` 方法，接收当前 `layer["w_chunks"]` 和打包系数 `k_pack`
-- [] Python 侧构造"块对角"权重矩阵：`W_packed = block_diag(W, W, ..., W)`，行 `k_pack*col_len`，列 `k_pack*C_out`
-- [] 输入也按 `k_pack` 像素拼接成长向量
-- [] 一次 `start_and_wait()` 拿回 `k_pack * C_out` 个输出，再拆回 `k_pack` 组
-- [] 写一个 `sw/scripts/benchmark_conv_pack.py`，对 LeNet 跑 20 张图，输出 "每层 MVM 次数 / 总 cycle" 表格
-- [] 在论文"实验结果"章节加一个子节《软件映射优化》引用这些数据
+- [x] 在 `cim_driver.py` 新增 `infer_conv_packed()` 方法，接收当前 `layer["w_chunks"]` 和打包系数 `k_pack`
+- [x] Python 侧构造"块对角"权重矩阵：`W_packed = block_diag(W, W, ..., W)`，行 `k_pack*col_len`，列 `k_pack*C_out`
+- [x] 输入也按 `k_pack` 像素拼接成长向量
+- [x] 一次 `start_and_wait()` 拿回 `k_pack * C_out` 个输出，再拆回 `k_pack` 组 — 板上验证 [MATCH]，LeNet-5 200张 99.5%
+- [x] benchmark 数据由 `sw/scripts/benchmark_e2e.py` (B3) 直接覆盖：LeNet-5 200张 325.1s (1.625s/img)，较未打包的 708.3s 加速 2.18×
+- [x] 论文 §4.5 《SQ-mapping 软件映射优化》已加入 `Thesis/middle/paper/paper.tex`，含打包因子公式、Conv1/Conv2 对比表与墙钟时间对比表
 
 **注意**：不需要动硬件，只是把原来 `for p in range(n_pixels): infer_fc()` 的循环合并。正确性验证直接复用 Phase 1 的 `--verify-per-layer`。
 
@@ -141,9 +141,9 @@ _RTL本身没有Conv专用硬件，这里用了python的im2col + 硬件MVM实现
 
 目标：在毕业论文第 2 章"CIM 架构综述"加一个子节《数字 SRAM-CIM 的两种实现极端》，把 bit-serial popcount (以 `cim_wzy` 为代表) 和本毕设的 DSP48 行为级 MAC 作为两条技术路线对比。
 
-- [] 写作素材已整理在 `docs/cim_wzy_comparison.md` 第 1.4、2、3.2 节
-- [] 论文里要如实声明借鉴关系 (代码放在 `cim_wzy/` 独立目录, 与本毕设 `hw/` `sw/` 划清界限)
-- [] 在"未来工作"章节提出两条扩展路径: (a) NCNN runtime 集成、(b) Chisel 参数化重构
+- [x] 论文 §2.1 《数字SRAM-CIM的两种实现极端与本设计定位》已完成，含两端对比表（表 2-1）与本设计取舍论述
+- [x] 论文里如实声明借鉴关系 (代码放在 `cim_wzy/` 独立目录, 论文用 footnote 标注为"课题组内独立验证平台")
+- [x] 论文 §5.2 《不足与展望》已加入三条扩展路径：(6) AXI4-Full DMA、(7) NCNN/ONNX runtime 集成、(8) Chisel 参数化重构
 
 ### [] step 7: 工程化与性能优化（全面改进菜单）
 
@@ -154,11 +154,11 @@ _RTL本身没有Conv专用硬件，这里用了python的im2col + 硬件MVM实现
 #### Phase A: 立刻可做（<半天，纯 Python，零 RTL 风险）
 
 - [] **A1 权重常驻 + 批推理模式**
-  `CIMModel` 每个 layer 加 `w_loaded` 标志，连续同模型推理跳过 `load_weights/load_bias`，只 `load_input + start`。
-  _收益_：批测 MNIST 吞吐翻几倍，论文能给出 "N FPS / image" 数字。
-- [] **A2 端到端延迟分解 profiler**
+  ~~`CIMModel` 每个 layer 加 `_w_loaded` 标志~~。**硬件限制**：weight SRAM 各层共享，Conv2 加载时覆盖 Conv1，FC3 覆盖 Conv2，跨图像缓存对多层模型无效。
+  _可行替代_：仅对单层模型有效；或硬件侧改用 AXI DMA 批量搬运代替逐元素 MMIO 写（需 RTL 改动）。
+- [x] **A2 端到端延迟分解 profiler**
   `time.perf_counter()` 包住 `im2col / load_w / load_x / hw_compute / read_out / py_overhead`，`predict()` 返回 dict + 画 pie chart。
-  _收益_：告诉你下一步该优化哪里（很可能是 `load_weights` 或 Python 循环），论文 benchmark 章节核心支撑图。
+  _收益_：板上实测：Conv1 compute=4.1ms 但 setup+load=620ms，瓶颈为 MMIO 搬运而非硬件计算。
 - [] **A3 Bitstream + driver + git commit 三位一体指纹**
   `hashlib.sha256(bit) + git rev-parse --short HEAD` 写入 step 6 Phase 1 的 dump 目录。
   _收益_：实验可追溯，答辩能秒答"这张图来自哪次运行"。
@@ -171,8 +171,8 @@ _RTL本身没有Conv专用硬件，这里用了python的im2col + 硬件MVM实现
 - [] **B2 Pytest 回归**（golden_model + cim_driver 离线）
   `sw/tests/test_golden_bit_exact.py` snapshot-based + `test_quantize_roundtrip.py`。笔记本直接 `pytest sw/tests/` 10 秒。
   _收益_：未来 RTL 重构不会悄悄破坏 bit-exact；论文可写"CI 覆盖率"。
-- [] **B3 多图 batch benchmark 脚本**
-  `sw/scripts/benchmark_e2e.py --n_images 1000 --batch_mode {single,resident}`，输出表格 (Model / n_img / total_s / ms_per_img / fps / accuracy)。
+- [x] **B3 多图 batch benchmark 脚本**
+  `sw/scripts/benchmark_e2e.py --model lenet5 --n_images 200`，输出表格 (Model / n_img / total_s / ms_per_img / fps / accuracy)，结果保存 `results/benchmark_*.csv`。
   _收益_：论文第 5 章 benchmark 数据表。
 
 #### Phase C: 时间充裕再做（RTL 改动，显著加速）
@@ -187,8 +187,9 @@ _RTL本身没有Conv专用硬件，这里用了python的im2col + 硬件MVM实现
   _风险_：BRAM 占用翻倍，PYNQ-Z2 可能放不下 —— 放到 KV260 phase 一起做更合理。
 - [] **C3 AXI4-Full burst 代替 AXI4-Lite 逐字** ⚠️ 接口重写
   换 AXI4-Full slave + DMA engine（PYNQ `pynq.lib.dma`），单次 burst 几 KB。
-  _收益_：weight load 从 ms 级降到 μs 级。
-  _风险_：改动最大。**不建议毕设阶段做**，论文"未来工作"提。
+  **背景**：profiler 实测（A2）显示 Conv1 compute=4.1 ms，但 load_weights ≈250 ms，瓶颈完全在 MMIO 逐字写。LeNet-5 每张图 ~700 ms 用于搬权重，计算本身可忽略不计。A1（软件权重缓存）尝试跳过重复加载，但 weight SRAM 各层共享、后层覆盖前层，多层网络无法使用。根本解决方案是本条 C3：AXI4-Full 突发传输可将 weight load 从 ms 级降到 μs 级，彻底消除搬运瓶颈。
+  _收益_：weight load 从 ~700 ms/张 降到 <1 ms，LeNet-5 吞吐理论 **100×+**。
+  _风险_：改动最大（需重写 AXI slave、Vivado block design、Python driver 改用 `pynq.lib.dma`）。**不建议毕设阶段动 RTL**，论文"未来工作"章节直接引用 profiler 数据作为动机。
 
 #### Phase D: KV260 专属（与 step 5 合并推进）
 
