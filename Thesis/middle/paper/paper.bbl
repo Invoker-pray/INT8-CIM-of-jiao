@@ -518,7 +518,6 @@
       \strng{nameanamehash}{08a12c7c01ecd37c0472ce0b42eceb4f}
       \strng{nameafullhash}{4ab39fc9f46cb7734350a33ac4a0bb79}
       \strng{nameafullhashraw}{4ab39fc9f46cb7734350a33ac4a0bb79}
-      \field{extraname}{1}
       \field{sortinit}{6}
       \field{sortinithash}{b33bc299efb3c36abec520a4c896a66d}
       \field{labelnamesource}{author}
@@ -917,112 +916,6 @@
       \field{pages}{188\bibrangedash 190}
       \range{pages}{3}
       \keyw{8}
-    \endentry
-    \entry{Sun2023AFS}{article}{}{}
-      \name{author}{6}{}{%
-        {{hash=ee895c8587dd20546cde1dcd5ef21f44}{%
-           family={Sun},
-           familyi={S\bibinitperiod},
-           given={Zhong},
-           giveni={Z\bibinitperiod}}}%
-        {{hash=b702c4c9ccebc9149ea9f2a93b9c53de}{%
-           family={Kvatinsky},
-           familyi={K\bibinitperiod},
-           given={Shahar},
-           giveni={S\bibinitperiod}}}%
-        {{hash=cdb5f008e8bbac837b66880f9cc7dc04}{%
-           family={Si},
-           familyi={S\bibinitperiod},
-           given={Xin},
-           giveni={X\bibinitperiod}}}%
-        {{hash=0273121097c739fc85cd10acaee7ecd9}{%
-           family={Mehonic},
-           familyi={M\bibinitperiod},
-           given={Adnan},
-           giveni={A\bibinitperiod}}}%
-        {{hash=478ccc0446049061f24d81f80bbccf23}{%
-           family={Cai},
-           familyi={C\bibinitperiod},
-           given={Yimao},
-           giveni={Y\bibinitperiod}}}%
-        {{hash=9560f66e17f9e321e49a2d5c98bd2a68}{%
-           family={Huang},
-           familyi={H\bibinitperiod},
-           given={Ru},
-           giveni={R\bibinitperiod}}}%
-      }
-      \name{namea}{6}{}{%
-        {{hash=ee895c8587dd20546cde1dcd5ef21f44}{%
-           family={Sun},
-           familyi={S\bibinitperiod},
-           given={Zhong},
-           giveni={Z\bibinitperiod}}}%
-        {{hash=b702c4c9ccebc9149ea9f2a93b9c53de}{%
-           family={Kvatinsky},
-           familyi={K\bibinitperiod},
-           given={Shahar},
-           giveni={S\bibinitperiod}}}%
-        {{hash=cdb5f008e8bbac837b66880f9cc7dc04}{%
-           family={Si},
-           familyi={S\bibinitperiod},
-           given={Xin},
-           giveni={X\bibinitperiod}}}%
-        {{hash=0273121097c739fc85cd10acaee7ecd9}{%
-           family={Mehonic},
-           familyi={M\bibinitperiod},
-           given={Adnan},
-           giveni={A\bibinitperiod}}}%
-        {{hash=478ccc0446049061f24d81f80bbccf23}{%
-           family={Cai},
-           familyi={C\bibinitperiod},
-           given={Yimao},
-           giveni={Y\bibinitperiod}}}%
-        {{hash=9560f66e17f9e321e49a2d5c98bd2a68}{%
-           family={Huang},
-           familyi={H\bibinitperiod},
-           given={Ru},
-           giveni={R\bibinitperiod}}}%
-      }
-      \list{language}{1}{%
-        {english}%
-      }
-      \strng{namehash}{08a12c7c01ecd37c0472ce0b42eceb4f}
-      \strng{fullhash}{4ab39fc9f46cb7734350a33ac4a0bb79}
-      \strng{fullhashraw}{4ab39fc9f46cb7734350a33ac4a0bb79}
-      \strng{bibnamehash}{ccb74970a5f02a208c36498cf9add19a}
-      \strng{authorbibnamehash}{ccb74970a5f02a208c36498cf9add19a}
-      \strng{authornamehash}{08a12c7c01ecd37c0472ce0b42eceb4f}
-      \strng{authorfullhash}{4ab39fc9f46cb7734350a33ac4a0bb79}
-      \strng{authorfullhashraw}{4ab39fc9f46cb7734350a33ac4a0bb79}
-      \strng{nameabibnamehash}{ccb74970a5f02a208c36498cf9add19a}
-      \strng{nameanamehash}{08a12c7c01ecd37c0472ce0b42eceb4f}
-      \strng{nameafullhash}{4ab39fc9f46cb7734350a33ac4a0bb79}
-      \strng{nameafullhashraw}{4ab39fc9f46cb7734350a33ac4a0bb79}
-      \field{extraname}{2}
-      \field{sortinit}{1}
-      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{journaltitle}{Nature Electronics}
-      \field{langid}{english}
-      \field{languageid}{english}
-      \field{lansortorder}{4}
-      \field{title}{A full spectrum of computing-in-memory technologies}
-      \field{usera}{J}
-      \field{userd}{english}
-      \field{userf}{english}
-      \field{volume}{6}
-      \field{year}{2023}
-      \field{dateera}{ce}
-      \field{pages}{823\bibrangedash 835}
-      \range{pages}{13}
-      \verb{urlraw}
-      \verb https://api.semanticscholar.org/CorpusID:265164939
-      \endverb
-      \verb{url}
-      \verb https://api.semanticscholar.org/CorpusID:265164939
-      \endverb
-      \keyw{Sun2023AFS}
     \endentry
     \entry{12}{article}{}{}
       \name{author}{11}{}{%

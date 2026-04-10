@@ -22,7 +22,7 @@
 ## 1. TIMING CONSTRAINTS
 ## ============================================================================
 ## The Zynq PS generates FCLK_CLK0 internally and feeds it to the PL fabric.
-## vivado_build.tcl sets PCW_FPGA0_PERIPHERAL_FREQMHZ = 125.
+## vivado_build.tcl sets PCW_FPGA0_PERIPHERAL_FREQMHZ = 60.
 ## Vivado auto-creates a clock object for FCLK_CLK0 during synthesis, but
 ## we explicitly define it here to ensure timing analysis is correct and to
 ## give it a readable name.

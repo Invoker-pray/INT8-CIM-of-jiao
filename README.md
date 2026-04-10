@@ -81,12 +81,12 @@ _RTL本身没有Conv专用硬件，这里用了python的im2col + 硬件MVM实现
 - [x] Phase 3: 多层网络调度 (FC1→FC2 软件循环) <-- MLP 2 layers + LeNet-5 7 layers, PASS
 - [x] Phase 3: im2col Conv 上板验证支持 <-- LeNet-5 Conv1+Conv2 bit-exact PASS
 
-### [] step 3: extensions
+### [x] step 3: extensions
 
 - [x] Phase 1: 实现多层自动化推理(python driver做layer-by-layer循环) <-- cim_driver.py CIMModel
 - [x] Phase 2: im2col展开Conv层：python侧做im2col变换后喂给MVM引擎 <-- LwNet-5, PASS
 - [x] Phase 3: 尝试映射一个Conv网络(比如LeNet-5) <-- 20 pics, bit-exact 100%
-- [] Phase 4: 尝试讨论bit-plane
+- [x] Phase 4: 尝试讨论bit-plane <-- 论文 §2.1（bit-serial vs word-level MAC 对比）+ §5.2(4)（未来工作）
 
 ### [x] step 4: PicoRV32替换ARM控制
 
@@ -103,7 +103,7 @@ _RTL本身没有Conv专用硬件，这里用了python的im2col + 硬件MVM实现
 - [] Phase 2: Zynq UltraScale+ 的 PS 是 Cortex-A53（AXI 接口兼容，驱动几乎不改），综合 + 时序收敛 + 上板验证
 - [] Phase 3: 性能对比报告：PYNQ-Z2 vs KV260（资源、频率、吞吐）
 
-### [] step 6: 师兄 `cim_wzy` 启发下的改进
+### [x] step 6: 师兄 `cim_wzy` 启发下的改进
 
 > 阅读师兄 `cim_wzy/` 的 bit-serial CIM + NCNN 协同平台后，梳理出三条增量式、低风险的改进。详见 `docs/cim_wzy_comparison.md`。
 > 希望在尽量不动 RTL，只改 Python 软件栈和论文写作，用最小工作量获得最大答辩/论文价值。
