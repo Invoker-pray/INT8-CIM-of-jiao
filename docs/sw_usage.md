@@ -22,7 +22,8 @@ sw/
 ├── universal_model_test_pynq.ipynb # PYNQ: 通用模型验证
 ├── prepare_picorv32_env.ipynb     # 宿主机: PicoRV32固件准备
 ├── pynq_verify_rv32.ipynb         # PYNQ: PicoRV32推理验证
-└── scripts/set_up.sh              # 环境安装脚本（pip方式）
+├── scripts/set_up.sh              # 环境安装脚本（pip方式）
+└── scripts/benchmark_e2e.py       # 端到端 batch benchmark（论文第5章数据）
 ```
 
 ---
@@ -471,6 +472,44 @@ pred, logits = model.predict(image_u8.reshape(1, 28, 28), verbose=True)
 
 ---
 
+## scripts/benchmark_e2e.py
+
+**定位**：PYNQ 板端端到端 batch benchmark 脚本，生成论文第 5 章性能数据表。
+
+支持 `lenet5`（7 层 CNN）和 `mlp`（2 层 FC）两种模型。
+
+### 命令行用法
+
+```bash
+# 从 sw/ 目录运行（需在 PYNQ 板端，同目录有 cim_soc.bit）
+python scripts/benchmark_e2e.py                          # lenet5, 200张
+python scripts/benchmark_e2e.py --model lenet5 --n_images 200 --data_dir lenet5_data
+python scripts/benchmark_e2e.py --model mlp    --n_images 200 --data_dir mnist_real_data
+python scripts/benchmark_e2e.py --verbose                # 打印错误图片详情
+```
+
+**参数**：
+- `--model`：`lenet5`（默认）或 `mlp`
+- `--n_images`：测试图片数（自动截断到可用数量，默认 200）
+- `--data_dir`：数据目录（默认 `lenet5_data` / `mnist_real_data`）
+- `--bitstream`：比特流路径（默认 `cim_soc.bit`）
+- `--out_dir`：CSV 输出目录（默认 `results/`）
+- `--verbose`：打印每张错误图片的预测
+
+**输出**（控制台）：
+```
+----------------------------------------------------------------------
+Model       n_img   total_s    ms/img     fps     accuracy
+----------------------------------------------------------------------
+lenet5      200     340.98s    1704.9     0.59    199/200 (99.5%)
+----------------------------------------------------------------------
+CSV saved: results/benchmark_lenet5_20260410_120000.csv
+```
+
+**CSV 列**：`model, n_img, total_s, ms_per_img, fps, correct, accuracy_pct`
+
+---
+
 ## Jupyter Notebooks
 
 | 文件 | 运行环境 | 用途 |
@@ -517,4 +556,4 @@ generate_*.ipynb ───→ *_test_pynq.ipynb
 
 ---
 
-*最后更新：2026-04-10。sw/下文件发生接口变更时请同步更新本文档。*
+*最后更新：2026-04-10（新增 scripts/benchmark_e2e.py）。sw/下文件发生接口变更时请同步更新本文档。*
