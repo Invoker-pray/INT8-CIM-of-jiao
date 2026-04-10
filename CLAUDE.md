@@ -91,7 +91,7 @@ See **`docs/sw_usage.md`** for full file descriptions, CLI usage, and Python API
 ## Key Constraints
 
 - **Max dimensions**: `MAX_IN_DIM=784`, `MAX_OUT_DIM=128` (limited by BRAM on PYNQ-Z2's 630KB). Conv im2col `col_len = C_in × K × K` must not exceed 784.
-- **Clock**: 62.5 MHz on PYNQ-Z2 (critical path: `w_tile_reg → DSP48 → CARRY4 → tile_psum_reg`).
+- **Clock**: 60 MHz on PYNQ-Z2 (critical path: `w_tile_reg → DSP48 → CARRY4 → tile_psum_reg`).
 - **Weight SRAM**: Split into 16 banks (128-bit each) to enable BRAM inference. Whole-word writes required — bit-select causes Vivado to fall back to registers.
 - **Vivado synthesizer limit**: Single variable must be under 1M bits.
 - **PAR_OB** must divide `N_OB` of the target layer. Set to 1 for synthesis (area), 4 for simulation.

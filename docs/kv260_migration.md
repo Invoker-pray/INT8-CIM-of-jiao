@@ -239,20 +239,71 @@ cp -r ./pynq_pkgs ubuntu@<kv260_ip>:~/
 pip install --no-index --find-links ~/pynq_pkgs pynq
 ```
 
-## aother way
+## another way（推荐路径）
 
-这是一条未曾设想的道路，来自烧录完成之后。
+22.04镜像启动时卡住（串口乱码/无响应）是KV260的**已知问题**：出厂时的2021.1 QSPI引导固件无法启动22.04镜像。解决方法：
 
-突然想到读取的22.04镜像出现乱码其实可能是因为板子firmware太旧了，所以尝试一下通过在24.04镜像上更新firmware之后能不能完成22.04镜像正常打开。
+**Step 1**: 先用24.04镜像开机（24.04兼容旧固件）
 
-在24.04打开之后，配好NAT，更新firmware:
+**Step 2**: 配好网络后更新QSPI固件：
 
 ```bash
 sudo apt update
 sudo xmutil bootfw_update -i /usr/lib/firmware/xilinx/kv26-starter-kits/*.bin
 ```
 
-然后再次尝试烧录22.04镜像。
+**Step 3**: 断电，换回22.04 SD卡，重新上电 → 应能正常启动
+
+**Step 4**: 在22.04上正常安装Kria-PYNQ：
+
+```bash
+cd ~/Kria-PYNQ
+sudo bash install.sh -b KV260
+```
+
+参考链接：
+- [AMD官方固件更新指南](https://xilinx.github.io/kria-apps-docs/kv260/2022.1/linux_boot/ubuntu_22_04/build/html/docs/fwupdate.html)
+- [element14社区：KV260 Boot Fix](https://community.element14.com/technologies/fpga-group/b/blog/posts/booting-ubuntu-22-04-in-kria-kv260-or-kr260)
+
+### 备选方案：留在24.04 + pip install pynq
+
+如果22.04仍然有问题，可以留在24.04，直接pip安装pynq核心：
+
+```bash
+sudo apt install -y python3-pip python3-venv
+python3 -m venv ~/pynq-env
+source ~/pynq-env/bin/activate
+pip install pynq
+python3 -c "from pynq import Overlay, MMIO; print('PYNQ OK')"
+```
+
+PYNQ的`MMIO`类本质上只是`/dev/mem` + `mmap`的封装，核心MMIO功能不依赖完整的Kria-PYNQ安装脚本。但Overlay自动加载比特流的功能可能不可用，需要改用`fpgautil`手动加载：
+
+```bash
+sudo fpgautil -b cim_soc.bit -o cim_soc.dtbo
+```
+
+### 最后备选：纯/dev/mem MMIO（零依赖）
+
+如果PYNQ完全无法安装，可以用15行纯Python替代：
+
+```python
+import mmap, os, struct
+
+class MMIO:
+    def __init__(self, base_addr, length):
+        f = os.open("/dev/mem", os.O_RDWR | os.O_SYNC)
+        self.mem = mmap.mmap(f, length, offset=base_addr)
+        os.close(f)
+    def read(self, offset):
+        self.mem.seek(offset)
+        return struct.unpack("<I", self.mem.read(4))[0]
+    def write(self, offset, value):
+        self.mem.seek(offset)
+        self.mem.write(struct.pack("<I", value))
+```
+
+需要root权限运行。KV260上AXI基址为`0xA0000000`（不是PYNQ-Z2的`0x40000000`）。
 
 ## bitstream
 
