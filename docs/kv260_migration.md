@@ -98,7 +98,7 @@ create_bd_cell -type ip -vlnv xilinx.com:ip:zynq_ultra_ps_e:3.5 ps_e
 
 Ubuntu镜像可以在[这里](https://people.canonical.com/~platform/images/xilinx/kria-ubuntu-22.04/) 或者[这里](https://ubuntu.com/download/amd#kria-k26)下载，文件名类似`iot-limerick-kria-classic-desktop-2204-****.img.xz`，下载完成之后可以用balenaetcher或者其他工具写入SD卡。
 
-我下载的镜像叫：`iot-limerick-kria-classic-server-2404-classic-24.04-x07-20250423.img.xz`.
+我下载的镜像叫：`iot-limerick-kria-classic-desktop-2204-x04-20220517-68.img.xz`.
 
 准备完镜像SD卡之后，将SD卡插入Kria KV260，连接电源和网线开机。
 
@@ -179,6 +179,18 @@ sudo bash install.sh -b KV260
 ```
 
 进行安装。
+
+如果scp因为和know host不同导致失败，其原因是之前对192.168.2.100这个ip使用过ssh，但是相关配置发生了变化，导致出现了污染，可以去PC的`.ssh/known_hosts`将相关的部分删除。
+
+如果安装时有识别不了name or service的问题：`sudo unable to resolve host kria: Name or service not known`，其实就是hostname解析失败，这样的话只需要：
+
+```bash
+echo "127.0.0.1 $(hostname)" | sudo tee -a /etc/hosts
+```
+
+# 注意，以下内容为乌龙事件。
+
+> 具体情况就是，kv260这个板子QSPI U-boot太旧了，对于部分比较新的高速卡并不兼容，而且即便是我用24.04进入系统之后手动更新一次固件，还是无法支持我的sd卡(sandisk extreme pro 64GB)，换了一张卡才搞定。因此以下内容都是没有什么实际意义的，但是还是保留下来了。
 
 _这里有个问题，我安装22.04失败了才换成的24.04，结果脚本只支持到22.04，所以我只好进行一次危险的操作：把脚本的22.04改成24.04._
 

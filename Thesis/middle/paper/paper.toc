@@ -31,10 +31,11 @@
 \contentsline {subsubsection}{\numberline {4.6.2}硬件推理时间}{27}{subsubsection.4.6.2}%
 \contentsline {subsubsection}{\numberline {4.6.3}端到端延迟拆解与瓶颈分析}{27}{subsubsection.4.6.3}%
 \contentsline {subsubsection}{\numberline {4.6.4}软件基线与加速比}{28}{subsubsection.4.6.4}%
-\contentsline {subsection}{\numberline {4.7}PicoRV32验证结果}{29}{subsection.4.7}%
-\contentsline {subsubsection}{\numberline {4.7.1}PicoRV32功能验证}{30}{subsubsection.4.7.1}%
-\contentsline {subsection}{\numberline {4.8}两种控制模式对比}{31}{subsection.4.8}%
-\contentsline {section}{\numberline {5}总结与展望}{31}{section.5}%
-\contentsline {subsection}{\numberline {5.1}工作总结}{31}{subsection.5.1}%
-\contentsline {subsection}{\numberline {5.2}不足与展望}{32}{subsection.5.2}%
+\contentsline {subsection}{\numberline {4.7}55 MHz时序收敛变体}{29}{subsection.4.7}%
+\contentsline {subsection}{\numberline {4.8}PicoRV32验证结果}{30}{subsection.4.8}%
+\contentsline {subsubsection}{\numberline {4.8.1}PicoRV32功能验证}{31}{subsubsection.4.8.1}%
+\contentsline {subsection}{\numberline {4.9}两种控制模式对比}{31}{subsection.4.9}%
+\contentsline {section}{\numberline {5}总结与展望}{32}{section.5}%
+\contentsline {subsection}{\numberline {5.1}工作总结}{32}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}不足与展望}{33}{subsection.5.2}%
 \contentsline {section}{\numberline {6}参考文献}{34}{section.6}%
