@@ -1,0 +1,129 @@
+# Prompt for Claude AI — Design priorities 2 (C1) and 3 (operator / sparsity / SIMD) for the INT8 CIM SoC project
+
+## Role
+You are a senior FPGA / digital-design engineer reviewing an INT8 Compute-in-Memory (CIM) graduation project. The author has just finished mid-defense and asks you to lay out, in depth, the next two architectural improvements that will follow the in-progress AXI4-Stream + axi_dma data-path rewrite (referred to as **C3** below). Your output is a written design proposal, not code.
+
+## Context — read these files first (do not skip)
+
+Working directory: `/home/jiao/git/INT8-CIM-of-jiao/`
+
+1. **`README.md`** — project overview, full development roadmap, the just-added **step 8** which describes the C3 (AXI4-Stream DMA) refactor in detail, and the existing optimization menu under step 7 (Phases A/B/C/D/E).
+2. **`CLAUDE.md`** — top-level architectural notes; pay attention to the "Key Constraints" section (60 MHz clock, critical path `w_tile_reg → DSP48 → CARRY4 → tile_psum_reg`, BRAM-only on PYNQ-Z2, MAX_IN_DIM=784 / MAX_OUT_DIM=128, PAR_OB=1 in synthesis).
+3. **`docs/cim_wzy_comparison.md`** — comparison vs the senior student's bit-serial CIM platform; section 5 enumerates Phase A-E optimizations with rationale. The "5.3 Phase C: C1 / C2 / C3" subsection is most relevant. The "patch 3" comment in `hw/rtl/core/cim_tile.sv` and the "patch" history in README's "坑" section explicitly call out the 16-element adder chain as the unsolved critical path.
+4. **`hw/rtl/pkg/cim_pkg.sv`** — single source of truth for parameters (TILE_ROWS=16, TILE_COLS=16, PAR_OB, FSM state enum, CSR address map). The FSM enum already shows the post-C3 expectation: `ST_COMPUTE` is split into `ST_XEFF_REG → ST_MAC → ...` and `ST_STORE` is split into `ST_STORE → ST_SHIFT_CLAMP → ST_WRITE_OBUF`. Patches 1/2/3 land here.
+5. **`hw/rtl/core/cim_tile.sv`** — the 16×16 combinational MAC array. This is what C1 modifies.
+6. **`hw/rtl/core/cim_accel_core.sv`** — main FSM that orchestrates fetch/MAC/accumulate/bias/activate/requantize/store. C1 adds one stage here.
+7. **`hw/rtl/core/psum_accum.sv`** + **`hw/rtl/mem/output_buffer.sv`** — accumulator and output path; relevant if you propose sparsity or operator fusion.
+8. **`Thesis/middle/paper/paper.tex`** §5 — current "future work" section; your design will end up cited here.
+9. **`cim_wzy/`** — the senior student's project. Especially `cim_wzy/user/chisel/src/main/scala/mainArray/Array_8x128.scala` (popcount adder tree topology — useful reference for split-and-merge designs) and `cim_wzy/simulation/csrc/layer/convolution.cpp` (SQ_MAPPING and the operator coverage NCNN provides).
+
+## Project state at the time you are invoked
+
+- Steps 1–4 done: RTL + golden model + PYNQ-Z2 deploy + PicoRV32 soft-core integration.
+- Step 6 done: per-layer bit-exact verify infra, SQ-mapping packed MVM, paper architecture-comparison chapter.
+- Step 7 partially done: A2 (latency profiler), B2 (pytest regression), B3 (batch benchmark), E1 (latency timeline figure).
+- Step 5 (KV260) is **explicitly out of scope** for this design pass.
+- Step 8 (C3, AXI4-Stream + axi_dma) is **about to be implemented** by another worker — assume it lands successfully and weight/input/bias DMA load drops from hundreds of ms to sub-ms. Your designs build on top of that.
+
+After C3 lands, the bottleneck shifts from MMIO transport back to **hardware compute itself**. That changes the value calculation: now C1 (frequency × 2) actually translates to ~2× end-to-end speedup, not ~1.005× as it would today.
+
+## What I want you to design
+
+### Part 1 — Priority 2 / C1: cim_tile critical-path split (16 → 2×8 → merge)
+
+Detailed proposal that covers all of the following. Be specific. Reference exact line ranges, signal names, and parameter names from the existing RTL.
+
+1. **Critical-path analysis**: Re-derive why `w_tile_reg → DSP48 → CARRY4 → tile_psum_reg` is the bottleneck. Quantify the 16-element adder chain's CARRY4 depth and the marginal slack at 100 MHz / 125 MHz / 150 MHz target frequencies. Reference timing report values from README's "patch 3" entry.
+2. **RTL split design**:
+   - Concrete pipeline-stage diagram before/after.
+   - Show the new 8-element partial-sum register (`tile_psum_lo_reg`, `tile_psum_hi_reg`) and how the merge happens in the next cycle.
+   - Specify the FSM change in `cim_accel_core.sv`: where exactly to insert `ST_MAC_LO` and `ST_MAC_HI`, what control signals advance, what the latency penalty is per inner-block iteration (1 extra cycle per IB iteration → quantify net throughput gain at 125 MHz vs 60 MHz baseline).
+   - Address whether `psum_accum.sv` needs to know about the split or if the merge happens upstream.
+3. **Parameterization**: Should the split factor be a parameter (`SPLIT_FACTOR=2 → 8+8`, `SPLIT_FACTOR=4 → 4+4+4+4`)? What's the trade-off (logic depth × stages × control complexity)? Recommend a default and justify.
+4. **Verification plan**:
+   - Which existing testbenches (`tb_cim_tile.sv`, `tb_cim_accel_core.sv`, `tb_mnist_e2e.sv`) need updates and what they need to check (the split is internally invisible; only the cycle count changes — your TB should assert the new cycle formula).
+   - Specify the new performance-counter expected value formula so `cim_pkg.sv::clog2_safe` and the e2e cycle assertion in the TB are correct.
+   - Describe how you would extend `sw/tests/` pytest cases to lock down the new cycle count without breaking bit-exact behavior.
+5. **Synthesis closure target**: Recommend which Vivado synthesis directives + place/route strategies to try (the current build uses `Flow_PerfOptimized_high` + `ExtraNetDelay_high` + `AggressiveExplore`). Predict what WNS is achievable at 100 MHz and 125 MHz.
+6. **Risk + rollback**: Identify the highest-risk change and propose a feature-flag-style toggle so the bitstream can fall back to monolithic 16-wide adder if 125 MHz timing fails. Hint: a `cim_pkg.sv` `parameter int TILE_PIPELINE_STAGES = 1` driving a `generate` block.
+7. **Integration with C3**: Once C3 has eliminated MMIO bottleneck and C1 doubles compute throughput, what is the predicted end-to-end LeNet-5 latency? Provide the math (cycles × 1/freq + remaining DMA overhead) and compare to the 60 MHz baseline.
+
+Deliverable: a markdown section ready to be appended to README.md as **step 9: C1 critical-path split**.
+
+### Part 2 — Priority 3 / Architecture extensions (pick the strongest one)
+
+I gave the project author three options earlier. **Evaluate all three rigorously, then recommend exactly one** as the primary post-C1 work, plus one as a stretch goal.
+
+#### Option A — Hardware-fused MaxPool / BatchNorm
+
+- The author's CIMModel currently runs Pool layers in Python on the PS, which means an extra read-out + im2col round-trip per Pool layer. After C3, MMIO is no longer ~100 ms but it is still nonzero per round-trip.
+- Design a `cim_pool_unit.sv` that sits beside `cim_accel_core.sv` and reads the output buffer directly, computes 2×2 max with stride 2, writes back to input_buffer for the next layer — no PS round-trip.
+- BatchNorm: argue whether folding BN into the existing requantize multiply-shift is sufficient (it is, for inference-only INT8 — show the math: `BN(x) = γ(x-μ)/σ + β` collapses into a per-channel scale + bias that merges with the existing requantize `mult/shift` and bias_sram). Decide whether anything new needs to be added to RTL or if it's purely a `model_zoo.py` quantization-script change.
+- Specify the CSR additions, FSM additions in the accel core (or a new top-level scheduler that chains Conv → Pool → next Conv without PS intervention), and the testbench plan.
+
+#### Option B — Output-sparsity / zero-skip exploitation
+
+- Post-ReLU activations are typically 40-60% zero. Show measured sparsity for LeNet-5 and MLP layers using the existing `sw/logs/` per-layer dumps (the verify-per-layer infra already saves `y.hex` per layer — this gives real numbers, not estimates).
+- Design a `nonzero_index_buffer` that, after each layer, scans the output buffer and writes a list of nonzero indices into a small BRAM. The next layer's `cim_accel_core` consumes this list and skips zero columns in its MAC inner loop.
+- Address: control overhead vs compute saving cross-over (skip is only worth it when fraction of nonzero × compute > scan cost). Quantify for FC2 (128→10) and FC1 (784→128) of the MLP and for the FC layers of LeNet-5.
+- Cite the relevant prior work in your reasoning (e.g. SCNN, EIE, Cambricon-X — give exact paper titles, not just author lists).
+
+#### Option C — DSP48 INT8×2 SIMD packing (Xilinx XAPP1163)
+
+- Each DSP48E1 in 25×18 mode can compute two parallel 8×8 multiplies whose results don't overflow into each other when one operand is shared. This effectively doubles MACs/DSP if you pack two output rows per DSP.
+- Show the 25-bit input layout (`{w_a[7:0], 9'b0, w_b[7:0]}`) and prove the result lanes don't collide for our INT8 ranges (worst-case `127 × 127 × 16` = 2,064,384 = 21 bits, fits comfortably below the 9-bit guard).
+- Re-derive the cim_tile structure: 16×16 = 256 MACs would now use 128 DSP48 instead of 256, freeing half for either parallelism (PAR_OB=2 for free) or other operators.
+- This is **the most likely path to "more compute in the same fabric"** without changing BRAM, which matters because step 5 (KV260) is out of scope so we cannot get more DSPs by moving fabric.
+
+For each option provide:
+- A clear architectural sketch and signal list.
+- Quantified expected gain (with explicit math, not hand-waving).
+- Verification strategy.
+- Risk + rollback.
+
+Then **pick one as the recommendation** with a one-paragraph justification that grounds the choice in:
+- Marginal value relative to C3 + C1 already done.
+- Author's available time budget (assume 2-3 weeks max).
+- Thesis story value — what new paragraph it earns in §3 (architecture) vs §5 (results).
+- Risk to bit-exact behavior (heavily weight against any change that could break the existing pytest regression).
+
+Deliverable: a markdown section ready to be appended to README.md as **step 10: <chosen option>**.
+
+## Constraints on your output
+
+- All recommendations must be implementable on PYNQ-Z2 (xc7z020clg400-1) without exceeding 140 BRAM blocks or 220 DSP48 slices. State explicitly when a proposal requires PAR_OB=1 vs PAR_OB=2.
+- Do not propose anything that requires moving to KV260 or migrating to UltraScale+ — that is a separate work stream.
+- Do not propose Chisel/HLS rewrites or NCNN/ONNX integration — those are paper-future-work items, not current implementation candidates.
+- Maintain bit-exact backward compatibility: every change must be testable with the existing `sw/tests/` pytest suite plus the existing TBs in `hw/tb/`. If a change requires new bit-exact reference data, specify how `sw/golden_model.py` should be extended.
+- Project documentation is primarily Chinese; code identifiers are English. Match this convention in any RTL signal names or doc snippets you propose. Final markdown for README append should be in Chinese (since README is Chinese), but reasoning in your reply to me can be English.
+- No emojis.
+- Be terse but complete — favor numbered lists and exact file/line references over prose. Skip filler ("In summary...", "It's worth noting...").
+
+## What I do not want
+
+- A high-level pep talk about CIM trends.
+- Generic "consider doing X" recommendations without a concrete implementation path.
+- Re-statement of facts already in README/CLAUDE.md without adding analysis.
+- Speculation about hardware behavior — if you assert a critical-path number or a sparsity ratio, ground it in the linked file or run an offline calculation that I can verify.
+
+## Format of your response
+
+```
+## Part 1 — C1 design proposal
+<markdown section ready for README append, in Chinese>
+
+## Part 2 — Architecture extension evaluation
+### Option A — <verdict + analysis>
+### Option B — <verdict + analysis>
+### Option C — <verdict + analysis>
+### Recommendation: Option <X>
+<one-paragraph justification>
+
+## Part 2b — Recommended option detailed design
+<markdown section ready for README append, in Chinese>
+
+## Open questions for the author
+<bullet list of decisions you need from me before implementation can start>
+```
+
+Begin.

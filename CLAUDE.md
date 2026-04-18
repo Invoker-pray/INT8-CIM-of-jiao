@@ -68,7 +68,7 @@ cd sw && python3 golden_model.py --mnist-e2e --output-dir <dir>   # generate hex
 - **`pkg/cim_pkg.sv`** — Single source of truth for all parameters: tile geometry (16×16), parallelism (`PAR_OB`), data widths (INT8/INT32), CSR address map, FSM states, requantize function. No magic numbers in RTL modules.
 - **`core/`** — `cim_tile.sv` (16×16 MAC, combinational) → `psum_accum.sv` (partial-sum accumulator) → `cim_accel_core.sv` (main FSM engine, configurable parallelism, multi-stage pipeline, performance counters). One unified engine handles arbitrary layers via CSR configuration.
 - **`mem/`** — `weight_sram.sv` (16 independent banks for BRAM inference, AXI DMA-style 32-bit chunk writes), `bias_sram.sv`, `input_buffer.sv` (with zero-point subtraction), `output_buffer.sv` (with argmax).
-- **`axi/`** — AXI4-Lite slave wrapper. CSR address space is 14-bit (16KB).
+- **`axi/`** — AXI4-Lite slave wrapper. CSR address space is 14-bit (16KB). **Planned (step 8 / C3)**: split into `cim_axi_lite_slave.sv` (CSR control + legacy MMIO staging, gated by `CSR_CTRL[3]=0`) + `cim_axi_stream_sink.sv` (AXIS data path, `CSR_CTRL[3]=1`) + `cim_top.sv` (wrapper with MUX). Data path goes PS S_AXI_HP0 → axi_dma → 32-bit AXIS → sink → BRAM; CSR path keeps M_AXI_GP0 → AXI4-Lite. Dual-path retained until commit 6 verified bit-exact, then commit 7 deletes legacy. **Authoritative spec: `docs/c3_dma_design.md`**; README.md step 8 is the overview.
 
 ### PicoRV32 Integration (`picorv32/hw/rtl/riscv/`)
 
@@ -85,7 +85,7 @@ See **`docs/sw_usage.md`** for full file descriptions, CLI usage, and Python API
 - `mnist_quantize.py` — Train/quantize/export MLP (784→128→10) for real MNIST testing.
 - `lenet5_quantize.py` — Train/quantize/export LeNet-5 with im2col support.
 - `model_zoo.py` — Unified multi-model API: `build_model`, `train`, `quantize`, `int8_infer`, `export_hex`.
-- `cim_driver.py` — PYNQ Python driver (`CIMDriver` low-level MMIO, `CIMModel` high-level multi-layer inference with im2col and SQ-mapping packed MVM).
+- `cim_driver.py` — PYNQ Python driver (`CIMDriver` low-level MMIO, `CIMModel` high-level multi-layer inference with im2col and SQ-mapping packed MVM). **Planned (step 8 / C3)**: `load_weights / load_input / load_bias` gain a `use_dma` path that uses `pynq.allocate` + `pynq.lib.dma.sendchannel.transfer()` instead of per-word MMIO writes. Targets ~270× end-to-end speedup on LeNet-5 (1696 → ~6 ms/img); profiled bottleneck is MMIO, not compute.
 - Jupyter notebooks (`*_pynq.ipynb`) — On-board verification scripts; `generate_*.ipynb` run on host.
 
 ## Key Constraints
@@ -95,6 +95,7 @@ See **`docs/sw_usage.md`** for full file descriptions, CLI usage, and Python API
 - **Weight SRAM**: Split into 16 banks (128-bit each) to enable BRAM inference. Whole-word writes required — bit-select causes Vivado to fall back to registers.
 - **Vivado synthesizer limit**: Single variable must be under 1M bits.
 - **PAR_OB** must divide `N_OB` of the target layer. Set to 1 for synthesis (area), 4 for simulation.
+- **Profiled bottleneck (A2)**: LeNet-5 ~700 ms/image is 99% AXI4-Lite weight/input MMIO transfer; hardware compute is ~4 ms. Step 8 (C3) replaces the data path with AXI Stream + axi_dma to recover this.
 
 ## Language
 

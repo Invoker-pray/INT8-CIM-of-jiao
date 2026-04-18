@@ -145,6 +145,111 @@ _RTL本身没有Conv专用硬件，这里用了python的im2col + 硬件MVM实现
 - [x] 论文里如实声明借鉴关系 (代码放在 `cim_wzy/` 独立目录, 论文用 footnote 标注为"课题组内独立验证平台")
 - [x] 论文 §5.2 《不足与展望》已加入三条扩展路径：(6) AXI4-Full DMA、(7) NCNN/ONNX runtime 集成、(8) Chisel 参数化重构
 
+### [] step 8: C3 落地 — AXI4-Stream + axi_dma 数据通路重构（**当前最高优先级**）
+
+> A2 profiler 实测：LeNet-5 端到端 1696 ms/img 中，硬件 compute 仅 ~4 ms（0.24%），其余 99.7% 全部花在 AXI4-Lite 32-bit 逐字 MMIO 上（单图 ~170 KB packed weight ≈ 42500 个 32-bit MMIO 写）。
+> 本 step 把数据通路从 "AXI4-Lite 逐字 MMIO" 换成 "AXI4-Stream + Xilinx axi_dma IP"，CSR 控制仍走 AXI4-Lite。理论端到端 **~270×** 加速（→ 6 ms/img）。
+> RTL 计算核心 (`cim_tile / psum_accum / cim_accel_core / weight_sram / input_buffer / bias_sram`) 一行不动，bit-exact 行为受 pytest 回归 + e2e TB 保护。
+>
+> **完整设计规范见 `docs/c3_dma_design.md`**（接口表 / 状态机 / BD TCL / 6-commit rollout / 风险登记）。本节为概览。
+
+#### 设计选型
+
+| 维度 | A. AXI4-Full slave | B. AXIS + Xilinx axi_dma （**采用**） | C. AXI MCDMA |
+|---|---|---|---|
+| 协议复杂度 | 自写 burst / id / wrap 握手 | 仅 `tvalid/tready/tdata/tlast` | 同 B + 多通道仲裁 |
+| Vivado IP | 自写 | 官方 axi_dma 7.1，PYNQ 一行 API | 官方但配置复杂 |
+| 多路仲裁 | 自写 dest 解码 | 一条 stream + 1-byte CSR 选目的 | 硬件多通道 |
+| **拒绝原因** | 协议复杂、风险高 | — | 单 HP 端口下多通道仍串行，**徒增复杂度无收益** |
+
+#### 系统框图
+
+```
+PS7 ──M_AXI_GP0──┬─ AXI Interconnect ── cim_top_0/S_AXI_LITE (CSR, 14-bit)
+                  └────────────────────── axi_dma_0/S_AXI_LITE (DMA 控制)
+PS7 ──M_AXI_GP1── 同上（DMA CSR 走 GP1 避开 GP0 仲裁）
+PS7 ──S_AXI_HP0── 64-bit, 1.2 GB/s ── axi_dma_0/M_AXI_MM2S (DDR 读)
+                                                  │
+                                  M_AXIS_MM2S (32-bit)
+                                                  ▼
+                            cim_top_0/S_AXIS_DATA → cim_axi_stream_sink
+                                                  │
+                                  CTRL[3] MUX (legacy MMIO ↔ stream)
+                                                  ▼
+                            weight_sram / input_buffer / bias_sram
+中断: xlconcat({cim_top_0/irq_done, axi_dma_0/mm2s_introut}) → ps7/IRQ_F2P
+复位: ps7/FCLK_CLK0 → proc_sys_reset_0 → cim_top_0
+                   → proc_sys_reset_1 → axi_dma_0  (独立, 防 CSR_CTRL[2] soft reset 把 in-flight DMA 一并清掉)
+```
+
+#### 关键设计决策（详见设计文档 §0-3）
+
+1. **AXIS 数据宽度 = 32-bit**（不升 64-bit）。理由：与现有 `weight_to_chunks` packing 兼容，axi_dma 内部做 64→32 dwidth 转换免费（PG021 §3.1.1），换 64-bit 仅省 ~30% 拍数但要重写 Python packing。
+2. **dual-path 强制保留**：`CSR_CTRL[3]=0` 走 legacy MMIO，`=1` 走 stream。直到 commit 6 上板 200 张 bit-exact 验证通过，**才**在 commit 7 删除 legacy 代码。
+3. **不为 stream sink 单独发 IRQ**：`mm2s_introut` 在 DMA 端表示 "DDR→AXIS 完成"，sink 端 BRAM 写延迟 ≤ 1 cycle，PS 拿到 DMA IRQ 时数据已到 SRAM。轮询 `CSR_STREAM_STATUS` 二次校验即可。
+4. **`s_axis_tready` 恒为 1**：BRAM 写 1 cycle 完成，sink 内部不需要排队，反压向 PS 端反向传播即可。
+5. **`cfg_start` 通过写 `CSR_STREAM_LEN` 隐式触发**：原子化，少一次 CSR 写省 1.5 µs/层。
+
+#### 新增 / 修改文件（清单）
+
+| 类别 | 文件 | 说明 |
+|---|---|---|
+| 新增 | `hw/rtl/axi/cim_axi_stream_sink.sv` | ~250 行；4-beat → 128-bit 行装配，dest 路由 |
+| 新增 | `hw/rtl/cim_top.sv` | ~200 行；wrapper, MUX legacy/stream |
+| 新增 | `hw/tb/tb_cim_stream_sink.sv` + `run_tb_cim_stream_sink.sh` | SV stream BFM, 与 weight_sram 内容比对 |
+| 新增 | `docs/c3_dma_design.md` | 详细设计规范（已完成） |
+| 修改 | `hw/rtl/pkg/cim_pkg.sv` | +`CSR_STREAM_DEST=14'h050` / `CSR_STREAM_LEN=14'h054` / `CSR_STREAM_STATUS=14'h058`；+`stream_dest_t` typedef |
+| 修改 | `hw/rtl/axi/cim_axi_lite_slave.sv` | +CSR 解码；+stream 端口；**legacy staging 保留** |
+| 修改 | `hw/scripts/vivado_build.tcl` + `_55mhz.tcl` | +HP0/GP1 启用、axi_dma_0、xlconcat、psr_dma、地址映射、.hwh assertion |
+| 修改 | `sw/cim_driver.py` | +`use_dma` 参数；+`_stream_load(words, dest, buf)`；三个 `load_*` 分流 |
+| 修改 | `sw/tests/test_cim_driver_offline.py` | +1 用例 `test_dma_path_bit_exact` |
+
+`CIMModel.predict() / infer_conv() / infer_conv_packed()` 上层接口完全不变。
+
+#### 推进计划（6 个 commit + 1 个清理）
+
+| # | 标题 | 验证 | 回退点 |
+|---|---|---|---|
+| 1 | feat(rtl): cim_axi_stream_sink + standalone TB | `run_tb_cim_stream_sink.sh` GREEN | 否 |
+| 2 | feat(rtl): CSR_STREAM_* + CTRL[3] gate | `run_regression.sh` GREEN（CTRL[3]=0 默认 legacy） | 否 |
+| 3 | feat(rtl): cim_top wrapper + MUX | `run_regression.sh` GREEN | 否 |
+| 4 | **feat(bd): integrate axi_dma + S_AXI_HP0 + xlconcat** | `vivado_build.sh` 出 .bit/.hwh, axi_dma 在 .hwh, WNS ≥ 0 | **是 — git tag `pre-c3-bd`** |
+| 5 | feat(sw): DMA path behind use_dma flag | `pytest sw/tests/ -v` 17 PASS | 否 |
+| 6 | feat: enable DMA by default + benchmark + paper | LeNet-5 200 张 99.5% acc, ≤25 ms/img, profiler load_w_ms <5% | 否 |
+| 7 (后) | refactor(rtl): remove legacy MMIO weight/input/bias path | 全 TB+pytest GREEN, LUT 减 ~800 | 否（commit 6 通过 1 周后） |
+
+#### 预期收益（量化）
+
+带宽推算：HP0 64-bit @ 60 MHz = 480 MB/s；LeNet-5 单图 weight ~170 KB → **354 µs**（仅 weight）。
+
+| 指标 | 当前 (60 MHz, MMIO) | C3 后 (60 MHz, DMA) | 加速比 |
+|---|---|---|---|
+| LeNet-5 weight load (单图整网) | ~700 ms | <1 ms | **~700×** |
+| LeNet-5 端到端单图 | 1696 ms | ~6 ms (目标) | **~270×** |
+| LeNet-5 200 张 benchmark | 325.1 s | ~1.5 s (目标) | ~200× |
+| MNIST MLP 端到端 | ~30 ms/img | <1 ms/img | 30~50× |
+| A2 profiler `load_w_ms` 占比 | ~40% | < 5% | — |
+
+#### 风险与回退（核心 7 条详见设计文档 §8）
+
+| 风险 | 概率 | 缓解 |
+|---|---|---|
+| `.hwh` 缺 axi_dma 段 | 中 | TCL 末尾 assertion + 驱动 try/except |
+| WNS 退化（DMA + Interconnect 引入） | 低 | Phase 4 强制查 WNS；失败先加 `axis_register_slice` 隔离 |
+| `soft_reset` 与 in-flight DMA 竞态 | 中 | 独立 proc_sys_reset + 驱动 `wait()` 兜底 |
+| dual-path 共存 LUT 超预算 | 低 | 当前 11k LUT (20%)，+1050 LUT 仍在预算内 |
+
+#### 验收标准（commit 6 必须满足）
+
+1. `pytest sw/tests/` 17/17 GREEN
+2. LeNet-5 200 张 accuracy = 99.5%（与 60 MHz baseline bit-exact 一致）
+3. LeNet-5 ≤ 25 ms/img（目标 ~6 ms）
+4. A2 profiler `load_w_ms` 占比 < 5%
+
+不满足任一条 → 不合并 commit 6，回滚到 commit 5（`use_dma=False` 默认）。
+
+---
+
 ### [] step 7: 工程化与性能优化（全面改进菜单）
 
 > 超出 step 6 范围的增量改进菜单，覆盖软件栈、RTL 时序优化、KV260 扩展、论文素材、工程健康度。
