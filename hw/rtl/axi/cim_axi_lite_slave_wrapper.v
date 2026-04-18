@@ -84,7 +84,20 @@ module cim_axi_lite_slave_wrapper #(
       .S_AXI_RVALID(S_AXI_RVALID),
       .S_AXI_RREADY(S_AXI_RREADY),
 
-      .irq_done(irq_done)
+      .irq_done(irq_done),
+
+      // C3 stream-sink side-band — unused in the legacy BD flow; commit 3+
+      // switches the BD top to cim_top.sv, which wires these to the new sink.
+      .stream_path_en  (),
+      .cfg_dest        (),
+      .cfg_len         (),
+      .cfg_base_addr   (),
+      .cfg_start       (),
+      .status_clear    (),
+      .stream_busy     (1'b0),
+      .stream_done     (1'b0),
+      .stream_overflow (1'b0),
+      .stream_underflow(1'b0)
   );
 
 endmodule
