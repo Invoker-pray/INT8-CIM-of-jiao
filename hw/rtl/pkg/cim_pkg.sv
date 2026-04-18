@@ -99,7 +99,7 @@ package cim_pkg;
   // All offsets relative to base address of CIM IP
 
   // --- Control / Status ---
-  parameter logic [13:0] CSR_CTRL = 14'h000;  // [0]=start, [1]=clear_done, [2]=soft_rst
+  parameter logic [13:0] CSR_CTRL = 14'h000;  // [0]=start, [1]=clear_done, [2]=soft_rst, [3]=stream_path_en
   parameter logic [13:0] CSR_STATUS = 14'h004;  // [0]=busy, [1]=done, [7:4]=state
   parameter logic [13:0] CSR_IRQ_EN = 14'h008;  // [0]=done_irq_en
   parameter logic [13:0] CSR_IRQ_STATUS = 14'h00C;  // [0]=done_irq (write-1-clear)
@@ -136,6 +136,13 @@ package cim_pkg;
   parameter logic [13:0] CSR_WDMA_DATA = 14'h048;  // weight SRAM write data (32-bit chunk)
   parameter logic [13:0] CSR_WDMA_CTRL = 14'h04C;  // [0]=wr_en, [7:4]=chunk_idx
 
+  // --- C3: AXI4-Stream Sink Control (active when CSR_CTRL[3]=1) ---
+  // Writing CSR_STREAM_LEN pulses cfg_start (design §3.3 scheme A); software
+  // must program CSR_STREAM_DEST first, then CSR_STREAM_LEN last.
+  parameter logic [13:0] CSR_STREAM_DEST = 14'h050;    // [1:0]=dest, [31:16]=base_addr
+  parameter logic [13:0] CSR_STREAM_LEN = 14'h054;     // [15:0]=len (beats); write triggers cfg_start
+  parameter logic [13:0] CSR_STREAM_STATUS = 14'h058;  // [0]=busy, [1]=done, [2]=overflow, [3]=underflow (W1C on done/ovf/und)
+
   // ==========================================================================
   // 8. Activation Function Modes
   // ==========================================================================
@@ -144,6 +151,13 @@ package cim_pkg;
     ACT_RELU  = 2'b01,
     ACT_CLAMP = 2'b10   // clamp to [min, max] (for output layer)
   } act_mode_t;
+
+  // C3 stream sink destination — shared between axi_lite_slave and cim_axi_stream_sink
+  typedef enum logic [1:0] {
+    STREAM_DEST_WEIGHT = 2'd0,
+    STREAM_DEST_INPUT  = 2'd1,
+    STREAM_DEST_BIAS   = 2'd2
+  } stream_dest_t;
 
   // ==========================================================================
   // 9. Accelerator FSM States

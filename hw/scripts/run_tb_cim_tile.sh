@@ -12,6 +12,22 @@ TB_NAME="tb_cim_tile"
 SIM_DIR="sim/${TB_NAME}"
 mkdir -p "${SIM_DIR}"
 
+# ------------------------------------------------------------
+# gcc 15+ treats implicit function declarations as a hard error;
+# VCS W-2024.09's generated rmapats.c relies on them. Inject a
+# wrapper earlier on PATH that re-enables the old warning-only
+# behavior. (Local to this script — does not leak to other tools.)
+# ------------------------------------------------------------
+WRAPPER_DIR="$(pwd)/${SIM_DIR}/.gcc_wrapper"
+mkdir -p "${WRAPPER_DIR}"
+REAL_GCC="$(command -v gcc)"
+cat > "${WRAPPER_DIR}/gcc" <<EOF
+#!/bin/bash
+exec ${REAL_GCC} -Wno-error=implicit-function-declaration "\$@"
+EOF
+chmod +x "${WRAPPER_DIR}/gcc"
+export PATH="${WRAPPER_DIR}:${PATH}"
+
 RTL_FILES=(
     rtl/pkg/cim_pkg.sv
     rtl/core/cim_tile.sv

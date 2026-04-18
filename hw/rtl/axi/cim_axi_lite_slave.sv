@@ -46,7 +46,20 @@ module cim_axi_lite_slave
     output logic                  S_AXI_RVALID,
     input  logic                  S_AXI_RREADY,
 
-    output logic irq_done
+    output logic irq_done,
+
+    // C3 stream-sink side-band interface (wired by cim_top, unused in legacy BD)
+    // CTRL[3]=0 → legacy MMIO data path only, all outputs below are inert.
+    output logic        stream_path_en,
+    output logic [ 1:0] cfg_dest,
+    output logic [15:0] cfg_len,
+    output logic [15:0] cfg_base_addr,
+    output logic        cfg_start,       // 1-cycle pulse on CSR_STREAM_LEN write
+    output logic        status_clear,    // 1-cycle pulse on CSR_STREAM_STATUS write
+    input  logic        stream_busy,
+    input  logic        stream_done,
+    input  logic        stream_overflow,
+    input  logic        stream_underflow
 );
 
   logic clk, rst_n;
@@ -175,6 +188,21 @@ module cim_axi_lite_slave
   logic                   start_pulse;
   logic                   soft_rst_pulse;
   logic                   done_irq_clear;
+
+  // C3 stream-sink CSR shadow state
+  logic                   reg_stream_path_en;
+  logic [         1:0]    reg_stream_dest;
+  logic [        15:0]    reg_stream_len;
+  logic [        15:0]    reg_stream_base_addr;
+  logic                   cfg_start_r;
+  logic                   status_clear_r;
+
+  assign stream_path_en = reg_stream_path_en;
+  assign cfg_dest       = reg_stream_dest;
+  assign cfg_len        = reg_stream_len;
+  assign cfg_base_addr  = reg_stream_base_addr;
+  assign cfg_start      = cfg_start_r;
+  assign status_clear   = status_clear_r;
 
   // ============================================================
   // Accelerator Core
@@ -428,12 +456,20 @@ MAX_IN_DIM/TILE_COLS
       reg_wdma_chunk    <= '0;
       reg_wdma_burst    <= 1'b0;
       burst_inc_pending <= 1'b0;
+      reg_stream_path_en   <= 1'b0;
+      reg_stream_dest      <= 2'd0;
+      reg_stream_len       <= 16'd0;
+      reg_stream_base_addr <= 16'd0;
+      cfg_start_r          <= 1'b0;
+      status_clear_r       <= 1'b0;
     end else begin
       // Self-clearing pulses
       start_pulse    <= 1'b0;
       soft_rst_pulse <= 1'b0;
       done_irq_clear <= 1'b0;
       reg_wdma_wr    <= 1'b0;
+      cfg_start_r    <= 1'b0;
+      status_clear_r <= 1'b0;
 
       // Burst auto-increment: fires one cycle AFTER the write pulse,
       // so weight_sram sees current chunk_idx during wr_en, then we advance.
@@ -453,6 +489,7 @@ MAX_IN_DIM/TILE_COLS
             if (w_data_r[0]) start_pulse <= 1'b1;
             if (w_data_r[1]) done_irq_clear <= 1'b1;
             if (w_data_r[2]) soft_rst_pulse <= 1'b1;
+            reg_stream_path_en <= w_data_r[3];  // CTRL[3]=stream path enable (mode bit)
           end
           CSR_IRQ_EN:        reg_irq_en <= w_data_r[0];
           CSR_IN_DIM:        reg_in_dim <= w_data_r[15:0];
@@ -477,6 +514,18 @@ MAX_IN_DIM/TILE_COLS
             reg_wdma_wr <= w_data_r[0];
             reg_wdma_burst <= w_data_r[1];  // FIX3: bit[1] = burst enable
             reg_wdma_chunk <= w_data_r[CHUNK_IDX_W+1:2];  // FIX: was [7:4] for 4-bit, now [7:2] for 6-bit
+          end
+          // C3: AXI4-Stream sink control registers (only used when CTRL[3]=1)
+          CSR_STREAM_DEST: begin
+            reg_stream_dest      <= w_data_r[1:0];
+            reg_stream_base_addr <= w_data_r[31:16];
+          end
+          CSR_STREAM_LEN: begin
+            reg_stream_len <= w_data_r[15:0];
+            cfg_start_r   <= 1'b1;  // §3.3 scheme A: LEN write triggers 1-cycle pulse
+          end
+          CSR_STREAM_STATUS: begin
+            status_clear_r <= 1'b1;  // any write clears sink sticky status
           end
           default:           ;  // input/bias windows handled by memory blocks
         endcase
@@ -505,7 +554,7 @@ MAX_IN_DIM/TILE_COLS
   // ============================================================
   function automatic logic [31:0] read_csr_fn(input logic [AXI_ADDR_W-1:0] addr);
     case (addr)
-      CSR_CTRL:          return 32'd0;
+      CSR_CTRL:          return {28'd0, reg_stream_path_en, 3'd0};
       CSR_STATUS:        return {24'd0, accel_state, done_sticky, accel_busy};
       CSR_IRQ_EN:        return {31'd0, reg_irq_en};
       CSR_IRQ_STATUS:    return {31'd0, done_sticky};
@@ -522,6 +571,9 @@ MAX_IN_DIM/TILE_COLS
       CSR_MAC_CNT_LO:    return perf_macs[31:0];
       CSR_MAC_CNT_HI:    return perf_macs[63:32];
       CSR_PRED_CLASS:    return {22'd0, pred_class};
+      CSR_STREAM_DEST:   return {reg_stream_base_addr, 14'd0, reg_stream_dest};
+      CSR_STREAM_LEN:    return {16'd0, reg_stream_len};
+      CSR_STREAM_STATUS: return {28'd0, stream_underflow, stream_overflow, stream_done, stream_busy};
       default: begin
         if (addr >= CSR_LOGIT_BASE && addr < MEM_INPUT_BASE)
           return {{(32 - OUTPUT_W) {obuf_rd_data[OUTPUT_W-1]}}, obuf_rd_data};
