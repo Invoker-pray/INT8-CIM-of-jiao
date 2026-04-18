@@ -145,7 +145,7 @@ _RTL本身没有Conv专用硬件，这里用了python的im2col + 硬件MVM实现
 - [x] 论文里如实声明借鉴关系 (代码放在 `cim_wzy/` 独立目录, 论文用 footnote 标注为"课题组内独立验证平台")
 - [x] 论文 §5.2 《不足与展望》已加入三条扩展路径：(6) AXI4-Full DMA、(7) NCNN/ONNX runtime 集成、(8) Chisel 参数化重构
 
-### [] step 8: C3 落地 — AXI4-Stream + axi_dma 数据通路重构（**当前最高优先级**）
+### [x] step 8: C3 落地 — AXI4-Stream + axi_dma 数据通路重构（**代码完成，上板 benchmark 待跑**）
 
 > A2 profiler 实测：LeNet-5 端到端 1696 ms/img 中，硬件 compute 仅 ~4 ms（0.24%），其余 99.7% 全部花在 AXI4-Lite 32-bit 逐字 MMIO 上（单图 ~170 KB packed weight ≈ 42500 个 32-bit MMIO 写）。
 > 本 step 把数据通路从 "AXI4-Lite 逐字 MMIO" 换成 "AXI4-Stream + Xilinx axi_dma IP"，CSR 控制仍走 AXI4-Lite。理论端到端 **~270×** 加速（→ 6 ms/img）。
@@ -208,15 +208,22 @@ PS7 ──S_AXI_HP0── 64-bit, 1.2 GB/s ── axi_dma_0/M_AXI_MM2S (DDR 读)
 
 #### 推进计划（6 个 commit + 1 个清理）
 
-| # | 标题 | 验证 | 回退点 |
-|---|---|---|---|
-| 1 | feat(rtl): cim_axi_stream_sink + standalone TB | `run_tb_cim_stream_sink.sh` GREEN | 否 |
-| 2 | feat(rtl): CSR_STREAM_* + CTRL[3] gate | `run_regression.sh` GREEN（CTRL[3]=0 默认 legacy） | 否 |
-| 3 | feat(rtl): cim_top wrapper + MUX | `run_regression.sh` GREEN | 否 |
-| 4 | **feat(bd): integrate axi_dma + S_AXI_HP0 + xlconcat** | `vivado_build.sh` 出 .bit/.hwh, axi_dma 在 .hwh, WNS ≥ 0 | **是 — git tag `pre-c3-bd`** |
-| 5 | feat(sw): DMA path behind use_dma flag | `pytest sw/tests/ -v` 17 PASS | 否 |
-| 6 | feat: enable DMA by default + benchmark + paper | LeNet-5 200 张 99.5% acc, ≤25 ms/img, profiler load_w_ms <5% | 否 |
-| 7 (后) | refactor(rtl): remove legacy MMIO weight/input/bias path | 全 TB+pytest GREEN, LUT 减 ~800 | 否（commit 6 通过 1 周后） |
+| # | 标题 | 验证 | 状态 | 回退点 |
+|---|---|---|---|---|
+| 1 | feat(rtl): cim_axi_stream_sink + standalone TB | `run_tb_cim_stream_sink.sh` GREEN | ✅ `f39489b` | 否 |
+| 2 | feat(rtl): CSR_STREAM_* + CTRL[3] gate | `run_regression.sh` GREEN（CTRL[3]=0 默认 legacy） | ✅ `0adf7da` | 否 |
+| 3 | feat(rtl): cim_top wrapper + MUX | `run_regression.sh` GREEN | ✅ `db16cbb` | 否 |
+| 4 | **feat(bd): integrate axi_dma + S_AXI_HP0 + xlconcat** | `vivado_build.sh` 出 .bit/.hwh, axi_dma 在 .hwh, WNS ≥ 0 | ✅ `4236e85` | **是 — git tag `pre-c3-bd`** |
+| 5 | feat(sw): DMA path behind use_dma flag | `pytest sw/tests/ -v` 22/22 PASS | ✅ `9c7914f` | 否 |
+| 6 | feat: enable DMA by default + benchmark + paper | LeNet-5 200 张 99.5% acc, ≤25 ms/img, profiler load_w_ms <5% | 🔄 代码完成，等 `vivado_build.sh` + 上板跑 benchmark | 否 |
+| 7 (后) | refactor(rtl): remove legacy MMIO weight/input/bias path | 全 TB+pytest GREEN, LUT 减 ~800 | ⏳ commit 6 通过 1 周后 | 否 |
+
+**Commit 6 剩余动作（上板端）**：
+1. `bash hw/scripts/vivado_build.sh` — 生成带 axi_dma 的新 .bit/.hwh
+2. 拷贝到 PYNQ-Z2，在 `lenet5_test_pynq.ipynb` 跑 200 张 MNIST
+3. `python sw/scripts/benchmark_e2e.py --model lenet5 --n_images 200`
+4. A2 profiler 重跑，出新的 latency breakdown 图
+5. 若 4 条验收 (99.5% acc / ≤25 ms/img / load_w_ms <5% / bit-exact) 全过 → 论文 §5.x 加 C3 对比节 + commit amend 补 benchmark 数据
 
 #### 预期收益（量化）
 

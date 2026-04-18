@@ -215,17 +215,17 @@ def maxpool2d(feat, kernel=2, stride=2):
 class CIMDriver:
     """Low-level driver for CIM accelerator via AXI4-Lite MMIO."""
 
-    def __init__(self, bitstream_path="cim_soc.bit", load=True, use_dma=False):
+    def __init__(self, bitstream_path="cim_soc.bit", load=True, use_dma=True):
         """
         Args:
             bitstream_path: path to .bit file (must have matching .hwh)
             load: if True, load overlay immediately
-            use_dma: if True, route weight/input/bias loads through the
-                     AXI-Stream + axi_dma data path (C3; step 8). Requires a
-                     bitstream built after the BD update in commit 4.
-                     Default False during commit-5 staged rollout; commit 6
-                     flips the default to True once on-board validation
-                     reaches 99.5% bit-exact accuracy on LeNet-5 200 images.
+            use_dma: if True (default, commit 6), route weight/input/bias
+                     through AXI-Stream + axi_dma (C3). Requires a bitstream
+                     built after commit 4 BD integration. If the bitstream
+                     predates C3, pass use_dma=False to fall back to the
+                     legacy MMIO path — everything still works at ~270× the
+                     wall-clock cost.
         """
         if not _HAS_PYNQ:
             raise RuntimeError("pynq not available — run this on PYNQ-Z2")

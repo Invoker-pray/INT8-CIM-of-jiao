@@ -68,7 +68,7 @@ cd sw && python3 golden_model.py --mnist-e2e --output-dir <dir>   # generate hex
 - **`pkg/cim_pkg.sv`** — Single source of truth for all parameters: tile geometry (16×16), parallelism (`PAR_OB`), data widths (INT8/INT32), CSR address map, FSM states, requantize function. No magic numbers in RTL modules.
 - **`core/`** — `cim_tile.sv` (16×16 MAC, combinational) → `psum_accum.sv` (partial-sum accumulator) → `cim_accel_core.sv` (main FSM engine, configurable parallelism, multi-stage pipeline, performance counters). One unified engine handles arbitrary layers via CSR configuration.
 - **`mem/`** — `weight_sram.sv` (16 independent banks for BRAM inference, AXI DMA-style 32-bit chunk writes), `bias_sram.sv`, `input_buffer.sv` (with zero-point subtraction), `output_buffer.sv` (with argmax).
-- **`axi/`** — AXI4-Lite slave wrapper. CSR address space is 14-bit (16KB). **Planned (step 8 / C3)**: split into `cim_axi_lite_slave.sv` (CSR control + legacy MMIO staging, gated by `CSR_CTRL[3]=0`) + `cim_axi_stream_sink.sv` (AXIS data path, `CSR_CTRL[3]=1`) + `cim_top.sv` (wrapper with MUX). Data path goes PS S_AXI_HP0 → axi_dma → 32-bit AXIS → sink → BRAM; CSR path keeps M_AXI_GP0 → AXI4-Lite. Dual-path retained until commit 6 verified bit-exact, then commit 7 deletes legacy. **Authoritative spec: `docs/c3_dma_design.md`**; README.md step 8 is the overview.
+- **`axi/`** + **`cim_top.sv`** — AXI4-Lite slave (CSR + legacy MMIO staging) and cim_axi_stream_sink (AXIS data path) are MUXed inside `cim_axi_lite_slave.sv` on `CSR_CTRL[3]`. `cim_top.sv` wires them together and exposes S_AXI + S_AXIS + irq_done to BD via `cim_top_wrapper.v`. PS data path: S_AXI_HP0 → axi_dma_0 → M_AXIS_MM2S (32-bit) → cim_top/S_AXIS → sink → BRAM; CSR still goes PS M_AXI_GP0 → cim_top/S_AXI. Dual-path retained through step 8 commit 7 (planned legacy removal). **Spec: `docs/c3_dma_design.md`**. Step 8 status: commits 1–5 landed, commit 6 needs `bash hw/scripts/vivado_build.sh` + 200-image on-board benchmark.
 
 ### PicoRV32 Integration (`picorv32/hw/rtl/riscv/`)
 
@@ -85,7 +85,7 @@ See **`docs/sw_usage.md`** for full file descriptions, CLI usage, and Python API
 - `mnist_quantize.py` — Train/quantize/export MLP (784→128→10) for real MNIST testing.
 - `lenet5_quantize.py` — Train/quantize/export LeNet-5 with im2col support.
 - `model_zoo.py` — Unified multi-model API: `build_model`, `train`, `quantize`, `int8_infer`, `export_hex`.
-- `cim_driver.py` — PYNQ Python driver (`CIMDriver` low-level MMIO, `CIMModel` high-level multi-layer inference with im2col and SQ-mapping packed MVM). **Planned (step 8 / C3)**: `load_weights / load_input / load_bias` gain a `use_dma` path that uses `pynq.allocate` + `pynq.lib.dma.sendchannel.transfer()` instead of per-word MMIO writes. Targets ~270× end-to-end speedup on LeNet-5 (1696 → ~6 ms/img); profiled bottleneck is MMIO, not compute.
+- `cim_driver.py` — PYNQ Python driver (`CIMDriver` low-level MMIO + DMA, `CIMModel` high-level multi-layer inference with im2col and SQ-mapping packed MVM). C3 landed (commit 5): `load_weights / load_input / load_bias` now dispatch on `use_dma` (default True). DMA path uses `pynq.allocate` + `pynq.lib.dma.sendchannel.transfer()`; legacy per-word MMIO retained behind `use_dma=False` for A/B comparison. Targets ~270× end-to-end speedup on LeNet-5 (1696 → ~6 ms/img); profiled bottleneck is MMIO, not compute.
 - Jupyter notebooks (`*_pynq.ipynb`) — On-board verification scripts; `generate_*.ipynb` run on host.
 
 ## Key Constraints
