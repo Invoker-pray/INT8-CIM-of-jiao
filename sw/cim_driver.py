@@ -93,9 +93,30 @@ _PRED_CLASS = 0x040
 _WDMA_ADDR = 0x044
 _WDMA_DATA = 0x048
 _WDMA_CTRL = 0x04C
+# C3 (step 8): AXI4-Stream sink control (active when CTRL[3]=1)
+_CSR_STREAM_DEST = 0x050      # [1:0]=dest (0=weight, 1=input, 2=bias); [31:16]=base_addr
+_CSR_STREAM_LEN = 0x054       # [15:0]=beat count; write triggers cfg_start pulse
+_CSR_STREAM_STATUS = 0x058    # [0]=busy, [1]=done, [2]=overflow, [3]=underflow
 _LOGIT_BASE = 0x100
 _MEM_INPUT = 0x1000
 _MEM_BIAS = 0x2000
+
+# CSR_CTRL bit masks
+_CTRL_START = 0x1
+_CTRL_CLEAR_DONE = 0x2
+_CTRL_SOFT_RST = 0x4
+_CTRL_STREAM_EN = 0x8         # C3: 1 → data writes come from stream sink, 0 → legacy MMIO staging
+
+# Stream destination codes (must match cim_pkg::stream_dest_t)
+_DEST_WEIGHT = 0
+_DEST_INPUT = 1
+_DEST_BIAS = 2
+
+# CMA buffer sizing upper bounds — cover any single-layer load for LeNet-5 / MNIST-MLP.
+# LeNet-5 Conv2 packed weight is the largest: col_len=150*16=2400 chunks; headroom 4×.
+_DMA_BUF_WEIGHTS = 20000      # 32-bit words (up to ~80 KB)
+_DMA_BUF_INPUT = (MAX_IN_DIM + 15) // 4  # packed UINT8 → uint32 words
+_DMA_BUF_BIAS = MAX_OUT_DIM
 
 
 # ============================================================================
@@ -194,24 +215,67 @@ def maxpool2d(feat, kernel=2, stride=2):
 class CIMDriver:
     """Low-level driver for CIM accelerator via AXI4-Lite MMIO."""
 
-    def __init__(self, bitstream_path="cim_soc.bit", load=True):
+    def __init__(self, bitstream_path="cim_soc.bit", load=True, use_dma=False):
         """
         Args:
             bitstream_path: path to .bit file (must have matching .hwh)
             load: if True, load overlay immediately
+            use_dma: if True, route weight/input/bias loads through the
+                     AXI-Stream + axi_dma data path (C3; step 8). Requires a
+                     bitstream built after the BD update in commit 4.
+                     Default False during commit-5 staged rollout; commit 6
+                     flips the default to True once on-board validation
+                     reaches 99.5% bit-exact accuracy on LeNet-5 200 images.
         """
         if not _HAS_PYNQ:
             raise RuntimeError("pynq not available — run this on PYNQ-Z2")
         if load:
             self.overlay = Overlay(bitstream_path)
         self.mmio = MMIO(_BASE, _MMIO_SIZE)
+        self.use_dma = use_dma
+        self.dma = None
+        self._buf_w = None
+        self._buf_x = None
+        self._buf_b = None
+        if use_dma:
+            self._init_dma()
         self.soft_reset()
 
+    def _init_dma(self):
+        """Prepare DMA channel + pinned CMA buffers. Called once from __init__
+        when use_dma=True. Fails fast if the bitstream does not expose axi_dma_0.
+        """
+        try:
+            self.dma = self.overlay.axi_dma_0
+        except AttributeError as e:
+            raise RuntimeError(
+                "Bitstream does not expose axi_dma_0 — rebuild with "
+                "hw/scripts/vivado_build.sh after C3 BD integration (commit 4)."
+            ) from e
+        from pynq import allocate
+        self._buf_w = allocate(shape=(_DMA_BUF_WEIGHTS,), dtype=np.uint32)
+        self._buf_x = allocate(shape=(_DMA_BUF_INPUT,), dtype=np.uint32)
+        self._buf_b = allocate(shape=(_DMA_BUF_BIAS,), dtype=np.uint32)
+
+    def set_dma_mode(self, enable):
+        """Runtime switch between DMA path and legacy MMIO path.
+
+        Useful for A/B bit-exact comparison. If enable=True and DMA was not
+        initialized in __init__, lazily initializes. Writes CTRL[3] so the
+        slave's MUX selects the correct path for subsequent load_* calls.
+        """
+        if enable and self.dma is None:
+            self._init_dma()
+        self.use_dma = bool(enable)
+        # Update CTRL[3] without disturbing other bits; CTRL[0:2] are pulses.
+        self.mmio.write(_CTRL, _CTRL_STREAM_EN if enable else 0)
+
     def soft_reset(self):
-        self.mmio.write(_CTRL, 0x4)
+        # Preserve CTRL[3] stream-mode bit while pulsing soft-reset.
+        self.mmio.write(_CTRL, _CTRL_SOFT_RST | (_CTRL_STREAM_EN if self.use_dma else 0))
 
     def _clear_done(self):
-        self.mmio.write(_CTRL, 0x2)
+        self.mmio.write(_CTRL, _CTRL_CLEAR_DONE | (_CTRL_STREAM_EN if self.use_dma else 0))
 
     def configure(self, in_dim, out_dim, zp, mult, shift, relu):
         """Configure CSR registers for one layer."""
@@ -227,8 +291,79 @@ class CIMDriver:
         m.write(_INPUT_ZP, int(zp) & 0xFFFFFFFF)
         m.write(_ACT_MODE, 1 if relu else 0)
 
+    # ------------------------------------------------------------------ #
+    # C3: data-path dispatchers — route to DMA or legacy MMIO path based
+    # on self.use_dma. Both paths land the exact same byte sequence in
+    # weight_sram / input_buffer / bias_sram (bit-exact guaranteed by the
+    # cim_axi_stream_sink FSM mirroring the MMIO staging logic; see
+    # docs/c3_dma_design.md §3.1-3.5 and §7.3 mock test).
+    # ------------------------------------------------------------------ #
+    def _stream_load(self, words, dest, buf):
+        """Push `words` (iterable of uint32) to the stream sink at `dest`.
+
+        Synchronous: blocks until DMA completes and sink reports done.
+        """
+        n = len(words)
+        if n == 0:
+            return
+        if n > len(buf):
+            raise ValueError(
+                f"stream_load: {n} words exceeds pre-allocated buffer capacity {len(buf)}. "
+                f"Increase _DMA_BUF_* at top of cim_driver.py."
+            )
+        buf[:n] = np.asarray(words, dtype=np.uint32)
+        # Order matters: DEST must be latched before LEN. LEN write atomically
+        # pulses cfg_start in the sink (see cim_axi_lite_slave.sv line for
+        # CSR_STREAM_LEN, and design doc §3.3 scheme A).
+        self.mmio.write(_CSR_STREAM_DEST, int(dest))
+        self.mmio.write(_CSR_STREAM_LEN, n)
+        self.dma.sendchannel.transfer(buf[:n])
+        self.dma.sendchannel.wait()
+        # Secondary status check — catches desyncs between PS transfer_len
+        # and CSR_STREAM_LEN (overflow / underflow sticky bits).
+        status = self.mmio.read(_CSR_STREAM_STATUS)
+        if status & 0x4:
+            raise RuntimeError(f"stream sink overflow (status=0x{status:08x}); "
+                               f"PS sent more beats than CSR_STREAM_LEN=n={n}")
+        if status & 0x8:
+            raise RuntimeError(f"stream sink underflow (status=0x{status:08x}); "
+                               f"PS sent fewer beats than CSR_STREAM_LEN=n={n}")
+        self.mmio.write(_CSR_STREAM_STATUS, 0)  # clear sticky done
+
     def load_weights(self, chunks):
-        """Load weight chunks via burst DMA."""
+        """Load weight chunks. Routes to DMA or legacy MMIO based on use_dma."""
+        if self.use_dma:
+            self._stream_load(chunks, _DEST_WEIGHT, self._buf_w)
+        else:
+            self._load_weights_legacy(chunks)
+
+    def load_input(self, data_u8):
+        """Load UINT8 input vector. Routes to DMA or legacy MMIO based on use_dma."""
+        if self.use_dma:
+            # Pack UINT8 stream into uint32 words, LE: byte0 in bits[7:0], etc.
+            # This matches cim_axi_stream_sink.sv DEST_INPUT path, which is
+            # itself byte-compatible with the legacy MMIO staging in
+            # cim_axi_lite_slave.sv (ibuf_staging[8k+7:8k] = byte k).
+            arr = np.asarray(data_u8, dtype=np.uint8)
+            pad = (-len(arr)) % 16
+            if pad:
+                arr = np.concatenate([arr, np.zeros(pad, dtype=np.uint8)])
+            words = arr.view(np.uint32)
+            self._stream_load(words.tolist(), _DEST_INPUT, self._buf_x)
+        else:
+            self._load_input_legacy(data_u8)
+
+    def load_bias(self, bias_u32):
+        """Load INT32 bias values. Routes to DMA or legacy MMIO based on use_dma."""
+        if self.use_dma:
+            words = [int(b) & 0xFFFFFFFF for b in bias_u32]
+            self._stream_load(words, _DEST_BIAS, self._buf_b)
+        else:
+            self._load_bias_legacy(bias_u32)
+
+    # --- Legacy (per-word MMIO) implementations; retained for A/B tests ---
+    def _load_weights_legacy(self, chunks):
+        """Load weight chunks via AXI4-Lite burst MMIO."""
         m = self.mmio
         m.write(_WDMA_ADDR, 0)
         m.write(_WDMA_CTRL, 0x02)  # burst enable
@@ -236,13 +371,13 @@ class CIMDriver:
             m.write(_WDMA_DATA, int(c))
         m.write(_WDMA_CTRL, 0x00)
 
-    def load_bias(self, bias_u32):
-        """Load INT32 bias values."""
+    def _load_bias_legacy(self, bias_u32):
+        """Load INT32 bias via per-word MMIO writes."""
         for i, b in enumerate(bias_u32):
             self.mmio.write(_MEM_BIAS + 4 * i, int(b) & 0xFFFFFFFF)
 
-    def load_input(self, data_u8):
-        """Load UINT8 input vector (auto-pads to multiple of 16)."""
+    def _load_input_legacy(self, data_u8):
+        """Load UINT8 input vector via per-word MMIO writes (auto-pads to 16)."""
         padded = list(data_u8)
         while len(padded) % 16 != 0:
             padded.append(0)
