@@ -59,7 +59,21 @@ module cim_axi_lite_slave
     input  logic        stream_busy,
     input  logic        stream_done,
     input  logic        stream_overflow,
-    input  logic        stream_underflow
+    input  logic        stream_underflow,
+
+    // C3 stream-sink write ports — MUXed into weight_sram / input_buffer / bias_sram
+    // when reg_stream_path_en==1 (CTRL[3]=1). Tied 0 in legacy BD.
+    input logic                                              stream_wsram_wr_en,
+    input logic [      $clog2(cim_pkg::TILE_ROWS)-1:0]       stream_wsram_wr_row,
+    input logic [clog2_safe(cim_pkg::WSRAM_DEPTH)-1:0]       stream_wsram_wr_tile_idx,
+    input logic [cim_pkg::TILE_COLS*cim_pkg::WEIGHT_W-1:0]   stream_wsram_wr_row_data,
+    input logic                                              stream_ibuf_wr_en,
+    input logic [clog2_safe(cim_pkg::MAX_IN_DIM/cim_pkg::TILE_COLS)-1:0]
+                                                             stream_ibuf_wr_tile_idx,
+    input logic [cim_pkg::TILE_COLS*cim_pkg::INPUT_W-1:0]    stream_ibuf_wr_tile_data,
+    input logic                                              stream_bsram_wr_en,
+    input logic [clog2_safe(cim_pkg::BSRAM_DEPTH)-1:0]       stream_bsram_wr_addr,
+    input logic [                                   31:0]    stream_bsram_wr_data
 );
 
   logic clk, rst_n;
@@ -311,14 +325,28 @@ module cim_axi_lite_slave
     end
   end
 
+  // C3 MUX: when reg_stream_path_en (CTRL[3]=1) → stream sink drives writes;
+  // otherwise legacy MMIO staging path. Selection is reg_stream_path_en, a
+  // mode bit that changes rarely (only between full layer uploads), so no
+  // glitch hazard at the SRAM write port.
+  logic                                 wsram_wr_en_mux;
+  logic [      $clog2(TILE_ROWS)-1:0]   wsram_wr_row_mux;
+  logic [clog2_safe(WSRAM_DEPTH)-1:0]   wsram_wr_tile_mux;
+  logic [                 ROW_W-1:0]    wsram_wr_data_mux;
+
+  assign wsram_wr_en_mux   = reg_stream_path_en ? stream_wsram_wr_en       : wsram_commit;
+  assign wsram_wr_row_mux  = reg_stream_path_en ? stream_wsram_wr_row      : wsram_commit_row;
+  assign wsram_wr_tile_mux = reg_stream_path_en ? stream_wsram_wr_tile_idx : wsram_commit_tile;
+  assign wsram_wr_data_mux = reg_stream_path_en ? stream_wsram_wr_row_data : wsram_staging;
+
   weight_sram #(
       .DEPTH(WSRAM_DEPTH)
   ) u_wsram (
       .clk        (clk),
-      .wr_en      (wsram_commit),
-      .wr_row     (wsram_commit_row),
-      .wr_tile_idx(wsram_commit_tile),
-      .wr_row_data(wsram_staging),
+      .wr_en      (wsram_wr_en_mux),
+      .wr_row     (wsram_wr_row_mux),
+      .wr_tile_idx(wsram_wr_tile_mux),
+      .wr_row_data(wsram_wr_data_mux),
       .rd_tile_idx(w_rd_tile_idx),
       .rd_tile    (w_rd_tile)
   );
@@ -382,13 +410,22 @@ MAX_IN_DIM/TILE_COLS
     end
   end
 
+  // C3 MUX: input buffer write path
+  logic                                                  ibuf_wr_en_mux;
+  logic [clog2_safe(MAX_IN_DIM/TILE_COLS)-1:0]           ibuf_wr_tile_mux;
+  logic [                            IBUF_TILE_W-1:0]    ibuf_wr_data_mux;
+
+  assign ibuf_wr_en_mux   = reg_stream_path_en ? stream_ibuf_wr_en       : ibuf_commit;
+  assign ibuf_wr_tile_mux = reg_stream_path_en ? stream_ibuf_wr_tile_idx : ibuf_commit_tile;
+  assign ibuf_wr_data_mux = reg_stream_path_en ? stream_ibuf_wr_tile_data: ibuf_staging;
+
   input_buffer #(
       .MAX_LEN(MAX_IN_DIM)
   ) u_ibuf (
       .clk         (clk),
-      .wr_en       (ibuf_commit),
-      .wr_tile_idx (ibuf_commit_tile),
-      .wr_tile_data(ibuf_staging),
+      .wr_en       (ibuf_wr_en_mux),
+      .wr_tile_idx (ibuf_wr_tile_mux),
+      .wr_tile_data(ibuf_wr_data_mux),
       .rd_tile_idx (ibuf_rd_tile_idx),
       .input_zp    (reg_input_zp),
       .x_tile      (ibuf_x_tile),
@@ -397,14 +434,25 @@ MAX_IN_DIM/TILE_COLS
 
   // ---- Bias SRAM: already whole-word (32-bit), no staging needed ----
   wire bias_wr_hit = wr_fire && (aw_addr_r >= MEM_BIAS_BASE) && (aw_addr_r < MEM_BIAS_BASE + 14'h200);
+  wire [clog2_safe(BSRAM_DEPTH)-1:0] legacy_bsram_wr_addr =
+      (aw_addr_r - MEM_BIAS_BASE) >> 2;
+
+  // C3 MUX: bias sram write path
+  logic                                bsram_wr_en_mux;
+  logic [clog2_safe(BSRAM_DEPTH)-1:0]  bsram_wr_addr_mux;
+  logic [                        31:0] bsram_wr_data_mux;
+
+  assign bsram_wr_en_mux   = reg_stream_path_en ? stream_bsram_wr_en   : bias_wr_hit;
+  assign bsram_wr_addr_mux = reg_stream_path_en ? stream_bsram_wr_addr : legacy_bsram_wr_addr;
+  assign bsram_wr_data_mux = reg_stream_path_en ? stream_bsram_wr_data : w_data_r;
 
   bias_sram #(
       .DEPTH(BSRAM_DEPTH)
   ) u_bsram (
       .clk    (clk),
-      .wr_en  (bias_wr_hit),
-      .wr_addr((aw_addr_r - MEM_BIAS_BASE) >> 2),
-      .wr_data(w_data_r),
+      .wr_en  (bsram_wr_en_mux),
+      .wr_addr(bsram_wr_addr_mux),
+      .wr_data(bsram_wr_data_mux),
       .rd_addr(b_rd_addr),
       .rd_data(b_rd_data)
   );

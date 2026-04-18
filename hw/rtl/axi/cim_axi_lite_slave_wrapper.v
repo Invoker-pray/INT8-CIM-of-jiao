@@ -86,18 +86,33 @@ module cim_axi_lite_slave_wrapper #(
 
       .irq_done(irq_done),
 
-      // C3 stream-sink side-band — unused in the legacy BD flow; commit 3+
-      // switches the BD top to cim_top.sv, which wires these to the new sink.
-      .stream_path_en  (),
-      .cfg_dest        (),
-      .cfg_len         (),
-      .cfg_base_addr   (),
-      .cfg_start       (),
-      .status_clear    (),
-      .stream_busy     (1'b0),
-      .stream_done     (1'b0),
-      .stream_overflow (1'b0),
-      .stream_underflow(1'b0)
+      // C3 stream-sink side-band — unused in the legacy BD flow; commit 4
+      // switches the BD top to cim_top_wrapper.v, which wires these to the
+      // new sink. Inputs tied 0 → CTRL[3] can still be written but with all
+      // stream_*_wr_en=0 the MUX is a no-op, preserving legacy behavior.
+      // Widths hard-coded to match cim_pkg defaults:
+      //   TILE_ROWS=16, WSRAM_DEPTH=392 (9b), MAX_IN_DIM/TILE_COLS=49 (6b),
+      //   BSRAM_DEPTH=128 (7b), row/tile data = 128b.
+      .stream_path_en          (),
+      .cfg_dest                (),
+      .cfg_len                 (),
+      .cfg_base_addr           (),
+      .cfg_start               (),
+      .status_clear            (),
+      .stream_busy             (1'b0),
+      .stream_done             (1'b0),
+      .stream_overflow         (1'b0),
+      .stream_underflow        (1'b0),
+      .stream_wsram_wr_en      (1'b0),
+      .stream_wsram_wr_row     (4'b0),
+      .stream_wsram_wr_tile_idx(9'b0),
+      .stream_wsram_wr_row_data(128'b0),
+      .stream_ibuf_wr_en       (1'b0),
+      .stream_ibuf_wr_tile_idx (6'b0),
+      .stream_ibuf_wr_tile_data(128'b0),
+      .stream_bsram_wr_en      (1'b0),
+      .stream_bsram_wr_addr    (7'b0),
+      .stream_bsram_wr_data    (32'b0)
   );
 
 endmodule
