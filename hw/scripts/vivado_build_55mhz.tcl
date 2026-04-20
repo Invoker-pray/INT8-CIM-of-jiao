@@ -1,16 +1,12 @@
 # ============================================================================
 # vivado_build_55mhz.tcl — Build CIM SoC at 55 MHz for timing-clean result
 # ============================================================================
-# Identical to vivado_build.tcl except:
+# Derived from vivado_build.tcl (60 MHz) with only these changes:
 #   FCLK_MHZ = 55  (18.182 ns period, eliminates the -0.086 ns WNS at 60 MHz)
 #   OUT_DIR   = vivado_proj_55mhz
 #   Deploy    → vivado_proj_55mhz/pynq_deploy/  (cim_soc_55mhz.bit/.hwh)
-#
-# Background: At 60 MHz the critical path (CIM Tile MAC chain) produces
-# WNS = -0.086 ns on 3 endpoints. Dropping to 55 MHz gives ~1.5 ns positive
-# slack on the same path. The hardware is functionally identical; the lower
-# frequency has negligible impact on inference latency (54.7 μs → 59.7 μs
-# for MLP, i.e. ~9% slowdown).
+#   AXIS connection uses signal-level wiring instead of connect_bd_intf_net
+#     to bypass BD 41-237 FREQ_HZ mismatch (~55.17 MHz PLL vs exact 55 MHz)
 #
 # Usage: bash hw/scripts/vivado_build_55mhz.sh
 # ============================================================================
@@ -57,7 +53,6 @@ set rtl_files [list \
 ]
 
 add_files -norecurse ${rtl_files}
-# Use dedicated 55 MHz XDC (18.182 ns period constraint)
 add_files -fileset constrs_1 -norecurse ${HW_DIR}/constraints/cim_soc_55mhz.xdc
 set_property file_type SystemVerilog [get_files *.sv]
 update_compile_order -fileset sources_1
@@ -79,7 +74,7 @@ if {![catch {apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 \
     puts "WARN: Board automation failed. Configure PS manually."
 }
 
-# Configure PS: 55 MHz fabric clock + C3 DMA ports (GP1 + HP0 + 2-bit IRQ)
+# Configure PS: enable M_AXI_GP0/GP1, S_AXI_HP0, fabric interrupts (2-bit)
 set_property -dict [list \
     CONFIG.PCW_USE_M_AXI_GP0             {1} \
     CONFIG.PCW_USE_M_AXI_GP1             {1} \
@@ -90,7 +85,7 @@ set_property -dict [list \
     CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ  ${FCLK_MHZ} \
 ] [get_bd_cells ps7]
 
-# --- 3b. CIM Accelerator IP (C3: cim_top_wrapper) ---
+# --- 3b. CIM Accelerator IP (C3: cim_top_wrapper = slave + stream sink) ---
 create_bd_cell -type module -reference cim_top_wrapper cim_0
 
 # --- 3b.1 axi_dma (MM2S only, Direct Register mode, 64→32 dwidth) ---
@@ -141,10 +136,18 @@ apply_bd_automation -rule xilinx.com:bd_rule:axi4 \
         master_apm {0} \
     ] [get_bd_intf_pins ps7/S_AXI_HP0]
 
-connect_bd_intf_net [get_bd_intf_pins axi_dma_0/M_AXIS_MM2S] \
-                    [get_bd_intf_pins cim_0/S_AXIS]
+# --- 55 MHz DIFFERENCE: signal-level AXIS wiring instead of connect_bd_intf_net ---
+# At 55 MHz the Zynq PLL outputs ~55.172413 MHz, not exactly 55 MHz.
+# connect_bd_intf_net triggers BD 41-237 FREQ_HZ mismatch between
+# cim_0/S_AXIS (inferred as exact 55 MHz) and axi_dma_0/M_AXIS_MM2S (actual PLL freq).
+# Signal-level connect_bd_net produces identical synthesis but skips the interface
+# property validation.
+connect_bd_net [get_bd_pins axi_dma_0/m_axis_mm2s_tdata]  [get_bd_pins cim_0/S_AXIS_TDATA]
+connect_bd_net [get_bd_pins axi_dma_0/m_axis_mm2s_tvalid] [get_bd_pins cim_0/S_AXIS_TVALID]
+connect_bd_net [get_bd_pins cim_0/S_AXIS_TREADY]          [get_bd_pins axi_dma_0/m_axis_mm2s_tready]
+connect_bd_net [get_bd_pins axi_dma_0/m_axis_mm2s_tlast]  [get_bd_pins cim_0/S_AXIS_TLAST]
 
-# --- 3d. Interrupt concat ---
+# --- 3d. Interrupt concatenation ---
 set_property -dict [list CONFIG.PCW_IRQ_F2P_INTR {1} CONFIG.PCW_NUM_F2P_INTR_INPUTS {2}] \
     [get_bd_cells ps7]
 create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_0
@@ -156,18 +159,40 @@ connect_bd_net [get_bd_pins xlconcat_0/dout]        [get_bd_pins ps7/IRQ_F2P]
 
 # --- 3d.1 Dedicated proc_sys_reset for axi_dma ---
 create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 psr_dma
-connect_bd_net [get_bd_pins ps7/FCLK_CLK0]     [get_bd_pins psr_dma/slowest_sync_clk]
-connect_bd_net [get_bd_pins ps7/FCLK_RESET0_N] [get_bd_pins psr_dma/ext_reset_in]
-set dma_reset_net [get_bd_nets -of_objects [get_bd_pins axi_dma_0/axi_resetn]]
-if {$dma_reset_net ne ""} {
-    delete_bd_objs $dma_reset_net
+connect_bd_net [get_bd_pins ps7/FCLK_CLK0]       [get_bd_pins psr_dma/slowest_sync_clk]
+connect_bd_net [get_bd_pins ps7/FCLK_RESET0_N]   [get_bd_pins psr_dma/ext_reset_in]
+
+proc reconnect_reset_pins {src_pin dst_pins} {
+    foreach dst_pin $dst_pins {
+        set old_net [get_bd_nets -quiet -of_objects $dst_pin]
+        if {$old_net ne ""} {
+            delete_bd_objs $old_net
+        }
+        connect_bd_net $src_pin $dst_pin
+    }
 }
-connect_bd_net [get_bd_pins psr_dma/peripheral_aresetn] [get_bd_pins axi_dma_0/axi_resetn]
+
+reconnect_reset_pins [get_bd_pins rst_ps7_55M/peripheral_aresetn] [list \
+    [get_bd_pins cim_0/S_AXI_ARESETN] \
+    [get_bd_pins ps7_axi_periph/ARESETN] \
+    [get_bd_pins ps7_axi_periph/M00_ARESETN] \
+    [get_bd_pins ps7_axi_periph/S00_ARESETN] \
+]
+
+reconnect_reset_pins [get_bd_pins psr_dma/peripheral_aresetn] [list \
+    [get_bd_pins axi_dma_0/axi_resetn] \
+    [get_bd_pins ps7_axi_periph_1/ARESETN] \
+    [get_bd_pins ps7_axi_periph_1/M00_ARESETN] \
+    [get_bd_pins ps7_axi_periph_1/S00_ARESETN] \
+    [get_bd_pins axi_mem_intercon/ARESETN] \
+    [get_bd_pins axi_mem_intercon/M00_ARESETN] \
+    [get_bd_pins axi_mem_intercon/S00_ARESETN] \
+]
 
 # --- 3e. Address mapping ---
 assign_bd_address -offset 0x40000000 -range 16K \
     [get_bd_addr_segs {cim_0/S_AXI/reg0}]
-assign_bd_address -offset 0x40400000 -range 64K \
+assign_bd_address -offset 0x80400000 -range 64K \
     [get_bd_addr_segs {axi_dma_0/S_AXI_LITE/Reg}]
 assign_bd_address -offset 0x00000000 -range 512M \
     [get_bd_addr_segs {ps7/S_AXI_HP0/HP0_DDR_LOWOCM}]
@@ -177,13 +202,36 @@ validate_bd_design
 save_bd_design
 puts "INFO: Block Design validated and saved."
 
-# --- 3g. .hwh sanity check ---
+# --- 3g. Post-validation: .hwh sanity check ---
 set dma_segs [get_bd_addr_segs -of_objects [get_bd_cells axi_dma_0]]
 if {[llength $dma_segs] < 1} {
-    puts "ERROR: axi_dma_0 has no address segment assigned. Aborting."
+    puts "ERROR: axi_dma_0 has no address segment assigned. Aborting — the"
+    puts "       generated .hwh will miss axi_dma and PYNQ driver will break."
     exit 1
 }
 puts "INFO: axi_dma_0 address segments verified: $dma_segs"
+
+set required_reset_pins [list \
+    [get_bd_pins cim_0/S_AXI_ARESETN] \
+    [get_bd_pins ps7_axi_periph/ARESETN] \
+    [get_bd_pins ps7_axi_periph/M00_ARESETN] \
+    [get_bd_pins ps7_axi_periph/S00_ARESETN] \
+    [get_bd_pins axi_dma_0/axi_resetn] \
+    [get_bd_pins ps7_axi_periph_1/ARESETN] \
+    [get_bd_pins ps7_axi_periph_1/M00_ARESETN] \
+    [get_bd_pins ps7_axi_periph_1/S00_ARESETN] \
+    [get_bd_pins axi_mem_intercon/ARESETN] \
+    [get_bd_pins axi_mem_intercon/M00_ARESETN] \
+    [get_bd_pins axi_mem_intercon/S00_ARESETN] \
+]
+foreach pin $required_reset_pins {
+    set net [get_bd_nets -quiet -of_objects $pin]
+    if {$net eq ""} {
+        puts "ERROR: required reset pin is unconnected: $pin"
+        exit 1
+    }
+}
+puts "INFO: reset wiring verified for CIM + AXI interconnects"
 
 # ============================================================================
 # 4. Generate wrapper
@@ -257,4 +305,19 @@ report_utilization    -file ${OUT_DIR}/utilization_report.txt
 report_timing_summary -file ${OUT_DIR}/timing_report.txt
 report_power          -file ${OUT_DIR}/power_report.txt
 puts "INFO: Reports saved to ${OUT_DIR}/"
+
+# --- Post-impl WNS gate ---
+set wns [get_property SLACK [get_timing_paths -delay_type max -max_paths 1]]
+set whs [get_property SLACK [get_timing_paths -delay_type min -max_paths 1]]
+puts "============================================================"
+puts "TIMING SUMMARY (55 MHz timing-clean target)"
+puts "  WNS (setup) : ${wns} ns"
+puts "  WHS (hold)  : ${whs} ns"
+if {${wns} < 0.0} {
+    puts "  STATUS      : FAIL — 55 MHz build must have WNS > 0."
+    puts "                try axis_register_slice between axi_dma and cim_0."
+} else {
+    puts "  STATUS      : CLEAN"
+}
+puts "============================================================"
 close_design
