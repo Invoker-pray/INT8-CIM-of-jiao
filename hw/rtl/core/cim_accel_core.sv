@@ -2,19 +2,27 @@
 // cim_accel_core.sv — CIM Accelerator Core
 // ============================================================================
 //
-// C1 pipeline (TILE_SPLIT_FACTOR=2, 100-125 MHz):
+// C1/C2 pipeline (TILE_SPLIT_FACTOR):
 //
-// Compute pipeline per input-block iteration:
+//   SPLIT=1 (≤60 MHz):
+//     ST_MAC_LO │ full 16-wide MAC -> tile_psum_reg
+//     ST_COMPUTE │ accumulate tile_psum_reg
 //
-//   ST_FETCH/WAIT_SRAM │ weight BRAM → w_tile_reg (unchanged)
-//   ST_XEFF_REG         │ input BRAM + ZP subtract → x_eff_reg (unchanged)
-//   ST_MAC_LO           │ lo-chain MAC (cols 0-7) → tile_psum_lo_reg
-//   ST_MAC_HI           │ hi-chain MAC (cols 8-15) → tile_psum_hi_reg
-//   ST_COMPUTE          │ merge lo+hi → psum_accum += tile_psum
+//   SPLIT=2 (100-125 MHz):
+//     ST_MAC_LO │ lo-chain MAC (cols 0-7) -> tile_psum_lo_reg
+//     ST_MAC_HI │ hi-chain MAC (cols 8-15) -> tile_psum_hi_reg
+//     ST_COMPUTE │ accumulate lo+hi together in one clock
 //
-// Cost: +1 cycle per IB iteration vs SPLIT_FACTOR=1.
-// For FC1 (49 IB): ~49*10 = 490 cycles vs 49*9 = 441 cycles (+11%).
-// But frequency ×2.08× → net 1.87× throughput gain at 125 vs 60 MHz.
+//   SPLIT=4 (100+ MHz):
+//     ST_MAC_Q0 │ quarter 0 MAC (cols 0-3) -> tile_psum_q0_reg
+//     ST_MAC_Q1 │ quarter 1 MAC (cols 4-7) -> tile_psum_q1_reg
+//     ST_MAC_Q2 │ quarter 2 MAC (cols 8-11) -> tile_psum_q2_reg
+//     ST_MAC_Q3 │ quarter 3 MAC (cols 12-15) -> tile_psum_q3_reg
+//     ST_COMPUTE │ accumulate q0+q1+q2+q3 together in one clock
+//
+// Cost vs SPLIT=1: +1 cycle (SPLIT=2), +3 cycles (SPLIT=4) per IB iteration.
+// But frequency: 1.67x (60->100 MHz), 2.08x (60->125 MHz).
+// Net throughput gain: SPLIT=2 ~1.87x, SPLIT=4 ~1.67x (but WNS positive).
 //
 // ============================================================================
 
@@ -99,22 +107,35 @@ module cim_accel_core
   // Stage B-C (C1): registered lo/hi partial sums (split MAC)
   // SPLIT_FACTOR=1: only tile_psum_reg is used, lo/hi = unused
   // SPLIT_FACTOR=2: tile_psum_lo_reg + tile_psum_hi_reg are used, tile_psum_reg = unused
+  // SPLIT_FACTOR=4: tile_psum_q0-q3_reg are used (4 quarter registers)
   logic signed [PSUM_W-1:0] tile_psum_reg[PAR_OB][TILE_ROWS];  // SPLIT=1 only
   logic signed [PSUM_W-1:0] tile_psum_lo_reg[PAR_OB][TILE_ROWS];  // C1 SPLIT=2
   logic signed [PSUM_W-1:0] tile_psum_hi_reg[PAR_OB][TILE_ROWS];  // C1 SPLIT=2
+  // SPLIT=4: 4 quarter registers (cols 0-3, 4-7, 8-11, 12-15)
+  logic signed [PSUM_W-1:0] tile_psum_q0_reg[PAR_OB][TILE_ROWS];
+  logic signed [PSUM_W-1:0] tile_psum_q1_reg[PAR_OB][TILE_ROWS];
+  logic signed [PSUM_W-1:0] tile_psum_q2_reg[PAR_OB][TILE_ROWS];
+  logic signed [PSUM_W-1:0] tile_psum_q3_reg[PAR_OB][TILE_ROWS];
 
   // ============================================================
   // CIM Tile Array + psum accum
   // ============================================================
   // cim_tile is purely combinational.
   // With SPLIT_FACTOR=2: psum_lo/hi exposed separately.
+  // With SPLIT_FACTOR=4: psum_q0-q3 exposed separately.
   logic signed [PSUM_W-1:0] tile_psum[PAR_OB][TILE_ROWS];
   logic signed [PSUM_W-1:0] psum_out[PAR_OB][TILE_ROWS];
   logic psum_clear, psum_en, psum_en_lo, psum_en_hi;
+  logic psum_en_q0, psum_en_q1, psum_en_q2, psum_en_q3;
 
   // C1: lo/hi partial sums from each tile instance (module-level for generate scoping)
   logic signed [PSUM_W-1:0] psum_lo_tile[PAR_OB][TILE_ROWS];
   logic signed [PSUM_W-1:0] psum_hi_tile[PAR_OB][TILE_ROWS];
+  // SPLIT=4: 4 quarter partial sums
+  logic signed [PSUM_W-1:0] psum_q0_tile[PAR_OB][TILE_ROWS];
+  logic signed [PSUM_W-1:0] psum_q1_tile[PAR_OB][TILE_ROWS];
+  logic signed [PSUM_W-1:0] psum_q2_tile[PAR_OB][TILE_ROWS];
+  logic signed [PSUM_W-1:0] psum_q3_tile[PAR_OB][TILE_ROWS];
 
   genvar g;
   generate
@@ -123,8 +144,12 @@ module cim_accel_core
           .x_eff   (x_eff_reg),
           .w_tile  (w_tile_reg[g]),
           .psum    (tile_psum[g]),
-          .psum_lo (psum_lo_tile[g]),  // C1 SPLIT=2
-          .psum_hi (psum_hi_tile[g])   // C1 SPLIT=2
+          .psum_lo (psum_lo_tile[g]),  // SPLIT=2
+          .psum_hi (psum_hi_tile[g]),   // SPLIT=2
+          .psum_q0 (psum_q0_tile[g]),   // SPLIT=4
+          .psum_q1 (psum_q1_tile[g]),   // SPLIT=4
+          .psum_q2 (psum_q2_tile[g]),   // SPLIT=4
+          .psum_q3 (psum_q3_tile[g])    // SPLIT=4
       );
       psum_accum u_psum (
           .clk      (clk),
@@ -133,9 +158,17 @@ module cim_accel_core
           .en       (psum_en),
           .en_lo    (psum_en_lo),
           .en_hi    (psum_en_hi),
+          .en_q0    (psum_en_q0),     // SPLIT=4
+          .en_q1    (psum_en_q1),     // SPLIT=4
+          .en_q2    (psum_en_q2),     // SPLIT=4
+          .en_q3    (psum_en_q3),     // SPLIT=4
           .tile_psum(tile_psum[g]),
-          .psum_lo_tile(tile_psum_lo_reg[g]),  // C1: use registered lo
-          .psum_hi_tile(tile_psum_hi_reg[g]),  // C1: use registered hi
+          .psum_lo_tile(tile_psum_lo_reg[g]),
+          .psum_hi_tile(tile_psum_hi_reg[g]),
+          .psum_q0_tile(tile_psum_q0_reg[g]),  // SPLIT=4
+          .psum_q1_tile(tile_psum_q1_reg[g]),  // SPLIT=4
+          .psum_q2_tile(tile_psum_q2_reg[g]),  // SPLIT=4
+          .psum_q3_tile(tile_psum_q3_reg[g]),  // SPLIT=4
           .psum     (psum_out[g])
       );
     end
@@ -224,6 +257,10 @@ module cim_accel_core
           tile_psum_reg[t][r]   <= '0;
           tile_psum_lo_reg[t][r] <= '0;
           tile_psum_hi_reg[t][r] <= '0;
+          tile_psum_q0_reg[t][r] <= '0;
+          tile_psum_q1_reg[t][r] <= '0;
+          tile_psum_q2_reg[t][r] <= '0;
+          tile_psum_q3_reg[t][r] <= '0;
           for (int c = 0; c < TILE_COLS; c++) w_tile_reg[t][r][c] <= '0;
         end
       end
@@ -246,9 +283,10 @@ module cim_accel_core
         for (int c = 0; c < TILE_COLS; c++) x_eff_reg[c] <= ibuf_x_eff[c];
       end
 
-      // C1: ST_MAC_LO → latch lo-chain psum (cols 0-7)
-      // C1: ST_MAC_HI → latch hi-chain psum (cols 8-15)
-      // Legacy: ST_MAC → latch full psum
+      // C1: ST_MAC_LO -> latch lo-chain psum (cols 0-7)
+      // C1: ST_MAC_HI -> latch hi-chain psum (cols 8-15)
+      // SPLIT=4: ST_MAC_Q0-Q3 -> latch 4 quarter psums
+      // Legacy: ST_MAC -> latch full psum
       if (TILE_SPLIT_FACTOR == 1) begin
         // === SPLIT_FACTOR=1: full 16-wide MAC in one cycle ===
         if (state == ST_MAC_LO) begin  // renamed from ST_MAC
@@ -256,7 +294,7 @@ module cim_accel_core
           for (int r = 0; r < TILE_ROWS; r++)
             tile_psum_reg[t][r] <= tile_psum[t][r];
         end
-      end else begin
+      end else if (TILE_SPLIT_FACTOR == 2) begin
         // === SPLIT_FACTOR=2: 8+8 split MAC over two cycles ===
         if (state == ST_MAC_LO) begin
           for (int t = 0; t < PAR_OB; t++)
@@ -267,6 +305,28 @@ module cim_accel_core
           for (int t = 0; t < PAR_OB; t++)
           for (int r = 0; r < TILE_ROWS; r++)
             tile_psum_hi_reg[t][r] <= psum_hi_tile[t][r];
+        end
+      end else begin
+        // === SPLIT_FACTOR=4: 4+4+4+4 split MAC over four cycles ===
+        if (state == ST_MAC_Q0) begin
+          for (int t = 0; t < PAR_OB; t++)
+          for (int r = 0; r < TILE_ROWS; r++)
+            tile_psum_q0_reg[t][r] <= psum_q0_tile[t][r];
+        end
+        if (state == ST_MAC_Q1) begin
+          for (int t = 0; t < PAR_OB; t++)
+          for (int r = 0; r < TILE_ROWS; r++)
+            tile_psum_q1_reg[t][r] <= psum_q1_tile[t][r];
+        end
+        if (state == ST_MAC_Q2) begin
+          for (int t = 0; t < PAR_OB; t++)
+          for (int r = 0; r < TILE_ROWS; r++)
+            tile_psum_q2_reg[t][r] <= psum_q2_tile[t][r];
+        end
+        if (state == ST_MAC_Q3) begin
+          for (int t = 0; t < PAR_OB; t++)
+          for (int r = 0; r < TILE_ROWS; r++)
+            tile_psum_q3_reg[t][r] <= psum_q3_tile[t][r];
         end
       end
 
@@ -287,19 +347,19 @@ module cim_accel_core
         neuron_addr_p3 <= neuron_addr_p1;
       end
 
-      // Pipeline Stage 4: ST_STORE (64-bit multiply → prod_r)
+      // Pipeline Stage 4: ST_STORE (64-bit multiply -> prod_r)
       if (state == ST_STORE) begin
         prod_r         <= prod_comb;
         neuron_addr_p4 <= neuron_addr_p3;
       end
 
-      // Pipeline Stage 5: ST_SHIFT (barrel shift → shifted_r)
+      // Pipeline Stage 5: ST_SHIFT (barrel shift -> shifted_r)
       if (state == ST_SHIFT) begin
         shifted_r      <= shifted_comb;
         neuron_addr_p4b <= neuron_addr_p4;
       end
 
-      // Pipeline Stage 6: ST_CLAMP (clamp to INT8 → requant_r)
+      // Pipeline Stage 6: ST_CLAMP (clamp to INT8 -> requant_r)
       if (state == ST_CLAMP) begin
         requant_r      <= clamped_comb;
         neuron_addr_p5 <= neuron_addr_p4b;
@@ -324,6 +384,10 @@ module cim_accel_core
     psum_en          = 1'b0;
     psum_en_lo       = 1'b0;
     psum_en_hi       = 1'b0;
+    psum_en_q0       = 1'b0;
+    psum_en_q1       = 1'b0;
+    psum_en_q2       = 1'b0;
+    psum_en_q3       = 1'b0;
     obuf_wr_en       = 1'b0;
     obuf_wr_addr     = '0;
     obuf_wr_data     = '0;
@@ -379,10 +443,11 @@ module cim_accel_core
         busy          = 1'b1;
         perf_counting = 1'b1;
         if (TILE_SPLIT_FACTOR == 1) state_nxt = ST_MAC_LO;
-        else                         state_nxt = ST_MAC_LO;
+        else if (TILE_SPLIT_FACTOR == 2) state_nxt = ST_MAC_LO;
+        else state_nxt = ST_MAC_Q0;  // SPLIT=4
       end
 
-      // ====== C1: ST_MAC_LO → lo half (cols 0-7) ======
+      // ====== SPLIT=1: ST_MAC_LO = full 16-wide MAC ======
       ST_MAC_LO: begin
         busy          = 1'b1;
         perf_counting = 1'b1;
@@ -393,8 +458,33 @@ module cim_accel_core
         end
       end
 
-      // ====== C1: ST_MAC_HI → hi half (cols 8-15) ======
+      // ====== SPLIT=2: ST_MAC_HI -> hi half (cols 8-15) ======
       ST_MAC_HI: begin
+        busy          = 1'b1;
+        perf_counting = 1'b1;
+        state_nxt     = ST_COMPUTE;
+      end
+
+      // ====== SPLIT=4: quarter states (cols 0-3, 4-7, 8-11, 12-15) ======
+      ST_MAC_Q0: begin
+        busy          = 1'b1;
+        perf_counting = 1'b1;
+        state_nxt     = ST_MAC_Q1;
+      end
+
+      ST_MAC_Q1: begin
+        busy          = 1'b1;
+        perf_counting = 1'b1;
+        state_nxt     = ST_MAC_Q2;
+      end
+
+      ST_MAC_Q2: begin
+        busy          = 1'b1;
+        perf_counting = 1'b1;
+        state_nxt     = ST_MAC_Q3;
+      end
+
+      ST_MAC_Q3: begin
         busy          = 1'b1;
         perf_counting = 1'b1;
         state_nxt     = ST_COMPUTE;
@@ -403,14 +493,20 @@ module cim_accel_core
       // ====== Stage C: psum accumulation ======
       // SPLIT=1: psum_en accumulates tile_psum_reg (full 16-wide, latched in ST_MAC_LO)
       // SPLIT=2: psum_en_lo + psum_en_hi accumulate registered lo/hi from MAC_LO/MAC_HI
+      // SPLIT=4: psum_en_q0-q3 accumulate registered q0-q3 from MAC_Q0-Q3
       ST_COMPUTE: begin
         busy          = 1'b1;
         perf_counting = 1'b1;
         if (TILE_SPLIT_FACTOR == 1) begin
           psum_en = 1'b1;  // accumulate full tile_psum_reg
-        end else begin
+        end else if (TILE_SPLIT_FACTOR == 2) begin
           psum_en_lo = 1'b1;  // accumulate tile_psum_lo_reg
           psum_en_hi = 1'b1;  // accumulate tile_psum_hi_reg
+        end else begin  // SPLIT=4
+          psum_en_q0 = 1'b1;  // accumulate tile_psum_q0_reg
+          psum_en_q1 = 1'b1;  // accumulate tile_psum_q1_reg
+          psum_en_q2 = 1'b1;  // accumulate tile_psum_q2_reg
+          psum_en_q3 = 1'b1;  // accumulate tile_psum_q3_reg
         end
         state_nxt = ST_NEXT_IB;
       end
@@ -527,7 +623,8 @@ module cim_accel_core
       perf_macs   <= '0;
     end else begin
       if (perf_counting) perf_cycles <= perf_cycles + 64'd1;
-      if (psum_en || (psum_en_lo && psum_en_hi)) perf_macs <= perf_macs + 64'(PAR_OB) * 64'(TILE_ROWS) * 64'(TILE_COLS);
+      if (psum_en || (psum_en_lo && psum_en_hi) || (psum_en_q0 && psum_en_q1 && psum_en_q2 && psum_en_q3))
+        perf_macs <= perf_macs + 64'(PAR_OB) * 64'(TILE_ROWS) * 64'(TILE_COLS);
     end
   end
 

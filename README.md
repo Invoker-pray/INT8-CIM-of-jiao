@@ -155,12 +155,12 @@ _RTL本身没有Conv专用硬件，这里用了python的im2col + 硬件MVM实现
 
 #### 设计选型
 
-| 维度 | A. AXI4-Full slave | B. AXIS + Xilinx axi_dma （**采用**） | C. AXI MCDMA |
-|---|---|---|---|
-| 协议复杂度 | 自写 burst / id / wrap 握手 | 仅 `tvalid/tready/tdata/tlast` | 同 B + 多通道仲裁 |
-| Vivado IP | 自写 | 官方 axi_dma 7.1，PYNQ 一行 API | 官方但配置复杂 |
-| 多路仲裁 | 自写 dest 解码 | 一条 stream + 1-byte CSR 选目的 | 硬件多通道 |
-| **拒绝原因** | 协议复杂、风险高 | — | 单 HP 端口下多通道仍串行，**徒增复杂度无收益** |
+| 维度         | A. AXI4-Full slave          | B. AXIS + Xilinx axi_dma （**采用**） | C. AXI MCDMA                                   |
+| ------------ | --------------------------- | ------------------------------------- | ---------------------------------------------- |
+| 协议复杂度   | 自写 burst / id / wrap 握手 | 仅 `tvalid/tready/tdata/tlast`        | 同 B + 多通道仲裁                              |
+| Vivado IP    | 自写                        | 官方 axi_dma 7.1，PYNQ 一行 API       | 官方但配置复杂                                 |
+| 多路仲裁     | 自写 dest 解码              | 一条 stream + 1-byte CSR 选目的       | 硬件多通道                                     |
+| **拒绝原因** | 协议复杂、风险高            | —                                     | 单 HP 端口下多通道仍串行，**徒增复杂度无收益** |
 
 #### 系统框图
 
@@ -192,33 +192,34 @@ PS7 ──S_AXI_HP0── 64-bit, 1.2 GB/s ── axi_dma_0/M_AXI_MM2S (DDR 读)
 
 #### 新增 / 修改文件（清单）
 
-| 类别 | 文件 | 说明 |
-|---|---|---|
-| 新增 | `hw/rtl/axi/cim_axi_stream_sink.sv` | ~250 行；4-beat → 128-bit 行装配，dest 路由 |
-| 新增 | `hw/rtl/cim_top.sv` | ~200 行；wrapper, MUX legacy/stream |
-| 新增 | `hw/tb/tb_cim_stream_sink.sv` + `run_tb_cim_stream_sink.sh` | SV stream BFM, 与 weight_sram 内容比对 |
-| 新增 | `docs/c3_dma_design.md` | 详细设计规范（已完成） |
-| 修改 | `hw/rtl/pkg/cim_pkg.sv` | +`CSR_STREAM_DEST=14'h050` / `CSR_STREAM_LEN=14'h054` / `CSR_STREAM_STATUS=14'h058`；+`stream_dest_t` typedef |
-| 修改 | `hw/rtl/axi/cim_axi_lite_slave.sv` | +CSR 解码；+stream 端口；**legacy staging 保留** |
-| 修改 | `hw/scripts/vivado_build.tcl` + `_55mhz.tcl` | +HP0/GP1 启用、axi_dma_0、xlconcat、psr_dma、地址映射、.hwh assertion |
-| 修改 | `sw/cim_driver.py` | +`use_dma` 参数；+`_stream_load(words, dest, buf)`；三个 `load_*` 分流 |
-| 修改 | `sw/tests/test_cim_driver_offline.py` | +1 用例 `test_dma_path_bit_exact` |
+| 类别 | 文件                                                        | 说明                                                                                                          |
+| ---- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 新增 | `hw/rtl/axi/cim_axi_stream_sink.sv`                         | ~250 行；4-beat → 128-bit 行装配，dest 路由                                                                   |
+| 新增 | `hw/rtl/cim_top.sv`                                         | ~200 行；wrapper, MUX legacy/stream                                                                           |
+| 新增 | `hw/tb/tb_cim_stream_sink.sv` + `run_tb_cim_stream_sink.sh` | SV stream BFM, 与 weight_sram 内容比对                                                                        |
+| 新增 | `docs/c3_dma_design.md`                                     | 详细设计规范（已完成）                                                                                        |
+| 修改 | `hw/rtl/pkg/cim_pkg.sv`                                     | +`CSR_STREAM_DEST=14'h050` / `CSR_STREAM_LEN=14'h054` / `CSR_STREAM_STATUS=14'h058`；+`stream_dest_t` typedef |
+| 修改 | `hw/rtl/axi/cim_axi_lite_slave.sv`                          | +CSR 解码；+stream 端口；**legacy staging 保留**                                                              |
+| 修改 | `hw/scripts/vivado_build.tcl` + `_55mhz.tcl`                | +HP0/GP1 启用、axi_dma_0、xlconcat、psr_dma、地址映射、.hwh assertion                                         |
+| 修改 | `sw/cim_driver.py`                                          | +`use_dma` 参数；+`_stream_load(words, dest, buf)`；三个 `load_*` 分流                                        |
+| 修改 | `sw/tests/test_cim_driver_offline.py`                       | +1 用例 `test_dma_path_bit_exact`                                                                             |
 
 `CIMModel.predict() / infer_conv() / infer_conv_packed()` 上层接口完全不变。
 
 #### 推进计划（6 个 commit + 1 个清理）
 
-| # | 标题 | 验证 | 状态 | 回退点 |
-|---|---|---|---|---|
-| 1 | feat(rtl): cim_axi_stream_sink + standalone TB | `run_tb_cim_stream_sink.sh` GREEN | ✅ `f39489b` | 否 |
-| 2 | feat(rtl): CSR_STREAM_* + CTRL[3] gate | `run_regression.sh` GREEN（CTRL[3]=0 默认 legacy） | ✅ `0adf7da` | 否 |
-| 3 | feat(rtl): cim_top wrapper + MUX | `run_regression.sh` GREEN | ✅ `db16cbb` | 否 |
-| 4 | **feat(bd): integrate axi_dma + S_AXI_HP0 + xlconcat** | `vivado_build.sh` 出 .bit/.hwh, axi_dma 在 .hwh, WNS ≥ 0 | ✅ `4236e85` | **是 — git tag `pre-c3-bd`** |
-| 5 | feat(sw): DMA path behind use_dma flag | `pytest sw/tests/ -v` 22/22 PASS | ✅ `9c7914f` | 否 |
-| 6 | feat: enable DMA by default + benchmark + paper | LeNet-5 200 张 99.5% acc, ≤25 ms/img, profiler load_w_ms <5% | 🔄 代码完成，等 `vivado_build.sh` + 上板跑 benchmark | 否 |
-| 7 (后) | refactor(rtl): remove legacy MMIO weight/input/bias path | 全 TB+pytest GREEN, LUT 减 ~800 | ⏳ commit 6 通过 1 周后 | 否 |
+| #      | 标题                                                     | 验证                                                         | 状态                                                 | 回退点                       |
+| ------ | -------------------------------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------- | ---------------------------- |
+| 1      | feat(rtl): cim_axi_stream_sink + standalone TB           | `run_tb_cim_stream_sink.sh` GREEN                            | ✅ `f39489b`                                         | 否                           |
+| 2      | feat(rtl): CSR*STREAM*\* + CTRL[3] gate                  | `run_regression.sh` GREEN（CTRL[3]=0 默认 legacy）           | ✅ `0adf7da`                                         | 否                           |
+| 3      | feat(rtl): cim_top wrapper + MUX                         | `run_regression.sh` GREEN                                    | ✅ `db16cbb`                                         | 否                           |
+| 4      | **feat(bd): integrate axi_dma + S_AXI_HP0 + xlconcat**   | `vivado_build.sh` 出 .bit/.hwh, axi_dma 在 .hwh, WNS ≥ 0     | ✅ `4236e85`                                         | **是 — git tag `pre-c3-bd`** |
+| 5      | feat(sw): DMA path behind use_dma flag                   | `pytest sw/tests/ -v` 22/22 PASS                             | ✅ `9c7914f`                                         | 否                           |
+| 6      | feat: enable DMA by default + benchmark + paper          | LeNet-5 200 张 99.5% acc, ≤25 ms/img, profiler load_w_ms <5% | 🔄 代码完成，等 `vivado_build.sh` + 上板跑 benchmark | 否                           |
+| 7 (后) | refactor(rtl): remove legacy MMIO weight/input/bias path | 全 TB+pytest GREEN, LUT 减 ~800                              | ⏳ commit 6 通过 1 周后                              | 否                           |
 
 **Commit 6 剩余动作（上板端）**：
+
 1. `bash hw/scripts/vivado_build.sh` — 生成带 axi_dma 的新 .bit/.hwh
 2. 拷贝到 PYNQ-Z2，在 `lenet5_test_pynq.ipynb` 跑 200 张 MNIST
 3. `python sw/scripts/benchmark_e2e.py --model lenet5 --n_images 200`
@@ -229,22 +230,22 @@ PS7 ──S_AXI_HP0── 64-bit, 1.2 GB/s ── axi_dma_0/M_AXI_MM2S (DDR 读)
 
 带宽推算：HP0 64-bit @ 60 MHz = 480 MB/s；LeNet-5 单图 weight ~170 KB → **354 µs**（仅 weight）。
 
-| 指标 | 当前 (60 MHz, MMIO) | C3 后 (60 MHz, DMA) | 加速比 |
-|---|---|---|---|
-| LeNet-5 weight load (单图整网) | ~700 ms | <1 ms | **~700×** |
-| LeNet-5 端到端单图 | 1696 ms | ~6 ms (目标) | **~270×** |
-| LeNet-5 200 张 benchmark | 325.1 s | ~1.5 s (目标) | ~200× |
-| MNIST MLP 端到端 | ~30 ms/img | <1 ms/img | 30~50× |
-| A2 profiler `load_w_ms` 占比 | ~40% | < 5% | — |
+| 指标                           | 当前 (60 MHz, MMIO) | C3 后 (60 MHz, DMA) | 加速比    |
+| ------------------------------ | ------------------- | ------------------- | --------- |
+| LeNet-5 weight load (单图整网) | ~700 ms             | <1 ms               | **~700×** |
+| LeNet-5 端到端单图             | 1696 ms             | ~6 ms (目标)        | **~270×** |
+| LeNet-5 200 张 benchmark       | 325.1 s             | ~1.5 s (目标)       | ~200×     |
+| MNIST MLP 端到端               | ~30 ms/img          | <1 ms/img           | 30~50×    |
+| A2 profiler `load_w_ms` 占比   | ~40%                | < 5%                | —         |
 
 #### 风险与回退（核心 7 条详见设计文档 §8）
 
-| 风险 | 概率 | 缓解 |
-|---|---|---|
-| `.hwh` 缺 axi_dma 段 | 中 | TCL 末尾 assertion + 驱动 try/except |
-| WNS 退化（DMA + Interconnect 引入） | 低 | Phase 4 强制查 WNS；失败先加 `axis_register_slice` 隔离 |
-| `soft_reset` 与 in-flight DMA 竞态 | 中 | 独立 proc_sys_reset + 驱动 `wait()` 兜底 |
-| dual-path 共存 LUT 超预算 | 低 | 当前 11k LUT (20%)，+1050 LUT 仍在预算内 |
+| 风险                                | 概率 | 缓解                                                    |
+| ----------------------------------- | ---- | ------------------------------------------------------- |
+| `.hwh` 缺 axi_dma 段                | 中   | TCL 末尾 assertion + 驱动 try/except                    |
+| WNS 退化（DMA + Interconnect 引入） | 低   | Phase 4 强制查 WNS；失败先加 `axis_register_slice` 隔离 |
+| `soft_reset` 与 in-flight DMA 竞态  | 中   | 独立 proc_sys_reset + 驱动 `wait()` 兜底                |
+| dual-path 共存 LUT 超预算           | 低   | 当前 11k LUT (20%)，+1050 LUT 仍在预算内                |
 
 #### 验收标准（commit 6 必须满足）
 
@@ -269,8 +270,8 @@ PS7 ──S_AXI_HP0── 64-bit, 1.2 GB/s ── axi_dma_0/M_AXI_MM2S (DDR 读)
   ~~`CIMModel` 每个 layer 加 `_w_loaded` 标志~~。**硬件限制**：weight SRAM 各层共享，Conv2 加载时覆盖 Conv1，FC3 覆盖 Conv2，跨图像缓存对多层模型无效。
   _可行替代_：仅对单层模型有效；或硬件侧改用 AXI DMA 批量搬运代替逐元素 MMIO 写（需 RTL 改动）。
 - [x] **A2 端到端延迟分解 profiler**
-  `time.perf_counter()` 包住 `im2col / load_w / load_x / hw_compute / read_out / py_overhead`，`predict()` 返回 dict + 画 pie chart。
-  _收益_：板上实测：Conv1 compute=4.1ms 但 setup+load=620ms，瓶颈为 MMIO 搬运而非硬件计算。
+      `time.perf_counter()` 包住 `im2col / load_w / load_x / hw_compute / read_out / py_overhead`，`predict()` 返回 dict + 画 pie chart。
+      _收益_：板上实测：Conv1 compute=4.1ms 但 setup+load=620ms，瓶颈为 MMIO 搬运而非硬件计算。
 - [] **A3 Bitstream + driver + git commit 三位一体指纹**
   `hashlib.sha256(bit) + git rev-parse --short HEAD` 写入 step 6 Phase 1 的 dump 目录。
   _收益_：实验可追溯，答辩能秒答"这张图来自哪次运行"。
@@ -280,12 +281,12 @@ PS7 ──S_AXI_HP0── 64-bit, 1.2 GB/s ── axi_dma_0/M_AXI_MM2S (DDR 读)
 - [] **B1 资源/时序/功耗自动提取 CSV**
   `hw/scripts/extract_report.py` 跑完 `vivado_build.sh` 后 grep `utilization_*.rpt / timing_summary.rpt / power.rpt`，append 一行到 `hw/build_history.csv` (`commit, freq_mhz, wns_ns, lut, ff, bram, dsp, power_w`)。
   _收益_：论文"硬件资源与性能"表直接用 + patch1/2/3 三次流水优化的趋势线，故事直观。
-- [x] **B2 Pytest 回归**（golden_model + cim_driver 离线）
-  `sw/tests/test_golden_model.py`（10 tests）+ `sw/tests/test_cim_driver_offline.py`（6 tests），`pytest sw/tests/ -v` 全部 GREEN（0.29s）。
-  _收益_：未来 RTL 重构不会悄悄破坏 bit-exact；论文可写"CI 覆盖率"。
+- [x] **B2 Pytest 回归**（golden*model + cim_driver 离线）
+      `sw/tests/test_golden_model.py`（10 tests）+ `sw/tests/test_cim_driver_offline.py`（6 tests），`pytest sw/tests/ -v` 全部 GREEN（0.29s）。
+      *收益\_：未来 RTL 重构不会悄悄破坏 bit-exact；论文可写"CI 覆盖率"。
 - [x] **B3 多图 batch benchmark 脚本**
-  `sw/scripts/benchmark_e2e.py --model lenet5 --n_images 200`，输出表格 (Model / n_img / total_s / ms_per_img / fps / accuracy)，结果保存 `results/benchmark_*.csv`。
-  _收益_：论文第 5 章 benchmark 数据表。
+      `sw/scripts/benchmark_e2e.py --model lenet5 --n_images 200`，输出表格 (Model / n*img / total_s / ms_per_img / fps / accuracy)，结果保存 `results/benchmark*\*.csv`。
+      _收益_：论文第 5 章 benchmark 数据表。
 
 #### Phase C: 时间充裕再做（RTL 改动，显著加速）
 
@@ -299,9 +300,9 @@ PS7 ──S_AXI_HP0── 64-bit, 1.2 GB/s ── axi_dma_0/M_AXI_MM2S (DDR 读)
   _风险_：BRAM 占用翻倍，PYNQ-Z2 可能放不下 —— 放到 KV260 phase 一起做更合理。
 - [] **C3 AXI4-Full burst 代替 AXI4-Lite 逐字** ⚠️ 接口重写
   换 AXI4-Full slave + DMA engine（PYNQ `pynq.lib.dma`），单次 burst 几 KB。
-  **背景**：profiler 实测（A2）显示 Conv1 compute=4.1 ms，但 load_weights ≈250 ms，瓶颈完全在 MMIO 逐字写。LeNet-5 每张图 ~700 ms 用于搬权重，计算本身可忽略不计。A1（软件权重缓存）尝试跳过重复加载，但 weight SRAM 各层共享、后层覆盖前层，多层网络无法使用。根本解决方案是本条 C3：AXI4-Full 突发传输可将 weight load 从 ms 级降到 μs 级，彻底消除搬运瓶颈。
-  _收益_：weight load 从 ~700 ms/张 降到 <1 ms，LeNet-5 吞吐理论 **100×+**。
-  _风险_：改动最大（需重写 AXI slave、Vivado block design、Python driver 改用 `pynq.lib.dma`）。**不建议毕设阶段动 RTL**，论文"未来工作"章节直接引用 profiler 数据作为动机。
+  **背景**：profiler 实测（A2）显示 Conv1 compute=4.1 ms，但 load*weights ≈250 ms，瓶颈完全在 MMIO 逐字写。LeNet-5 每张图 ~700 ms 用于搬权重，计算本身可忽略不计。A1（软件权重缓存）尝试跳过重复加载，但 weight SRAM 各层共享、后层覆盖前层，多层网络无法使用。根本解决方案是本条 C3：AXI4-Full 突发传输可将 weight load 从 ms 级降到 μs 级，彻底消除搬运瓶颈。
+  *收益*：weight load 从 ~700 ms/张 降到 <1 ms，LeNet-5 吞吐理论 **100×+**。
+  *风险\_：改动最大（需重写 AXI slave、Vivado block design、Python driver 改用 `pynq.lib.dma`）。**不建议毕设阶段动 RTL**，论文"未来工作"章节直接引用 profiler 数据作为动机。
 
 #### Phase D: KV260 专属（与 step 5 合并推进）
 
@@ -316,8 +317,8 @@ PS7 ──S_AXI_HP0── 64-bit, 1.2 GB/s ── axi_dma_0/M_AXI_MM2S (DDR 读)
 #### Phase E: 论文素材与工程健康度
 
 - [x] **E1 层级 latency timeline 可视化** (matplotlib stacked bar chart)
-  `sw/scripts/plot_latency_breakdown.py` → `Thesis/middle/paper/fig/latency_breakdown.{pdf,png}`，已插入论文 profiler 小节。
-  _收益_：论文 Figure：compute 段几乎不可见，直观传达"MMIO 是瓶颈"。
+      `sw/scripts/plot_latency_breakdown.py` → `Thesis/middle/paper/fig/latency_breakdown.{pdf,png}`，已插入论文 profiler 小节。
+      _收益_：论文 Figure：compute 段几乎不可见，直观传达"MMIO 是瓶颈"。
 - [] **E2 统一 CLI 入口** `sw/scripts/cim.py run --model lenet5 --input foo.png --verify`
   替代散落 notebook，答辩 demo 干净。
 - [] **E3 架构图自动生成** (`graphviz` 驱动 `cim_pkg.sv` 参数)
@@ -334,6 +335,337 @@ step 6 Phase 3 (thesis)  ──┘
 ```
 
 原则：**不贪多**。完成 step 6 Phase 1+2 + Top 3 已经是扎实的毕设工作量。剩下的放进论文"未来工作"章节。答辩委员看到一个能讲清楚"下一步该往哪走"的候选人，永远比看到一个"啥都做了一半"的候选人印象好。
+
+### [] step 9: C1 落地 — cim_tile 关键路径拆分 (16 → 2×8 → merge)
+
+> 前提：step 8 (C3) 上板完成，MMIO 瓶颈消除。端到端主瓶颈回到硬件 compute 本身。
+> 本 step 把 `cim_tile.sv` 的 16-wide 串行加法链拆成 2×8 两拍流水，解锁 125 MHz 目标频率。
+> 实测 critical path 位于 `w_tile_reg → DSP48 → CARRY4 → tile_psum_reg`（README `坑` 章节 patch 3；布线后延迟 16.2 ns，60 MHz WNS = −0.086 ns）；拆分后预计单段延迟 ≤ 8 ns，支持 125 MHz。
+
+#### 1. 关键路径分析
+
+现状 `hw/rtl/core/cim_tile.sv` L23–L36 是一条纯组合的 16 级加法链：
+
+```systemverilog
+for (c = 0; c < TILE_COLS; c++) begin : GEN_COL
+    assign row_acc[c+1] = row_acc[c] + $signed({1'b0, x_eff[c]}) * $signed(w_tile[r][c]);
+end
+```
+
+Vivado 综合会把 `x_eff[c] * w_tile[r][c]` 映射到 DSP48E1 的 `A*B` 端，16 个乘积通过 `P` 端串联进 CARRY4 级联。布线后结构为：
+
+```
+DSP48_0.P ─── CARRY4_0 ─── CARRY4_1 ─── ... ─── CARRY4_3 ─── tile_psum_reg
+             (cin=0)                             (16-bit acc)
+```
+
+按 xc7z020-1 speed grade 估算：DSP48 `P` 端 `PCOUT→Tco` 约 2.3 ns，单级 CARRY4 `CI→CO` 约 0.3 ns，4 级 CARRY4 级联 ≈ 1.2 ns，再加 `w_tile_reg` 的 `Tck→Q` 约 0.5 ns 与寄存器 `setup` 约 0.3 ns，理想延迟 ≈ 4.3 ns。但 256 个 DSP 并行布线下 net delay 显著（布线后实测 16.2 ns），其中约 10 ns 是 net 延迟。
+
+目标频率下的 slack 估算：
+
+| 目标频率 | 周期      | 现状延迟 | Slack     | 结论                  |
+| -------- | --------- | -------- | --------- | --------------------- |
+| 60 MHz   | 16.667 ns | 16.2 ns  | −0.086 ns | 3 个 failing endpoint |
+| 100 MHz  | 10.000 ns | 16.2 ns  | −6.2 ns   | 必须拆分              |
+| 125 MHz  | 8.000 ns  | 16.2 ns  | −8.2 ns   | 必须拆分且单段 ≤ 8 ns |
+
+#### 2. RTL 拆分设计
+
+**拆分前（ST_MAC 单拍，一次算 16 列乘积 + 16 级加法）**：
+
+```
+ ST_WAIT_SRAM ─► ST_XEFF_REG ─► ST_MAC ─► ST_COMPUTE ─► ST_NEXT_IB
+                                 │
+                                 └── 16-wide DSP chain (16.2 ns)
+```
+
+**拆分后（ST_MAC_LO + ST_MAC_HI 两拍，各算 8 列）**：
+
+```
+ ST_WAIT_SRAM ─► ST_XEFF_REG ─► ST_MAC_LO ─► ST_MAC_HI ─► ST_COMPUTE ─► ST_NEXT_IB
+                                    │             │
+                                    │             └── 8-wide DSP chain (≤8 ns, tile_psum_hi_reg)
+                                    └── 8-wide DSP chain (≤8 ns, tile_psum_lo_reg)
+```
+
+`cim_tile.sv` 对应改动（关键片段）：
+
+```systemverilog
+// 新增参数，1 = 不拆分 (legacy), 2 = 8+8 拆分
+parameter int SPLIT_FACTOR = cim_pkg::TILE_SPLIT_FACTOR;
+
+generate
+  for (r = 0; r < TILE_ROWS; r++) begin : GEN_ROW
+    if (SPLIT_FACTOR == 1) begin : GEN_MONO
+      // 原 16-level chain (保留为 fallback)
+      logic signed [PSUM_W-1:0] row_acc [TILE_COLS+1];
+      assign row_acc[0] = '0;
+      for (c = 0; c < TILE_COLS; c++) begin : GEN_COL
+        assign row_acc[c+1] = row_acc[c] + ...;
+      end
+      assign psum[r] = row_acc[TILE_COLS];
+    end else begin : GEN_SPLIT
+      // 8-wide partial chains, exposed as two outputs to accel_core
+      logic signed [PSUM_W-1:0] lo_chain [9], hi_chain [9];
+      assign lo_chain[0] = '0; assign hi_chain[0] = '0;
+      for (c = 0; c < 8; c++) begin : GEN_LO
+        assign lo_chain[c+1] = lo_chain[c] + ...; // x_eff[c]   * w_tile[r][c]
+      end
+      for (c = 0; c < 8; c++) begin : GEN_HI
+        assign hi_chain[c+1] = hi_chain[c] + ...; // x_eff[c+8] * w_tile[r][c+8]
+      end
+      assign psum_lo[r] = lo_chain[8];
+      assign psum_hi[r] = hi_chain[8];
+    end
+  end
+endgenerate
+```
+
+`cim_accel_core.sv` 对应改动：
+
+- 新增寄存器 `tile_psum_lo_reg[PAR_OB][TILE_ROWS]` 和 `tile_psum_hi_reg[PAR_OB][TILE_ROWS]`（替代单一 `tile_psum_reg`）。
+- ST_MAC_LO 拍：latch `psum_lo` → `tile_psum_lo_reg`；
+- ST_MAC_HI 拍：latch `psum_hi` → `tile_psum_hi_reg`；
+- ST_COMPUTE 拍：组合 `tile_psum_reg = tile_psum_lo_reg + tile_psum_hi_reg`，送给 `psum_accum`（即 psum_accum 的输入路径中多一级 32-bit 加法，时序裕量充足，不需要再拆）。
+
+#### 3. FSM 改动 (`cim_pkg.sv::accel_state_t`)
+
+在枚举中把 `ST_MAC` 拆为 `ST_MAC_LO` 和 `ST_MAC_HI`，状态字段从 5 位保持不变（仍 ≤32 状态）：
+
+```systemverilog
+ST_MAC_LO      = 5'd6,   // 原 ST_MAC, low 8 columns
+ST_MAC_HI      = 5'd17,  // 新增, high 8 columns
+```
+
+`cim_accel_core.sv` 状态机 L362–L368 原 ST_MAC 分裂为：
+
+```systemverilog
+ST_MAC_LO: begin ...; state_nxt = ST_MAC_HI; end
+ST_MAC_HI: begin ...; state_nxt = ST_COMPUTE; end
+```
+
+每个 IB iteration 从 6 拍增加到 **7 拍**（多 ST_MAC_HI 一拍）。`psum_accum.sv` 无需改动——它只看输入的 `tile_psum[TILE_ROWS]`，对 split 不透明，merge 在 core 内部完成。
+
+#### 4. 参数化讨论：SPLIT_FACTOR 选择
+
+| SPLIT_FACTOR | 单段宽度 | 单段 DSP 链深度 | 单段延迟估算 | 额外 FSM 拍数 | 适用频率    |
+| ------------ | -------- | --------------- | ------------ | ------------- | ----------- |
+| 1            | 16       | 4×CARRY4        | 16.2 ns      | 0             | ≤60 MHz     |
+| 2            | 8        | 2×CARRY4        | ~8 ns        | +1            | 120–125 MHz |
+| 4            | 4        | 1×CARRY4        | ~5 ns        | +3            | 150–200 MHz |
+
+**推荐默认 `SPLIT_FACTOR = 2`**。理由：
+
+1. 最小拆分即可解锁 125 MHz，恰好是本工作原目标（README 坑章节 patch 2 提及"尝试 125 MHz"）。
+2. 每 IB +1 拍，LeNet-5 总周期从 76034 增至 ~88,700 （+16.7\%），但频率 ×2，净加速 ≈ 1.71×。
+3. SPLIT_FACTOR=4 在 xc7z020 上布线 net delay 会吃掉 `T_period` 减小的一半以上，实际提升有限，同时 FSM +3 拍让 compute 拍数膨胀 50\%，综合得不偿失。
+4. 为 KV260 (UltraScale+ DSP58) 保留 `SPLIT_FACTOR=4` 入口，但不作为 PYNQ-Z2 默认。
+
+在 `cim_pkg.sv` 新增：
+
+```systemverilog
+parameter int TILE_SPLIT_FACTOR = 2;  // 1=monolithic (legacy), 2=8+8 (125 MHz target)
+```
+
+以 `generate` 形式驱动 `cim_tile.sv` 内部结构，支持 `TILE_SPLIT_FACTOR=1` 一键回退。
+
+#### 5. 验证计划
+
+| Testbench              | 改动                                                                                                                                         | 判定                                  |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `tb_cim_tile.sv`       | 新增 `SPLIT_FACTOR` 参数扫描（1 和 2 各跑 103 个随机用例），比对 `psum` 输出 bit-exact 一致                                                  | `psum_mono == psum_split`             |
+| `tb_cim_accel_core.sv` | 修改 `expected_cycles` 计算公式：原 `6 + 7*n_ib*n_ob_groups + output_pipeline`，新 `6 + (6+SPLIT_FACTOR)*n_ib*n_ob_groups + output_pipeline` | 断言 `perf_cycles == expected_cycles` |
+| `tb_mnist_e2e.sv`      | 新增 `+define+CHECK_CYCLE_COUNT`，断言 MLP 实际周期与 SPLIT_FACTOR 相关的公式一致                                                            | argmax + cycle count 双重比对         |
+
+新增 pytest 用例 `sw/tests/test_golden_model.py::test_expected_cycles_split2`：
+
+```python
+def test_expected_cycles_split2():
+    # Encodes the cycle formula for TILE_SPLIT_FACTOR=2 so RTL refactor cannot
+    # silently break the timing model used by benchmark_e2e.
+    n_ib, n_ob = 49, 8  # FC1
+    setup = 6; inner_per_iter = 7  # 6 → 7 due to ST_MAC_HI
+    output_pipe = 6 * 16 * 8  # 6 stages × 16 rows × 8 ob_groups
+    assert expected_cycles(784, 128, split=2) == setup + inner_per_iter*n_ib*n_ob + output_pipe
+```
+
+`sw/golden_model.py` 无需改动——split 完全位于 RTL 内部，对功能 bit-exact 透明。
+
+#### 6. 综合收敛策略
+
+优先尝试现有 `Flow_PerfOptimized_high` + `ExtraNetDelay_high` + `AggressiveExplore` 组合，在 100 MHz 目标下应直接收敛。125 MHz 若失败，依次尝试：
+
+1. 把 synth 策略切到 `PerformanceOptimized_high`（对 DSP pipelining 更激进）；
+2. impl place 策略改 `Performance_ExplorePostRoutePhysOpt` + 开启 `post_route_phys_opt_design`；
+3. 约束中为 `tile_psum_lo_reg / tile_psum_hi_reg` 增加 `ASYNC_REG` 或 `KEEP` 避免 Vivado 合并；
+4. 若仍未收敛，降频至 120 MHz（周期 8.33 ns）——仍能获得 2× 吞吐。
+
+预测 WNS：100 MHz 目标 WNS ≈ +1.5 ns（舒适）；125 MHz 目标 WNS ≈ +0.1 ns（紧张但可行）。
+
+#### 7. 风险与回退
+
+| 风险                                                                         | 概率 | 缓解                                                                                  |
+| ---------------------------------------------------------------------------- | ---- | ------------------------------------------------------------------------------------- |
+| 125 MHz 综合仍不收敛（xc7z020 布线极限）                                     | 中   | `cim_pkg.sv::TILE_SPLIT_FACTOR=1` 一键回退至 60 MHz 单段设计，功能不受影响            |
+| ST_MAC_HI 与 ST_MAC_LO 之间的 `w_tile_reg` 驱动扇出翻倍（同一 reg 两拍被读） | 低   | Vivado 自动 register duplication，或手动在 `cim_tile.sv` 增加 `(* max_fanout = 50 *)` |
+| split merge 处 32-bit 加法在 ST_COMPUTE 拍变成 critical path                 | 低   | psum_accum 已有同款 32-bit 加，实测 ~4 ns，远小于周期                                 |
+
+**回退路径**：`set TILE_SPLIT_FACTOR 1` → 重跑 `vivado_build.sh` → 回到 60 MHz 单段 bitstream。pytest/TB 回归用 `SPLIT_FACTOR=1` 路径自动保护。
+
+#### 8. 端到端收益预测（C3 + C1 组合）
+
+| 指标                  | 60 MHz baseline | 60 MHz + C3    | 125 MHz + C3 + C1 | 相对 baseline |
+| --------------------- | --------------- | -------------- | ----------------- | ------------- |
+| LeNet-5 硬件 cycle 数 | 76,034          | 76,034         | 88,700 (+16.7\%)  | —             |
+| 硬件 compute 时间     | 1.267 ms        | 1.267 ms       | 0.710 ms          | 1.78×         |
+| DMA load 时间         | 700 ms          | ~0.8 ms        | ~0.8 ms           | —             |
+| 端到端单图延迟        | 1696 ms         | ~7.6 ms (目标) | ~4.8 ms (目标)    | **~350×**     |
+
+C1 单独贡献：在 C3 之后把端到端从 ~7.6 ms 进一步压到 ~4.8 ms（+1.58× on top of C3）。
+
+#### 推进计划
+
+| #   | 标题                                                | 验证                                                    |
+| --- | --------------------------------------------------- | ------------------------------------------------------- |
+| 1   | feat(pkg): add TILE_SPLIT_FACTOR + ST_MAC_HI enum   | `run_regression.sh` (SPLIT=1 路径)                      |
+| 2   | feat(rtl): split cim_tile into lo/hi under generate | `tb_cim_tile.sv` SPLIT=1 与 SPLIT=2 bit-exact 对拍      |
+| 3   | feat(rtl): add ST_MAC_LO/HI to accel_core + merge   | `tb_cim_accel_core.sv` cycle 公式断言                   |
+| 4   | feat(build): bump XDC to 125 MHz, retry synth       | `vivado_build.sh` WNS ≥ 0                               |
+| 5   | feat(sw): bump CIMModel clk_mhz default to 125      | `benchmark_e2e.py` 200 张 acc 不变、延迟 ≈ 0.7× C3 结果 |
+
+---
+
+### [] step 10: 架构扩展 — DSP48 INT8×2 SIMD 打包（优选方案）
+
+> 三选一评估（完整对比见下文"评估与取舍"小节），最终推荐 **Option C: DSP48 INT8×2 SIMD 打包 (XAPP1163)** 作为 post-C1 的核心工作，**Option A (MaxPool 硬件融合)** 作为 stretch goal。
+> 核心论据：PYNQ-Z2 当前 DSP48E1 占用率 100\% (Thesis §6 item 1)，是限制 PAR_OB 提升的唯一资源瓶颈；SIMD 打包把每 DSP 的 MAC 产出 ×2，\textbf{在不换板的前提下}释放出"fabric 里的第二个 PAR_OB"。
+
+#### 评估与取舍
+
+| 维度           | Option A: MaxPool 融合                                         | Option B: 输出稀疏跳零                 | **Option C: DSP SIMD 打包**                                |
+| -------------- | -------------------------------------------------------------- | -------------------------------------- | ---------------------------------------------------------- |
+| 量化增益       | 消除每 Pool 层 ~50 ms PS round-trip（C3 前）/ ~0.1 ms（C3 后） | 稀疏度 40–60\% → compute 时间 ×0.5–0.6 | DSP 用量 ÷2 → PAR_OB=1→2，端到端 compute ×0.5              |
+| bit-exact 风险 | 低（MaxPool 数值确定）                                         | 中（scan 顺序敏感）                    | **极低**（lane 隔离数学保证）                              |
+| RTL 改动规模   | 新增 ~300 行 pool_unit + FSM scheduler                         | 新增 ~400 行 nonzero 扫描 + 索引 BRAM  | **cim_tile.sv 重写 ~80 行 + SPLIT_FACTOR 样式参数化**      |
+| DSP/LUT 资源   | +0 DSP / +~400 LUT                                             | +~0 DSP / +~600 LUT +1 BRAM            | **−128 DSP / +~200 LUT**                                   |
+| 对 C1 协同     | 正交                                                           | 正交                                   | C1 拆分后的 ST_MAC_LO/HI 刚好为每 DSP 两 lane 提供天然容器 |
+| 论文故事价值   | §3 算子融合小节                                                | §3 稀疏架构小节 + SCNN/EIE 对比        | §3 DSP 原语利用小节（XAPP1163 引用，工业界非常规使用）     |
+
+##### Option A — MaxPool / BatchNorm 硬件融合
+
+- **定位**：当前 `CIMModel.infer_maxpool()` 在 PS 端 Python 实现，单层 ~50 ms（含 output 读出 + im2col 往返），C3 后降至 ~0.1 ms 级。
+- **BN 折叠**：BN 已可通过 `mult/shift/bias_sram` 三参数在 `sw/model_zoo.py::quantize()` 静态折叠，**RTL 零改动**即可支持。因此 Option A 的实际内容只剩 MaxPool 硬件化。
+- **RTL 设计**：新增 `cim_pool_unit.sv`，直接从 `output_buffer` 读 stride-2 2×2 窗口，组合路径 max 四选一 → 写入 `input_buffer`。新增顶层 FSM 调度 Conv → Pool → next Conv 的链接，CSR 增加 `CSR_POOL_CFG` (kernel size / stride / enable)。
+- **验证**：`tb_pool_fusion.sv` 对比 Python MaxPool 参考；`sw/tests/test_pool_fused.py` 比对 predict() 结果 bit-exact。
+- **风险/回退**：`CSR_POOL_CFG[0]=0` 关闭硬件 Pool，退回 PS Python 路径。
+- **判决**：C3 后 Pool round-trip 降至可忽略水平，收益不再显著；但实现成本也较低，适合作为 stretch goal。
+
+##### Option B — 输出稀疏跳零
+
+- **定位**：ReLU 后的激活典型稀疏度 40–60\% (SCNN/EIE 经验值)，理论上 compute 时间可压缩至 ~0.5×。
+- **所需数据**：step 6 Phase 1 `sw/logs/<run_id>/layer_<i>_<type>/y.hex` 已存，可离线脚本计算每层稀疏度；需作者提供 LeNet-5 / MLP 实测数据后再做最终决策。
+- **RTL 设计**：新增 `nonzero_index_buffer`（~1 KB BRAM 存索引）。`cim_accel_core.sv` 新增 `ST_FETCH_IDX → ST_FETCH_WEIGHT_SPARSE → ...` 跳零分支。
+- **开销权衡**：扫描 overhead 在 FC2 (128→10) 不划算（层太小，扫描成本 > 跳零节省）；FC1 (784→128) 和 LeNet-5 FC3 (256→120) 才有净收益。
+- **先验工作**：
+  - Parashar et al., "SCNN: An Accelerator for Compressed-sparse Convolutional Neural Networks," ISCA 2017
+  - Han et al., "EIE: Efficient Inference Engine on Compressed Deep Neural Network," ISCA 2016
+  - Zhang et al., "Cambricon-X: An Accelerator for Sparse Neural Networks," MICRO 2016
+- **bit-exact 风险**：稀疏跳零本身不引入数值误差，但扫描顺序与累加顺序的耦合需额外 golden model 验证路径。
+- **判决**：收益分布不均（仅大层受益），实现复杂度与 C1 相当，但需要新增 scan FSM + 索引 BRAM，且对 bit-exact 保护增量较高。若只是为了论文 §3 加一个"稀疏架构"小节，ROI 不如 Option C。
+
+##### Option C — DSP48 INT8×2 SIMD 打包 (XAPP1163)
+
+- **定位**：单颗 DSP48E1 在 25×18 乘法模式下，若 18-bit 侧送 `{w_a[7:0], 9'b0, w_b[7:0]}`，25-bit 侧送共享的 `x_eff[7:0]`，则 `P[47:0] = x * (w_a * 2^17) + x * w_b`，高 25 位与低 23 位不串扰——等价于一次 DSP 计算两个独立 INT8 乘法。
+- **数学证明（lane 隔离）**：
+  - 单 INT8 × INT8 乘积范围：$[-128 \times 127, 127 \times 127] \subset [-2^{14}, 2^{14}-1]$（15-bit）。
+  - 累加 TILE_COLS=16 个乘积：$16 \times 2^{14} = 2^{18}$（19-bit）。
+  - 低 lane 占 19-bit，预留 9-bit guard（`w_b[7:0]` 在 bit[0:7]，`w_a[7:0]` 在 bit[17:24]），无进位到高 lane。
+  - 高 lane 同样 19-bit，`P[47:25]` 承接。
+  - 结论：lane 隔离数学上成立。XAPP1163 §2.1 给出相同论证。
+
+- **RTL 设计**（与 step 9 的 SPLIT_FACTOR=2 协同）：
+  - `cim_tile.sv` 每一行从 16 个 DSP 降至 **8 个 DSP**：每 DSP 同时算 `row_r` 和 `row_{r+TILE_ROWS/2}` 的同列乘积。
+  - `x_eff[c]` 在两 lane 共享（广播到 DSP 的 25-bit 端），`w_tile[r][c]` 与 `w_tile[r+8][c]` 拼成 18-bit `{w_hi, 9'b0, w_lo}` 送入。
+  - 输出 `P[47:0]` 在 combinational 逻辑中按位切分：`psum_lo += P[22:0]`；`psum_hi += P[47:25]`（符号扩展）。
+- **资源影响**：TILE_ROWS × TILE_COLS = 16×16 = 256 DSP（PAR_OB=1）降至 **128 DSP**。PYNQ-Z2 总 DSP 220 个——释放出 92 DSP 用于：
+  - 方案 a：PAR_OB=1 → PAR_OB=2，吞吐 ×2；
+  - 方案 b：为 step 10 stretch goal 的 MaxPool fuse unit 腾出 DSP 预算（其实不太需要 DSP，仅作为冗余）。
+- **验证**：
+  - `tb_cim_tile.sv` 增加 `SIMD_MODE` 参数，两种模式跑 103 随机用例比对 `psum` bit-exact。
+  - `tb_cim_accel_core.sv` 循环数公式不变（SIMD 仅改 DSP 结构，不改拍数），但增加 DSP primitive 用量断言。
+  - 新增 `sw/tests/test_dsp_simd_layout.py`：纯 NumPy 复现 `{w_hi, 9'b0, w_lo}` 布局，断言 lane 隔离在所有 INT8 输入下成立（遍历 $2^{32}$ 组合用采样覆盖）。
+- **风险**：
+  - Vivado 是否能自动推断此布局存在经验差异。保底方案：显式实例化 `DSP48E1` primitive，用 `OPMODE/INMODE` 精确控制乘法器端口（XAPP1163 附录 A 给出 Verilog 模板）。
+  - 未改动的 tile_psum 累加宽度 (`PSUM_W=32`) 对两 lane 已够（19+9=28-bit），无需扩宽。
+- **回退**：`parameter int TILE_DSP_SIMD = 0`（默认关闭）→ 走 step 9 的 SPLIT_FACTOR=2 单乘法路径。`= 1` 开启 SIMD。
+
+#### 推荐结论：**Option C**
+
+> 相对 C3+C1 已有收益，Option C 在\textbf{不换板}前提下是唯一能再次 ×2 compute throughput 的路径。PYNQ-Z2 DSP 100\% 占用是论文 §6 已经承认的硬约束，砍一半 DSP 预算 = 释放 PAR_OB=2 = LeNet-5 端到端再 ÷2。与 C1 的 ST_MAC_LO/HI 拆分天然对齐（每 DSP 两 lane 刚好对应 lo/hi 两拍的两组权重），总实现工作量 ≈ 2 周。论文 §3 可新增"DSP 原语 SIMD 利用"小节，引用 Xilinx XAPP1163，与现行 §2.1 的"CIM 架构两种实现极端"形成"软硬协同优化"的完整故事。Option A 留作 stretch goal（C3 后 Pool round-trip 已非瓶颈，时间多再做）；Option B 因扫描 overhead 在小层不划算且 bit-exact 保护增量高，不推荐作为毕设阶段重点。
+
+#### Option C 详细设计（Chinese README-ready）
+
+##### 10.1 DSP48E1 SIMD 布局
+
+单 DSP 输入/输出布局（25×18 乘法模式，`OPMODE=5'b00101`, `INMODE=5'b00000`）：
+
+```
+A[24:0]  = {17{sign(x_eff)}, x_eff[7:0]}     // 共享输入 (25-bit sign extended)
+B[17:0]  = {w_hi[7:0], 9'b0, w_lo[7:0]}      // 两权重拼接 (18-bit)
+P[47:0]  = A * B
+         = x_eff * w_hi * 2^17 + x_eff * w_lo     // lane 隔离展开
+```
+
+输出按位切分（在 `cim_tile.sv` combinational）：
+
+```systemverilog
+logic signed [22:0] prod_lo;   // x_eff * w_lo
+logic signed [24:0] prod_hi;   // x_eff * w_hi （sign-extended from P[47:17]）
+assign prod_lo = P[22:0];
+assign prod_hi = $signed(P[47:17]);
+```
+
+##### 10.2 cim_tile.sv 重构要点
+
+- 新增 `parameter int TILE_DSP_SIMD = cim_pkg::TILE_DSP_SIMD_EN;`；
+- `TILE_ROWS` 逻辑上仍为 16，但物理 DSP 数减半 → `TILE_ROWS_PHYS = TILE_ROWS / 2 = 8`；
+- generate 循环从 `r = 0 .. TILE_ROWS-1` 改为 `r_pair = 0 .. TILE_ROWS_PHYS-1`，每次实例化一个 DSP 同时驱动 `psum[r_pair]` 和 `psum[r_pair + 8]`。
+
+##### 10.3 验证矩阵
+
+| 测试                  | SPLIT=1/SIMD=0 | SPLIT=2/SIMD=0 | SPLIT=2/SIMD=1                |
+| --------------------- | -------------- | -------------- | ----------------------------- |
+| tb_cim_tile 103 用例  | baseline       | C1 验证        | C1+C 验证                     |
+| tb_cim_accel_core     | baseline       | +1 拍/IB       | 同 C1 (拍数不变)              |
+| tb_mnist_e2e          | baseline       | baseline       | **必须 bit-exact = baseline** |
+| Vivado DSP 计数       | 256            | 256            | **128**                       |
+| 60 MHz → 125 MHz 时序 | -0.086 ns      | +0.1 ns 目标   | +0.1 ns 目标                  |
+
+##### 10.4 推进计划
+
+| #   | 标题                                                          | 验证                                                    |
+| --- | ------------------------------------------------------------- | ------------------------------------------------------- |
+| 1   | feat(pkg): add TILE_DSP_SIMD_EN parameter                     | regression GREEN @ SIMD=0                               |
+| 2   | feat(rtl): cim_tile DSP48E1 primitive inst behind SIMD=1      | tb_cim_tile SIMD=0/1 bit-exact 对拍                     |
+| 3   | feat(sw): `test_dsp_simd_layout.py` — 纯 Python lane 隔离证明 | pytest GREEN                                            |
+| 4   | feat(build): re-synth with PAR_OB=2 + SIMD=1                  | WNS ≥ 0, DSP report == 128 (PAR_OB=1) or 256 (PAR_OB=2) |
+| 5   | feat: 上板 LeNet-5 200 张验证 bit-exact + latency ×0.5        | 99.5\% acc, compute 段时间折半                          |
+
+##### 10.5 风险登记
+
+| 风险                                   | 概率 | 缓解                                                  |
+| -------------------------------------- | ---- | ----------------------------------------------------- |
+| Vivado 无法自动推断 SIMD 布局          | 中   | fallback 显式实例化 `DSP48E1` primitive (XAPP1163 §A) |
+| `w_tile` packing 打包翻倍增加 fanout   | 低   | generate 内 `(* max_fanout = 50 *)`                   |
+| 综合后 P[47:25] 走线延迟不均           | 低   | XDC 加 `set_property LOC` 约束一对 DSP 相邻           |
+| PAR_OB=2 时 weight SRAM 访问 port 不够 | 中   | 已有 16-bank 独立 BRAM，每 bank 已 2R1W，够用         |
+
+#### 开放问题
+
+1. **Option A MaxPool 硬件化是否作为 step 10.5 子节落地**？当前评估为 stretch goal，但若 C3 后 Pool round-trip 仍占 ≥5\% 端到端延迟，可提升优先级。
+2. **DSP48E1 primitive 显式实例化 vs 依赖 Vivado 推断**：建议 commit 2 先尝试 inference，失败才切 primitive，以保持可读性。
+3. **C1 与 Option C 是否合并为一个 step**：本 README 当前保持拆分以便 git 历史清晰，但论文 §3 可以合并成"DSP 原语协同优化"一小节。
+4. **SPLIT_FACTOR=2 + SIMD=1 是否默认开启**：建议保持默认 `SPLIT=1 / SIMD=0`，新 bitstream 通过 `vivado_build_perf.tcl` 脚本变体开启，主线默认保留现行 60 MHz 设计以兼容已部署 notebook。
 
 # 进展记录
 
@@ -390,6 +722,32 @@ VCS仿真时，通过逐个替换firmware.hex，testbench直接读取result BRAM
 PYNQ上板，PS通过AXI加载firmware，计算之后读取pred/logits，和golden对比。
 
 更多详细设计过程见`docs/picorv32_design.md`.
+
+## checkpoint 3
+
+2026.04.20, C3 (AXI4-Stream + axi_dma 数据通路重构) RTL + 上板验证完成, 55 MHz 时序收敛变体同步完成。
+
+### 做了什么
+
+在 checkpoint 1-2 的基础上，完成了 step 6 (SQ-mapping 软件优化)、step 7 部分优化 (A2 profiler、B2 pytest、B3 benchmark)、step 8 (C3 AXI4-Stream DMA 数据通路重构)。C3 的核心改动是将 weight/input/bias 的搬运路径从 AXI4-Lite 逐字 MMIO 切换为 DDR→S_AXI_HP0→axi_dma→AXIS→cim_axi_stream_sink 的批量 stream 路径，CSR 控制仍走 AXI4-Lite。
+
+### 关键成果
+
+- **RTL 新增**: `cim_axi_stream_sink.sv` (~250行)、`cim_top.sv` + wrapper (~220行)、stream sink 独立 TB
+- **RTL 修改**: `cim_pkg.sv` (+CSR*STREAM*\*地址)、`cim_axi_lite_slave.sv` (CSR解码+CTRL[3] MUX)、BD TCL (axi_dma + HP0 + xlconcat + 独立psr_dma)
+- **软件**: `cim_driver.py` 新增 `use_dma` 参数 + `_stream_load()` 方法，上层 API 不变
+- **60 MHz 实测**: LeNet-5 200张 340.1s / 1700.4ms/img / 99.50% acc
+- **55 MHz 实测**: LeNet-5 200张 343.9s / 1719.7ms/img / 99.50% acc（WNS > 0, 时序完全收敛）
+- 55 MHz 端到端仅慢 1.1%，印证 profiler 结论：瓶颈在 MMIO 搬运（与时钟频率无关），不在硬件计算
+
+### 55 MHz build 技术细节
+
+55 MHz build 遇到了 Zynq PLL 无法精确输出 55 MHz 的问题（实际 ~55.17 MHz），导致 Vivado BD 验证时 `cim_0/S_AXIS` 与 `axi_dma_0/M_AXIS_MM2S` 的 FREQ_HZ 不匹配 (BD 41-237)。解决方案：在 TCL 中用信号级 `connect_bd_net` 代替接口级 `connect_bd_intf_net`，绕过 FREQ_HZ 校验，综合结果完全等价。
+
+### 待完成
+
+- C3 DMA 软件路径 (`use_dma=True`) 的上板 benchmark（验证 ~223× 理论加速比）
+- C1 (cim_tile 16→8+8 关键路径拆分) 的上板验证
 
 # 坑
 
