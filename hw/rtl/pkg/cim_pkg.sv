@@ -23,6 +23,22 @@ package cim_pkg;
   parameter int TILE_ELEMS = TILE_ROWS * TILE_COLS;  // 256
 
   // ==========================================================================
+  // 1b. CIM Tile Pipeline Split (C1)
+  // ==========================================================================
+  // SPLIT_FACTOR=1: 16-wide MAC chain in one cycle (legacy, ≤60 MHz)
+  // SPLIT_FACTOR=2: split 16→8+8 over two cycles (100-125 MHz target)
+  //
+  // Critical path with SPLIT_FACTOR=1: w_tile_reg → DSP48×16 → CARRY4×4 chain → tile_psum_reg
+  //   At 60 MHz (16.7 ns period): 16.2 ns actual → WNS = -0.086 ns
+  //   At 55 MHz (18.2 ns period): 16.2 ns actual → WNS = +2.0 ns
+  // With SPLIT_FACTOR=2: each half has 8 elements → CARRY4×2 depth → ≤8 ns per stage
+  //   At 125 MHz (8.0 ns period): target ≤8 ns → WNS ≈ +0.1 ns
+  //
+  // The SPLIT_FACTOR is compiled-in (Vivado synthesis parameter), not runtime.
+
+  parameter int TILE_SPLIT_FACTOR = 2;  // 1=monolithic, 2=8+8 split (125 MHz)
+
+  // ==========================================================================
   // 2. Parallelism — how many tiles compute simultaneously
   // ==========================================================================
   // PAR_OB = number of output-block tiles active in parallel
@@ -35,7 +51,7 @@ package cim_pkg;
   //   PAR_OB=4  → 2 passes, each 49 iterations = 98 tile-cycles
   //   PAR_OB=8  → 1 pass,  49 iterations = 49 tile-cycles (max parallel for this layer)
 
-  parameter int PAR_OB = 4;  // tunable: 1, 2, 4, 8 (must divide N_OB of target layer)
+  parameter int PAR_OB = 1;  // tunable: 1, 2, 4, 8 (must divide N_OB of target layer)
 
   // ==========================================================================
   // 3. Data Widths
@@ -169,14 +185,16 @@ package cim_pkg;
     ST_FETCH       = 5'd3,
     ST_WAIT_SRAM   = 5'd4,
     ST_XEFF_REG    = 5'd5,
-    ST_MAC         = 5'd6,
-    ST_COMPUTE     = 5'd7,
+    ST_MAC_LO      = 5'd6,  // low 8 columns of split MAC (C1)
+    ST_MAC_HI      = 5'd17, // high 8 columns of split MAC (C1), merge in ST_COMPUTE
+    ST_COMPUTE     = 5'd7,  // with SPLIT_FACTOR=2: merge lo+hi psum here
     ST_NEXT_IB     = 5'd8,
     ST_BIAS_ADD    = 5'd9,
     ST_ACTIVATE    = 5'd10,
     ST_REQUANT     = 5'd11,
     ST_STORE       = 5'd12,  // 64-bit multiply → prod_r
-    ST_SHIFT_CLAMP = 5'd13,  // shift + round + clamp → requant_r
+    ST_SHIFT       = 5'd13,  // barrel shift + round → shifted_r
+    ST_CLAMP       = 5'd18,  // clamp to INT8 → requant_r
     ST_WRITE_OBUF  = 5'd14,  // write obuf
     ST_NEXT_OB     = 5'd15,
     ST_DONE        = 5'd16

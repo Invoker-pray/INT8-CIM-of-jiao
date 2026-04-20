@@ -215,17 +215,15 @@ def maxpool2d(feat, kernel=2, stride=2):
 class CIMDriver:
     """Low-level driver for CIM accelerator via AXI4-Lite MMIO."""
 
-    def __init__(self, bitstream_path="cim_soc.bit", load=True, use_dma=True):
+    def __init__(self, bitstream_path="cim_soc.bit", load=True, use_dma=False):
         """
         Args:
             bitstream_path: path to .bit file (must have matching .hwh)
             load: if True, load overlay immediately
-            use_dma: if True (default, commit 6), route weight/input/bias
-                     through AXI-Stream + axi_dma (C3). Requires a bitstream
-                     built after commit 4 BD integration. If the bitstream
-                     predates C3, pass use_dma=False to fall back to the
-                     legacy MMIO path — everything still works at ~270× the
-                     wall-clock cost.
+            use_dma: if True, route weight/input/bias through AXI-Stream +
+                     axi_dma (C3). This path still depends on a board-verified
+                     bitstream/hwh pair, so the safer default remains False.
+                     Pass use_dma=False to stay on the legacy MMIO path.
         """
         if not _HAS_PYNQ:
             raise RuntimeError("pynq not available — run this on PYNQ-Z2")
@@ -239,7 +237,9 @@ class CIMDriver:
         self._buf_b = None
         if use_dma:
             self._init_dma()
-        self.soft_reset()
+        # Do not pulse soft-reset during construction.
+        # Overlay download already places the IP in a known state, while some
+        # marginal board builds are sensitive to immediate CTRL[2] writes.
 
     def _init_dma(self):
         """Prepare DMA channel + pinned CMA buffers. Called once from __init__
@@ -271,6 +271,13 @@ class CIMDriver:
         self.mmio.write(_CTRL, _CTRL_STREAM_EN if enable else 0)
 
     def soft_reset(self):
+        """Pulse CSR_CTRL[2] for manual recovery / debug.
+
+        Normal inference does not require this. start_and_wait() already clears
+        done-sticky, and a start pulse from ST_IDLE resets the performance
+        counters. Keeping soft-reset explicit avoids turning driver
+        construction into a board-level reset event.
+        """
         # Preserve CTRL[3] stream-mode bit while pulsing soft-reset.
         self.mmio.write(_CTRL, _CTRL_SOFT_RST | (_CTRL_STREAM_EN if self.use_dma else 0))
 
@@ -429,7 +436,6 @@ class CIMDriver:
         do_t = _timings is not None
 
         if do_t: t0 = time.perf_counter()
-        self.soft_reset()
         self.configure(in_dim, out_dim, zp, mult, shift, relu)
         if do_t: t1 = time.perf_counter()
         self.load_weights(w_chunks)
@@ -725,7 +731,6 @@ class CIMModel:
 
                     # One-time setup: configure + load weights + bias
                     if profile: t_setup = time.perf_counter()
-                    self.drv.soft_reset()
                     self.drv.configure(
                         packed["packed_in_dim"], packed["packed_out_dim"],
                         layer["zp"], layer["mult"], layer["shift"], layer["relu"],
@@ -764,7 +769,6 @@ class CIMModel:
                 else:
                     # === Unpacked path with weight reuse ===
                     if profile: t_setup = time.perf_counter()
-                    self.drv.soft_reset()
                     self.drv.configure(
                         col_len, C_out,
                         layer["zp"], layer["mult"], layer["shift"], layer["relu"],

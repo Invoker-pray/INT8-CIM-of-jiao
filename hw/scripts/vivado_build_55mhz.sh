@@ -14,12 +14,6 @@
 #   increases by ~9% (54.7 μs → 59.7 μs for MLP), which is negligible.
 # ============================================================================
 
-set -e
-
-rm -rf vivado_proj_55mhz .Xil
-# PAR_OB must be 1 for PYNQ-Z2 (220 DSP limit)
-sed -i 's/parameter int PAR_OB = 4;/parameter int PAR_OB = 1;/' hw/rtl/pkg/cim_pkg.sv
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
@@ -43,15 +37,44 @@ echo "  Vivado: $(${VIVADO_BIN} -version 2>/dev/null | head -1 || echo ${VIVADO_
 
 cd "${PROJECT_ROOT}"
 
+# --- PAR_OB must be 1 for synthesis (PAR_OB=4 is simulation-only) ---
+CURRENT_PAR=$(grep "parameter int PAR_OB = " hw/rtl/pkg/cim_pkg.sv | head -1)
+if echo "$CURRENT_PAR" | grep -q "PAR_OB = 1"; then
+	echo "  PAR_OB already = 1 (OK for synthesis)"
+	NEEDS_RESTORE=0
+elif echo "$CURRENT_PAR" | grep -q "PAR_OB = 4"; then
+	echo "  PAR_OB = 4, changing to 1 for synthesis..."
+	sed -i 's/parameter int PAR_OB = 4;/parameter int PAR_OB = 1;/' hw/rtl/pkg/cim_pkg.sv
+	NEEDS_RESTORE=1
+else
+	echo "  WARNING: PAR_OB = $CURRENT_PAR (unexpected)"
+	NEEDS_RESTORE=0
+fi
+
+rm -rf vivado_proj_55mhz .Xil
+
 ${VIVADO_BIN} -mode batch \
     -source hw/scripts/vivado_build_55mhz.tcl \
     -log vivado_proj_55mhz/vivado_build.log \
     -journal vivado_proj_55mhz/vivado_build.jou
+BUILD_STATUS=$?
+
+# --- Restore PAR_OB for simulation (only if we changed it) ---
+if [ "$NEEDS_RESTORE" = "1" ]; then
+	sed -i 's/parameter int PAR_OB = 1;/parameter int PAR_OB = 4;/' hw/rtl/pkg/cim_pkg.sv
+fi
+
+if [ $BUILD_STATUS -ne 0 ]; then
+	echo ""
+	echo "============================================================"
+	echo "Build FAILED (exit code ${BUILD_STATUS})"
+	echo "PAR_OB has been restored. Check logs above."
+	echo "============================================================"
+	exit $BUILD_STATUS
+fi
 
 echo ""
 echo "============================================================"
 echo "Build finished. Check vivado_proj_55mhz/vivado_build.log"
 echo "Deploy files: vivado_proj_55mhz/pynq_deploy/"
 echo "============================================================"
-
-sed -i 's/parameter int PAR_OB = 1;/parameter int PAR_OB = 4;/' hw/rtl/pkg/cim_pkg.sv

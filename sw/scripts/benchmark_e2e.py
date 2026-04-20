@@ -39,6 +39,8 @@ def parse_args():
                    help="Bitstream path (default: cim_soc.bit)")
     p.add_argument("--out_dir",   default="results",
                    help="Directory for CSV output (default: results/)")
+    p.add_argument("--use-dma",   action="store_true",
+                   help="Enable experimental DMA data path (default: legacy MMIO)")
     p.add_argument("--verbose",   action="store_true",
                    help="Print per-image prediction")
     return p.parse_args()
@@ -140,8 +142,8 @@ def main():
     # Load driver + model
     from cim_driver import CIMDriver
     print(f"Loading bitstream {args.bitstream} ...")
-    drv = CIMDriver(args.bitstream)
-
+    drv = CIMDriver(args.bitstream, use_dma=args.use_dma)
+    print(f"Driver mode: {'DMA' if args.use_dma else 'legacy MMIO'}")
     if args.model == "lenet5":
         model = load_lenet5_model(drv, args.data_dir)
         input_shape = (1, 28, 28)
