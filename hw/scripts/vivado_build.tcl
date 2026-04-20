@@ -173,23 +173,61 @@ connect_bd_net [get_bd_pins xlconcat_0/dout]        [get_bd_pins ps7/IRQ_F2P]
 create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 psr_dma
 connect_bd_net [get_bd_pins ps7/FCLK_CLK0]       [get_bd_pins psr_dma/slowest_sync_clk]
 connect_bd_net [get_bd_pins ps7/FCLK_RESET0_N]   [get_bd_pins psr_dma/ext_reset_in]
-# Retarget axi_dma's reset: disconnect auto-inferred psr, re-connect to psr_dma.
-set dma_reset_net [get_bd_nets -of_objects [get_bd_pins axi_dma_0/axi_resetn]]
-if {$dma_reset_net ne ""} {
-    delete_bd_objs $dma_reset_net
+
+# Helper: reconnect a reset source to one or more pins, overriding any stale
+# or missing automation result. C3's module-reference top (`cim_top_wrapper`)
+# caused Vivado automation to leave several ARESETN pins floating, which made
+# MMIO accesses hang on-board even though Overlay() itself succeeded.
+proc reconnect_reset_pins {src_pin dst_pins} {
+    foreach dst_pin $dst_pins {
+        set old_net [get_bd_nets -quiet -of_objects $dst_pin]
+        if {$old_net ne ""} {
+            delete_bd_objs $old_net
+        }
+        connect_bd_net $src_pin $dst_pin
+    }
 }
-connect_bd_net [get_bd_pins psr_dma/peripheral_aresetn] [get_bd_pins axi_dma_0/axi_resetn]
+
+# Main GP0/CIM control path reset. Without these explicit connections the
+# generated .hwh showed cim_0/S_AXI_ARESETN and ps7_axi_periph ARESETN pins
+# unconnected, and board MMIO read/write would hard-hang.
+reconnect_reset_pins [get_bd_pins rst_ps7_60M/peripheral_aresetn] [list \
+    [get_bd_pins cim_0/S_AXI_ARESETN] \
+    [get_bd_pins ps7_axi_periph/ARESETN] \
+    [get_bd_pins ps7_axi_periph/M00_ARESETN] \
+    [get_bd_pins ps7_axi_periph/S00_ARESETN] \
+]
+
+# DMA data/control path reset. Keep axi_dma and its interconnects on the
+# dedicated proc_sys_reset so CSR_CTRL[2] soft-reset inside CIM never couples
+# into an in-flight MM2S transfer.
+reconnect_reset_pins [get_bd_pins psr_dma/peripheral_aresetn] [list \
+    [get_bd_pins axi_dma_0/axi_resetn] \
+    [get_bd_pins ps7_axi_periph_1/ARESETN] \
+    [get_bd_pins ps7_axi_periph_1/M00_ARESETN] \
+    [get_bd_pins ps7_axi_periph_1/S00_ARESETN] \
+    [get_bd_pins axi_mem_intercon/ARESETN] \
+    [get_bd_pins axi_mem_intercon/M00_ARESETN] \
+    [get_bd_pins axi_mem_intercon/S00_ARESETN] \
+]
 
 # --- 3e. Address mapping ---
-# CIM CSR: 0x40000000, 16 KB (14-bit address space)
-# axi_dma CSR: 0x40400000, 64 KB
+# CIM CSR: 0x40000000, 16 KB (14-bit address space, via M_AXI_GP0, aperture 0x4000_0000[1G])
+# axi_dma CSR: 0x80400000, 64 KB (via M_AXI_GP1, aperture 0x8000_0000[1G])
 # DDR seen by DMA MM2S via HP0: full 512 MB LOWOCM window
 assign_bd_address -offset 0x40000000 -range 16K \
     [get_bd_addr_segs {cim_0/S_AXI/reg0}]
-assign_bd_address -offset 0x40400000 -range 64K \
+assign_bd_address -offset 0x80400000 -range 64K \
     [get_bd_addr_segs {axi_dma_0/S_AXI_LITE/Reg}]
 assign_bd_address -offset 0x00000000 -range 512M \
     [get_bd_addr_segs {ps7/S_AXI_HP0/HP0_DDR_LOWOCM}]
+
+# --- 3e'. Associate S_AXIS with S_AXI_ACLK (wrapper lacks X_INTERFACE_INFO) ---
+# Without this, Vivado defaults S_AXIS FREQ_HZ to 100 MHz while DMA's
+# M_AXIS_MM2S is at 60 MHz (tied to FCLK_CLK0) → validate_bd_design fails
+# with BD 41-237 FREQ_HZ mismatch.
+set_property CONFIG.ASSOCIATED_BUSIF {S_AXI:S_AXIS} [get_bd_pins cim_0/S_AXI_ACLK]
+set_property CONFIG.FREQ_HZ [expr {${FCLK_MHZ}*1000000}] [get_bd_intf_pins cim_0/S_AXIS]
 
 # --- 3f. Validate ---
 validate_bd_design
@@ -206,6 +244,30 @@ if {[llength $dma_segs] < 1} {
     exit 1
 }
 puts "INFO: axi_dma_0 address segments verified: $dma_segs"
+
+# Reset wiring sanity check — fail fast instead of shipping a bitstream whose
+# AXI peripherals can be discovered by Overlay() but hang on the first MMIO.
+set required_reset_pins [list \
+    [get_bd_pins cim_0/S_AXI_ARESETN] \
+    [get_bd_pins ps7_axi_periph/ARESETN] \
+    [get_bd_pins ps7_axi_periph/M00_ARESETN] \
+    [get_bd_pins ps7_axi_periph/S00_ARESETN] \
+    [get_bd_pins axi_dma_0/axi_resetn] \
+    [get_bd_pins ps7_axi_periph_1/ARESETN] \
+    [get_bd_pins ps7_axi_periph_1/M00_ARESETN] \
+    [get_bd_pins ps7_axi_periph_1/S00_ARESETN] \
+    [get_bd_pins axi_mem_intercon/ARESETN] \
+    [get_bd_pins axi_mem_intercon/M00_ARESETN] \
+    [get_bd_pins axi_mem_intercon/S00_ARESETN] \
+]
+foreach pin $required_reset_pins {
+    set net [get_bd_nets -quiet -of_objects $pin]
+    if {$net eq ""} {
+        puts "ERROR: required reset pin is unconnected: $pin"
+        exit 1
+    }
+}
+puts "INFO: reset wiring verified for CIM + AXI interconnects"
 
 # ============================================================================
 # 4. Generate wrapper
@@ -281,6 +343,26 @@ report_utilization -file ${OUT_DIR}/utilization_report.txt
 report_timing_summary -file ${OUT_DIR}/timing_report.txt
 report_power -file ${OUT_DIR}/power_report.txt
 puts "INFO: Reports saved to ${OUT_DIR}/"
-close_design
 
+# --- Post-impl WNS gate (docs/c3_dma_design.md §7.4, §8 risk #5) ---
+# axi_dma + extra Interconnect may regress critical path. Print prominently so
+# the author can decide whether to accept (60 MHz baseline is known -0.086 ns),
+# retry with axis_register_slice isolation, or fall back to the 55 MHz variant.
+set wns [get_property SLACK [get_timing_paths -delay_type max -max_paths 1]]
+set whs [get_property SLACK [get_timing_paths -delay_type min -max_paths 1]]
+puts "============================================================"
+puts "TIMING SUMMARY"
+puts "  WNS (setup) : ${wns} ns"
+puts "  WHS (hold)  : ${whs} ns"
+if {${wns} < -0.5} {
+    puts "  STATUS      : REGRESSION — WNS below -0.5 ns threshold."
+    puts "                Consider axis_register_slice between axi_dma and"
+    puts "                cim_0/S_AXIS, or use vivado_build_55mhz.sh instead."
+} elseif {${wns} < 0.0} {
+    puts "  STATUS      : MARGINAL — negative slack (expected at 60 MHz)."
+} else {
+    puts "  STATUS      : CLEAN — positive slack."
+}
+puts "============================================================"
+close_design
 
