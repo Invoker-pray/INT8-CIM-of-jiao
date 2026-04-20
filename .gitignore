@@ -59,8 +59,14 @@ sim/**
 sim/
 sim
 
+vivado_proj_55mhz/**
+vivado_proj_55mhz/
 vivado_proj/
 vivado_proj/**
+
+vivado_proj*/
+vivado_build*
+vivado_proj*/**
 
 .pyre/
 .pyre/**
@@ -106,7 +112,13 @@ mlp_data/
 mlp_data/**
 mlp_data.zip
 
-/memory.txt
+memory.txt
+
+fix_kv260_sdcard.sh
+
+prompt.txt
+prompt_C3.txt
+
 
 cim_wzy/
 cim_wzy/**

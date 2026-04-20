@@ -166,23 +166,38 @@
 \newlabel{sec:55mhz}{{4.7}{29}{55 MHz时序收敛变体}{subsection.4.7}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {14}{\ignorespaces 60 MHz与55 MHz版本性能对比（LeNet-5，200张MNIST，PYNQ-Z2）}}{30}{table.14}\protected@file@percent }
 \newlabel{tab:55mhz_compare}{{14}{30}{60 MHz与55 MHz版本性能对比（LeNet-5，200张MNIST，PYNQ-Z2）}{table.14}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.8}PicoRV32验证结果}{30}{subsection.4.8}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {15}{\ignorespaces PicoRV32模式资源占用（PYNQ-Z2）}}{30}{table.15}\protected@file@percent }
-\newlabel{tab:util_rv32}{{15}{30}{PicoRV32模式资源占用（PYNQ-Z2）}{table.15}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {16}{\ignorespaces PicoRV32模式时序与功耗}}{30}{table.16}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.8.1}PicoRV32功能验证}{31}{subsubsection.4.8.1}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {17}{\ignorespaces PicoRV32推理验证结果（784→16→10 MLP，200张MNIST图片）}}{31}{table.17}\protected@file@percent }
-\newlabel{tab:rv32_verify}{{17}{31}{PicoRV32推理验证结果（784→16→10 MLP，200张MNIST图片）}{table.17}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.9}两种控制模式对比}{31}{subsection.4.9}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {18}{\ignorespaces ARM控制 vs PicoRV32控制模式对比}}{31}{table.18}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces ARM控制与PicoRV32控制模式多维对比雷达图}}{32}{figure.16}\protected@file@percent }
-\newlabel{fig:arm_vs_rv32}{{16}{32}{ARM控制与PicoRV32控制模式多维对比雷达图}{figure.16}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5}总结与展望}{32}{section.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}工作总结}{32}{subsection.5.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}不足与展望}{33}{subsection.5.2}\protected@file@percent }
-\newlabel{sec:future_work}{{5.2}{33}{不足与展望}{subsection.5.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.8}AXI4-Stream + DMA数据通路重构}{30}{subsection.4.8}\protected@file@percent }
+\newlabel{sec:c3_dma}{{4.8}{30}{AXI4-Stream + DMA数据通路重构}{subsection.4.8}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.8.1}系统拓扑}{30}{subsubsection.4.8.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces AXI4-Stream + \texttt  {axi\_dma} 数据通路系统拓扑（C3）}}{30}{figure.16}\protected@file@percent }
+\newlabel{fig:c3_topology}{{16}{30}{AXI4-Stream + \texttt {axi\_dma} 数据通路系统拓扑（C3）}{figure.16}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.8.2}关键设计决策}{31}{subsubsection.4.8.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.8.3}RTL改动规模}{31}{subsubsection.4.8.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {15}{\ignorespaces C3重构RTL改动范围}}{31}{table.15}\protected@file@percent }
+\newlabel{tab:c3_rtl_scope}{{15}{31}{C3重构RTL改动范围}{table.15}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.8.4}理论带宽与预测延迟}{32}{subsubsection.4.8.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.8.5}实测性能}{32}{subsubsection.4.8.5}\protected@file@percent }
+\newlabel{sec:c3_benchmark}{{4.8.5}{32}{实测性能}{subsubsection.4.8.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {16}{\ignorespaces C3重构前后LeNet-5端到端性能对比（200张MNIST，PYNQ-Z2，60 MHz）}}{32}{table.16}\protected@file@percent }
+\newlabel{tab:c3_benchmark}{{16}{32}{C3重构前后LeNet-5端到端性能对比（200张MNIST，PYNQ-Z2，60 MHz）}{table.16}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.8.6}验收标准与bit-exact保障}{32}{subsubsection.4.8.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.9}PicoRV32验证结果}{33}{subsection.4.9}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {17}{\ignorespaces PicoRV32模式资源占用（PYNQ-Z2）}}{33}{table.17}\protected@file@percent }
+\newlabel{tab:util_rv32}{{17}{33}{PicoRV32模式资源占用（PYNQ-Z2）}{table.17}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {18}{\ignorespaces PicoRV32模式时序与功耗}}{33}{table.18}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.9.1}PicoRV32功能验证}{33}{subsubsection.4.9.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {19}{\ignorespaces PicoRV32推理验证结果（784→16→10 MLP，200张MNIST图片）}}{34}{table.19}\protected@file@percent }
+\newlabel{tab:rv32_verify}{{19}{34}{PicoRV32推理验证结果（784→16→10 MLP，200张MNIST图片）}{table.19}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.10}两种控制模式对比}{34}{subsection.4.10}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {20}{\ignorespaces ARM控制 vs PicoRV32控制模式对比}}{34}{table.20}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces ARM控制与PicoRV32控制模式多维对比雷达图}}{34}{figure.17}\protected@file@percent }
+\newlabel{fig:arm_vs_rv32}{{17}{34}{ARM控制与PicoRV32控制模式多维对比雷达图}{figure.17}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}总结与展望}{35}{section.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}工作总结}{35}{subsection.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}不足与展望}{35}{subsection.5.2}\protected@file@percent }
+\newlabel{sec:future_work}{{5.2}{35}{不足与展望}{subsection.5.2}{}}
 \abx@aux@nociteall
-\@writefile{toc}{\contentsline {section}{\numberline {6}参考文献}{34}{section.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}参考文献}{37}{section.6}\protected@file@percent }
 \abx@aux@read@bbl@mdfivesum{A4862695C23B4AAD82AD2B498C6BF389}
 \abx@aux@defaultrefcontext{0}{10}{none/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{11}{none/global//global/global/global}
@@ -210,4 +225,4 @@
 \abx@aux@defaultrefcontext{0}{29}{none/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{16}{none/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{23}{none/global//global/global/global}
-\gdef \@abspage@last{37}
+\gdef \@abspage@last{39}

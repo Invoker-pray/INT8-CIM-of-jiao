@@ -23,20 +23,23 @@ package cim_pkg;
   parameter int TILE_ELEMS = TILE_ROWS * TILE_COLS;  // 256
 
   // ==========================================================================
-  // 1b. CIM Tile Pipeline Split (C1)
+  // 1b. CIM Tile Pipeline Split (C1/C2)
   // ==========================================================================
   // SPLIT_FACTOR=1: 16-wide MAC chain in one cycle (legacy, ≤60 MHz)
   // SPLIT_FACTOR=2: split 16→8+8 over two cycles (100-125 MHz target)
+  // SPLIT_FACTOR=4: split 16→4+4+4+4 over four cycles (100+ MHz target)
   //
   // Critical path with SPLIT_FACTOR=1: w_tile_reg → DSP48×16 → CARRY4×4 chain → tile_psum_reg
   //   At 60 MHz (16.7 ns period): 16.2 ns actual → WNS = -0.086 ns
   //   At 55 MHz (18.2 ns period): 16.2 ns actual → WNS = +2.0 ns
   // With SPLIT_FACTOR=2: each half has 8 elements → CARRY4×2 depth → ≤8 ns per stage
-  //   At 125 MHz (8.0 ns period): target ≤8 ns → WNS ≈ +0.1 ns
+  //   But 8-wide DSP48→CARRY4 chain still ~14 ns at 10 ns period → timing fails
+  // With SPLIT_FACTOR=4: each quarter has 4 elements → CARRY4×1 depth → ≤5 ns per stage
+  //   Target for 100 MHz (10 ns period): each stage ≤8 ns, WNS ≈ +0.5 ns
   //
   // The SPLIT_FACTOR is compiled-in (Vivado synthesis parameter), not runtime.
 
-  parameter int TILE_SPLIT_FACTOR = 2;  // 1=monolithic, 2=8+8 split (125 MHz)
+  parameter int TILE_SPLIT_FACTOR = 4;  // 1=monolithic, 2=8+8, 4=4+4+4+4 (100+ MHz)
 
   // ==========================================================================
   // 2. Parallelism — how many tiles compute simultaneously
@@ -185,19 +188,28 @@ package cim_pkg;
     ST_FETCH       = 5'd3,
     ST_WAIT_SRAM   = 5'd4,
     ST_XEFF_REG    = 5'd5,
-    ST_MAC_LO      = 5'd6,  // low 8 columns of split MAC (C1)
-    ST_MAC_HI      = 5'd17, // high 8 columns of split MAC (C1), merge in ST_COMPUTE
-    ST_COMPUTE     = 5'd7,  // with SPLIT_FACTOR=2: merge lo+hi psum here
+    // MAC pipeline states (number depends on SPLIT_FACTOR):
+    // SPLIT=1: ST_MAC (5'd6)
+    // SPLIT=2: ST_MAC_LO (5'd6) + ST_MAC_HI (5'd22)
+    // SPLIT=4: ST_MAC_Q0-Q3 (5'd22-25)
+    ST_MAC         = 5'd6,   // SPLIT=1: full 16-wide MAC
+    ST_MAC_LO      = 5'd7,   // SPLIT=2: low half (cols 0-7)
+    ST_MAC_HI      = 5'd17,  // SPLIT=2: high half (cols 8-15)
+    ST_MAC_Q0      = 5'd18,  // SPLIT=4: quarter 0 (cols 0-3)
+    ST_MAC_Q1      = 5'd19,  // SPLIT=4: quarter 1 (cols 4-7)
+    ST_MAC_Q2      = 5'd20,  // SPLIT=4: quarter 2 (cols 8-11)
+    ST_MAC_Q3      = 5'd21,  // SPLIT=4: quarter 3 (cols 12-15)
+    ST_COMPUTE     = 5'd22,  // merge + psum_accum
     ST_NEXT_IB     = 5'd8,
     ST_BIAS_ADD    = 5'd9,
     ST_ACTIVATE    = 5'd10,
     ST_REQUANT     = 5'd11,
-    ST_STORE       = 5'd12,  // 64-bit multiply → prod_r
-    ST_SHIFT       = 5'd13,  // barrel shift + round → shifted_r
-    ST_CLAMP       = 5'd18,  // clamp to INT8 → requant_r
-    ST_WRITE_OBUF  = 5'd14,  // write obuf
-    ST_NEXT_OB     = 5'd15,
-    ST_DONE        = 5'd16
+    ST_STORE       = 5'd12,  // 64-bit multiply -> prod_r
+    ST_SHIFT       = 5'd13,  // barrel shift + round -> shifted_r
+    ST_CLAMP       = 5'd14,  // clamp to INT8 -> requant_r
+    ST_WRITE_OBUF  = 5'd15,  // write obuf
+    ST_NEXT_OB     = 5'd23,
+    ST_DONE        = 5'd24
   } accel_state_t;
 
   // ==========================================================================
