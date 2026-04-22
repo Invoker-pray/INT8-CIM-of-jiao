@@ -50,6 +50,7 @@ module cim_axi_stream_sink
     input logic [15:0] cfg_len,        // 期望 beat 数 (必须 > 0)
     input logic        cfg_start,      // 1-cycle pulse: 锁存配置, 开始接收
     input logic [15:0] cfg_base_addr,  // 起始地址 (weight/input: tile idx; bias: word addr)
+    input logic        cfg_continue,   // 0=reset addr ptrs, 1=continue from current position
     input logic        status_clear,   // 1-cycle pulse: 清除 done/overflow/underflow
 
     // ------------------------------------------------------------------
@@ -200,13 +201,20 @@ module cim_axi_stream_sink
             len_r        <= cfg_len;
             base_r       <= cfg_base_addr;
             beat_count   <= '0;
-            chunk_in_row <= '0;
-            w_row_cnt    <= '0;
-            w_tile_cnt   <= cfg_base_addr[WSRAM_IDX_W-1:0];
-            i_tile_cnt   <= cfg_base_addr[IBUF_IDX_W-1:0];
-            b_addr_cnt   <= cfg_base_addr[BSRAM_IDX_W-1:0];
             state        <= ST_RECV;
             done_r       <= 1'b0;  // 新事务开始时自动清 done
+
+            // Only reset address pointers and staging state when NOT continuing
+            if (!cfg_continue) begin
+              chunk_in_row  <= '0;
+              w_row_cnt     <= '0;
+              w_tile_cnt    <= cfg_base_addr[WSRAM_IDX_W-1:0];
+              i_tile_cnt    <= cfg_base_addr[IBUF_IDX_W-1:0];
+              b_addr_cnt    <= cfg_base_addr[BSRAM_IDX_W-1:0];
+              wsram_staging <= '0;
+              ibuf_staging  <= '0;
+            end
+            // When continuing, preserve chunk_in_row, w_row_cnt, w_tile_cnt, and staging registers
           end
         end
 
@@ -219,15 +227,9 @@ module cim_axi_stream_sink
             case (dest_r)
               // -------- Weight: 4-chunk row assembly --------
               DEST_WEIGHT: begin
-                case (chunk_in_row)
-                  2'd0: wsram_staging[ 31:  0] <= s_axis_tdata;
-                  2'd1: wsram_staging[ 63: 32] <= s_axis_tdata;
-                  2'd2: wsram_staging[ 95: 64] <= s_axis_tdata;
-                  2'd3: wsram_staging[127: 96] <= s_axis_tdata;
-                endcase
-
                 if (chunk_full) begin
                   // Commit completed 128-bit row to weight_sram
+                  // Use s_axis_tdata directly as [127:96] since staging[127:96] hasn't updated yet
                   wsram_wr_en       <= 1'b1;
                   wsram_wr_row      <= w_row_cnt;
                   wsram_wr_tile_idx <= w_tile_cnt;
@@ -242,6 +244,12 @@ module cim_axi_stream_sink
                   end
                   chunk_in_row <= '0;
                 end else begin
+                  // Accumulate chunks 0-2 into staging register
+                  case (chunk_in_row)
+                    2'd0: wsram_staging[ 31:  0] <= s_axis_tdata;
+                    2'd1: wsram_staging[ 63: 32] <= s_axis_tdata;
+                    2'd2: wsram_staging[ 95: 64] <= s_axis_tdata;
+                  endcase
                   chunk_in_row <= chunk_in_row + 2'd1;
                 end
               end
@@ -250,13 +258,6 @@ module cim_axi_stream_sink
               // Legacy per-byte staging 把第 k 个字节放在 [8k+7:8k], 等价于
               // 每 4 个连续字节打包为一个 uint32 little-endian 放在对应 32-bit 槽.
               DEST_INPUT: begin
-                case (chunk_in_row)
-                  2'd0: ibuf_staging[ 31:  0] <= s_axis_tdata;
-                  2'd1: ibuf_staging[ 63: 32] <= s_axis_tdata;
-                  2'd2: ibuf_staging[ 95: 64] <= s_axis_tdata;
-                  2'd3: ibuf_staging[127: 96] <= s_axis_tdata;
-                endcase
-
                 if (chunk_full) begin
                   ibuf_wr_en        <= 1'b1;
                   ibuf_wr_tile_idx  <= i_tile_cnt;
@@ -264,6 +265,11 @@ module cim_axi_stream_sink
                   i_tile_cnt        <= i_tile_cnt + {{(IBUF_IDX_W-1){1'b0}}, 1'b1};
                   chunk_in_row      <= '0;
                 end else begin
+                  case (chunk_in_row)
+                    2'd0: ibuf_staging[ 31:  0] <= s_axis_tdata;
+                    2'd1: ibuf_staging[ 63: 32] <= s_axis_tdata;
+                    2'd2: ibuf_staging[ 95: 64] <= s_axis_tdata;
+                  endcase
                   chunk_in_row <= chunk_in_row + 2'd1;
                 end
               end
