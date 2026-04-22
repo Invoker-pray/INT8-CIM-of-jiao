@@ -54,6 +54,7 @@ module cim_axi_lite_slave
     output logic [ 1:0] cfg_dest,
     output logic [15:0] cfg_len,
     output logic [15:0] cfg_base_addr,
+    output logic        cfg_continue,    // 0=reset addr ptrs, 1=continue from current position
     output logic        cfg_start,       // 1-cycle pulse on CSR_STREAM_LEN write
     output logic        status_clear,    // 1-cycle pulse on CSR_STREAM_STATUS write
     input  logic        stream_busy,
@@ -208,6 +209,7 @@ module cim_axi_lite_slave
   logic [         1:0]    reg_stream_dest;
   logic [        15:0]    reg_stream_len;
   logic [        15:0]    reg_stream_base_addr;
+  logic                   reg_stream_continue;
   logic                   cfg_start_r;
   logic                   status_clear_r;
 
@@ -215,6 +217,7 @@ module cim_axi_lite_slave
   assign cfg_dest       = reg_stream_dest;
   assign cfg_len        = reg_stream_len;
   assign cfg_base_addr  = reg_stream_base_addr;
+  assign cfg_continue   = reg_stream_continue;
   assign cfg_start      = cfg_start_r;
   assign status_clear   = status_clear_r;
 
@@ -508,6 +511,7 @@ MAX_IN_DIM/TILE_COLS
       reg_stream_dest      <= 2'd0;
       reg_stream_len       <= 16'd0;
       reg_stream_base_addr <= 16'd0;
+      reg_stream_continue  <= 1'b0;
       cfg_start_r          <= 1'b0;
       status_clear_r       <= 1'b0;
     end else begin
@@ -575,6 +579,9 @@ MAX_IN_DIM/TILE_COLS
           CSR_STREAM_STATUS: begin
             status_clear_r <= 1'b1;  // any write clears sink sticky status
           end
+          CSR_STREAM_CONTINUE: begin
+            reg_stream_continue <= w_data_r[0];
+          end
           default:           ;  // input/bias windows handled by memory blocks
         endcase
       end
@@ -619,9 +626,10 @@ MAX_IN_DIM/TILE_COLS
       CSR_MAC_CNT_LO:    return perf_macs[31:0];
       CSR_MAC_CNT_HI:    return perf_macs[63:32];
       CSR_PRED_CLASS:    return {22'd0, pred_class};
-      CSR_STREAM_DEST:   return {reg_stream_base_addr, 14'd0, reg_stream_dest};
-      CSR_STREAM_LEN:    return {16'd0, reg_stream_len};
-      CSR_STREAM_STATUS: return {28'd0, stream_underflow, stream_overflow, stream_done, stream_busy};
+      CSR_STREAM_DEST:     return {reg_stream_base_addr, 14'd0, reg_stream_dest};
+      CSR_STREAM_LEN:      return {16'd0, reg_stream_len};
+      CSR_STREAM_STATUS:   return {28'd0, stream_underflow, stream_overflow, stream_done, stream_busy};
+      CSR_STREAM_CONTINUE: return {31'd0, reg_stream_continue};
       default: begin
         if (addr >= CSR_LOGIT_BASE && addr < MEM_INPUT_BASE)
           return {{(32 - OUTPUT_W) {obuf_rd_data[OUTPUT_W-1]}}, obuf_rd_data};
