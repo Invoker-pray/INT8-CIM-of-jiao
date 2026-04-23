@@ -187,7 +187,7 @@ module cim_accel_core
   longint signed                prod_r;
   logic          [        31:0] neuron_addr_p4;
 
-  longint signed                shifted_r;    // C1: barrel shift output register
+  longint signed                pre_shift_r;     // round result (no shift yet)
   logic          [        31:0] neuron_addr_p4b; // pipeline address for shift stage
 
   logic signed   [OUTPUT_W-1:0] requant_r;
@@ -209,19 +209,21 @@ module cim_accel_core
   longint signed prod_comb;
   assign prod_comb = longint'(activated_r) * longint'($signed(cfg_requant_mult));
 
-  // C1: split requantize into two stages — shift then clamp
-  longint signed shifted_comb;
+  // C1: split requantize into two pipeline stages — round then shift+clamp
+  // Stage 1 (ST_SHIFT): round only — prod_r + half-up rounding offset -> pre_shift_r
+  //   This cuts the 22-CARRY4 rounding adder from the barrel shifter path
+  longint signed round_comb;
   always_comb begin
-    if (cfg_requant_shift == 0) shifted_comb = prod_r;
-    else shifted_comb = (prod_r + (longint'(1) <<< (cfg_requant_shift - 1))) >>> cfg_requant_shift;
+    if (cfg_requant_shift == 0) round_comb = prod_r;
+    else round_comb = prod_r + (longint'(1) <<< (cfg_requant_shift - 1));
   end
 
-  // Clamp: operates on registered shifted_r (cut from the barrel shifter path)
-  logic signed [OUTPUT_W-1:0] clamped_comb;
+  // Stage 2 (ST_CLAMP): barrel shift on registered pre_shift_r, then clamp
+  //   pre_shift_r is registered, so the barrel shifter starts from a clean register
+  longint signed shifted_comb;
   always_comb begin
-    if (shifted_r > 127) clamped_comb = 8'sd127;
-    else if (shifted_r < -128) clamped_comb = -8'sd128;
-    else clamped_comb = shifted_r[OUTPUT_W-1:0];
+    if (cfg_requant_shift == 0) shifted_comb = pre_shift_r;
+    else shifted_comb = pre_shift_r >>> cfg_requant_shift;
   end
 
   // ============================================================
@@ -247,7 +249,7 @@ module cim_accel_core
       neuron_addr_p3 <= '0;
       prod_r         <= '0;
       neuron_addr_p4 <= '0;
-      shifted_r      <= '0;
+      pre_shift_r    <= '0;
       neuron_addr_p4b <= '0;
       requant_r      <= '0;
       neuron_addr_p5 <= '0;
@@ -353,15 +355,18 @@ module cim_accel_core
         neuron_addr_p4 <= neuron_addr_p3;
       end
 
-      // Pipeline Stage 5: ST_SHIFT (barrel shift -> shifted_r)
+      // Pipeline Stage 5: ST_SHIFT (round only -> pre_shift_r)
       if (state == ST_SHIFT) begin
-        shifted_r      <= shifted_comb;
+        pre_shift_r    <= round_comb;
         neuron_addr_p4b <= neuron_addr_p4;
       end
 
-      // Pipeline Stage 6: ST_CLAMP (clamp to INT8 -> requant_r)
+      // Pipeline Stage 6: ST_CLAMP (barrel shift + clamp to INT8 -> requant_r)
       if (state == ST_CLAMP) begin
-        requant_r      <= clamped_comb;
+        // Inline clamp to avoid extra pipeline stage
+        if (shifted_comb > 127)        requant_r <= 8'sd127;
+        else if (shifted_comb < -128)  requant_r <= -8'sd128;
+        else                           requant_r <= shifted_comb[OUTPUT_W-1:0];
         neuron_addr_p5 <= neuron_addr_p4b;
       end
     end

@@ -74,6 +74,7 @@ module cim_top
   logic [ 1:0] cfg_dest;
   logic [15:0] cfg_len;
   logic [15:0] cfg_base_addr;
+  logic        cfg_continue;
   logic        cfg_start;
   logic        status_clear;
 
@@ -138,6 +139,7 @@ module cim_top
       .cfg_dest        (cfg_dest),
       .cfg_len         (cfg_len),
       .cfg_base_addr   (cfg_base_addr),
+      .cfg_continue    (cfg_continue),
       .cfg_start       (cfg_start),
       .status_clear    (status_clear),
 
@@ -178,6 +180,7 @@ module cim_top
       .cfg_len          (cfg_len),
       .cfg_start        (cfg_start),
       .cfg_base_addr    (cfg_base_addr),
+      .cfg_continue     (cfg_continue),
       .status_clear     (status_clear),
 
       .busy             (stream_busy),

@@ -158,9 +158,10 @@ package cim_pkg;
   // --- C3: AXI4-Stream Sink Control (active when CSR_CTRL[3]=1) ---
   // Writing CSR_STREAM_LEN pulses cfg_start (design §3.3 scheme A); software
   // must program CSR_STREAM_DEST first, then CSR_STREAM_LEN last.
-  parameter logic [13:0] CSR_STREAM_DEST = 14'h050;    // [1:0]=dest, [31:16]=base_addr
-  parameter logic [13:0] CSR_STREAM_LEN = 14'h054;     // [15:0]=len (beats); write triggers cfg_start
-  parameter logic [13:0] CSR_STREAM_STATUS = 14'h058;  // [0]=busy, [1]=done, [2]=overflow, [3]=underflow (W1C on done/ovf/und)
+  parameter logic [13:0] CSR_STREAM_DEST = 14'h050;     // [1:0]=dest, [31:16]=base_addr
+  parameter logic [13:0] CSR_STREAM_LEN = 14'h054;      // [15:0]=len (beats); write triggers cfg_start
+  parameter logic [13:0] CSR_STREAM_STATUS = 14'h058;   // [0]=busy, [1]=done, [2]=overflow, [3]=underflow (W1C on done/ovf/und)
+  parameter logic [13:0] CSR_STREAM_CONTINUE = 14'h05C; // [0]=continue (0=reset addr ptrs, 1=continue from current position)
 
   // ==========================================================================
   // 8. Activation Function Modes
@@ -205,8 +206,8 @@ package cim_pkg;
     ST_ACTIVATE    = 5'd10,
     ST_REQUANT     = 5'd11,
     ST_STORE       = 5'd12,  // 64-bit multiply -> prod_r
-    ST_SHIFT       = 5'd13,  // barrel shift + round -> shifted_r
-    ST_CLAMP       = 5'd14,  // clamp to INT8 -> requant_r
+    ST_SHIFT       = 5'd13,  // round + coarse shift -> pre_shift_r (pipeline split)
+    ST_CLAMP       = 5'd14,  // fine shift + clamp to INT8 -> requant_r
     ST_WRITE_OBUF  = 5'd15,  // write obuf
     ST_NEXT_OB     = 5'd23,
     ST_DONE        = 5'd24

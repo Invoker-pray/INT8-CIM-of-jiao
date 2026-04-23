@@ -11,7 +11,6 @@
 
 -e file:.
 anyio==4.12.1
-    # via httpx
     # via jupyter-server
 argon2-cffi==25.1.0
     # via jupyter-server
@@ -29,12 +28,11 @@ attrs==26.1.0
 babel==2.18.0
     # via jupyterlab-server
 beautifulsoup4==4.14.3
+    # via deep-translator
     # via nbconvert
 bleach==6.3.0
     # via nbconvert
 certifi==2026.2.25
-    # via httpcore
-    # via httpx
     # via requests
 cffi==2.0.0
     # via argon2-cffi-bindings
@@ -55,6 +53,8 @@ debugpy==1.8.20
     # via ipykernel
 decorator==5.2.1
     # via ipython
+deep-translator==1.11.4
+    # via sw
 defusedxml==0.7.1
     # via nbconvert
 executing==2.2.1
@@ -69,15 +69,8 @@ fqdn==1.5.1
     # via jsonschema
 fsspec==2026.2.0
     # via torch
-h11==0.16.0
-    # via httpcore
-httpcore==1.0.9
-    # via httpx
-httpx==0.28.1
-    # via jupyterlab
-idna==3.11
+idna==2.10
     # via anyio
-    # via httpx
     # via jsonschema
     # via requests
 ipykernel==7.2.0
@@ -142,7 +135,7 @@ jupyter-server==2.17.0
     # via notebook-shim
 jupyter-server-terminals==0.5.4
     # via jupyter-server
-jupyterlab==4.5.6
+jupyterlab==4.0.13
     # via jupyter
     # via notebook
 jupyterlab-pygments==0.3.0
@@ -157,6 +150,7 @@ kiwisolver==1.5.0
 lark==1.3.1
     # via rfc3987-syntax
 lxml==6.0.3
+    # via python-docx
     # via python-pptx
 markupsafe==3.0.3
     # via jinja2
@@ -183,7 +177,7 @@ nest-asyncio==1.6.0
     # via ipykernel
 networkx==3.6.1
     # via torch
-notebook==7.5.5
+notebook==7.0.8
     # via jupyter
 notebook-shim==0.2.4
     # via jupyterlab
@@ -275,6 +269,8 @@ python-dateutil==2.9.0.post0
     # via arrow
     # via jupyter-client
     # via matplotlib
+python-docx==1.2.0
+    # via sw
 python-json-logger==4.0.0
     # via jupyter-events
 python-pptx==1.0.2
@@ -291,6 +287,7 @@ referencing==0.37.0
     # via jsonschema-specifications
     # via jupyter-events
 requests==2.32.5
+    # via deep-translator
     # via jupyterlab-server
 rfc3339-validator==0.1.4
     # via jsonschema
@@ -306,7 +303,6 @@ rpds-py==0.30.0
 send2trash==2.1.0
     # via jupyter-server
 setuptools==82.0.1
-    # via jupyterlab
     # via torch
 six==1.17.0
     # via python-dateutil
@@ -355,6 +351,7 @@ triton==3.6.0
     # via torch
 typing-extensions==4.15.0
     # via beautifulsoup4
+    # via python-docx
     # via python-pptx
     # via torch
 tzdata==2025.3
