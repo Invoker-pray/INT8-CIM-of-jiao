@@ -97,6 +97,7 @@ _WDMA_CTRL = 0x04C
 _CSR_STREAM_DEST = 0x050      # [1:0]=dest (0=weight, 1=input, 2=bias); [31:16]=base_addr
 _CSR_STREAM_LEN = 0x054       # [15:0]=beat count; write triggers cfg_start pulse
 _CSR_STREAM_STATUS = 0x058    # [0]=busy, [1]=done, [2]=overflow, [3]=underflow
+_CSR_STREAM_CONTINUE = 0x05C  # [0]=continue mode (0=reset addr ptrs, 1=continue from current position)
 _LOGIT_BASE = 0x100
 _MEM_INPUT = 0x1000
 _MEM_BIAS = 0x2000
@@ -237,6 +238,10 @@ class CIMDriver:
         self._buf_b = None
         if use_dma:
             self._init_dma()
+            # Enable DMA path in hardware by setting CTRL[3]
+            self.mmio.write(_CTRL, _CTRL_STREAM_EN)
+            # Clear any stale stream status from previous runs
+            self.mmio.write(_CSR_STREAM_STATUS, 0)
         # Do not pulse soft-reset during construction.
         # Overlay download already places the IP in a known state, while some
         # marginal board builds are sensitive to immediate CTRL[2] writes.
@@ -309,6 +314,7 @@ class CIMDriver:
         """Push `words` (iterable of uint32) to the stream sink at `dest`.
 
         Synchronous: blocks until DMA completes and sink reports done.
+        Automatically chunks large transfers to stay within PYNQ DMA's 16KB limit.
         """
         n = len(words)
         if n == 0:
@@ -318,24 +324,57 @@ class CIMDriver:
                 f"stream_load: {n} words exceeds pre-allocated buffer capacity {len(buf)}. "
                 f"Increase _DMA_BUF_* at top of cim_driver.py."
             )
-        buf[:n] = np.asarray(words, dtype=np.uint32)
-        # Order matters: DEST must be latched before LEN. LEN write atomically
-        # pulses cfg_start in the sink (see cim_axi_lite_slave.sv line for
-        # CSR_STREAM_LEN, and design doc §3.3 scheme A).
-        self.mmio.write(_CSR_STREAM_DEST, int(dest))
-        self.mmio.write(_CSR_STREAM_LEN, n)
-        self.dma.sendchannel.transfer(buf[:n])
-        self.dma.sendchannel.wait()
-        # Secondary status check — catches desyncs between PS transfer_len
-        # and CSR_STREAM_LEN (overflow / underflow sticky bits).
-        status = self.mmio.read(_CSR_STREAM_STATUS)
-        if status & 0x4:
-            raise RuntimeError(f"stream sink overflow (status=0x{status:08x}); "
-                               f"PS sent more beats than CSR_STREAM_LEN=n={n}")
-        if status & 0x8:
-            raise RuntimeError(f"stream sink underflow (status=0x{status:08x}); "
-                               f"PS sent fewer beats than CSR_STREAM_LEN=n={n}")
-        self.mmio.write(_CSR_STREAM_STATUS, 0)  # clear sticky done
+
+        # PYNQ DMA limit: 16383 bytes = 4095 words (uint32)
+        # For DEST_WEIGHT: align chunks to 4-word boundaries (128-bit rows)
+        # to avoid splitting rows across DMA transfers
+        if dest == _DEST_WEIGHT:
+            MAX_DMA_WORDS = 4092  # 4092 = 4095 - 3, divisible by 4
+        else:
+            MAX_DMA_WORDS = 4095
+
+        if n <= MAX_DMA_WORDS:
+            # Single transfer
+            buf[:n] = np.asarray(words, dtype=np.uint32)
+            # Clear any previous status before starting new transfer
+            self.mmio.write(_CSR_STREAM_STATUS, 0)
+            self.mmio.write(_CSR_STREAM_DEST, int(dest))
+            self.mmio.write(_CSR_STREAM_CONTINUE, 0)  # Reset address pointers
+            self.mmio.write(_CSR_STREAM_LEN, n)  # This triggers cfg_start
+            # Wait for FSM to enter ST_RECV (cfg_start is 1-cycle pulse, state transition takes 1-2 cycles)
+            _ = self.mmio.read(_CSR_STREAM_STATUS)  # Dummy read to ensure write completes + add delay
+            self.dma.sendchannel.transfer(buf[:n])
+            self.dma.sendchannel.wait()
+            status = self.mmio.read(_CSR_STREAM_STATUS)
+            if status & 0x4:
+                raise RuntimeError(f"stream sink overflow (status=0x{status:08x})")
+            if status & 0x8:
+                raise RuntimeError(f"stream sink underflow (status=0x{status:08x})")
+            self.mmio.write(_CSR_STREAM_STATUS, 0)
+        else:
+            # Chunked transfer
+            words_arr = np.asarray(words, dtype=np.uint32)
+            offset = 0
+            while offset < n:
+                chunk_size = min(MAX_DMA_WORDS, n - offset)
+                buf[:chunk_size] = words_arr[offset:offset + chunk_size]
+                # Clear any previous status before starting new transfer
+                self.mmio.write(_CSR_STREAM_STATUS, 0)
+                self.mmio.write(_CSR_STREAM_DEST, int(dest))
+                # First chunk: reset address pointers; subsequent chunks: continue from current position
+                self.mmio.write(_CSR_STREAM_CONTINUE, 1 if offset > 0 else 0)
+                self.mmio.write(_CSR_STREAM_LEN, chunk_size)  # This triggers cfg_start
+                # Wait for FSM to enter ST_RECV (cfg_start is 1-cycle pulse, state transition takes 1-2 cycles)
+                _ = self.mmio.read(_CSR_STREAM_STATUS)  # Dummy read to ensure write completes + add delay
+                self.dma.sendchannel.transfer(buf[:chunk_size])
+                self.dma.sendchannel.wait()
+                status = self.mmio.read(_CSR_STREAM_STATUS)
+                if status & 0x4:
+                    raise RuntimeError(f"stream sink overflow at offset {offset} (status=0x{status:08x})")
+                if status & 0x8:
+                    raise RuntimeError(f"stream sink underflow at offset {offset} (status=0x{status:08x})")
+                self.mmio.write(_CSR_STREAM_STATUS, 0)
+                offset += chunk_size
 
     def load_weights(self, chunks):
         """Load weight chunks. Routes to DMA or legacy MMIO based on use_dma."""
@@ -394,7 +433,7 @@ class CIMDriver:
     def start_and_wait(self):
         """Trigger computation and block until done. Returns (cycles, macs)."""
         self._clear_done()
-        self.mmio.write(_CTRL, 0x1)
+        self.mmio.write(_CTRL, _CTRL_START | (_CTRL_STREAM_EN if self.use_dma else 0))
         while not (self.mmio.read(_STATUS) & 0x2):
             pass
         cycles = self.mmio.read(_CYCLE_CNT_LO)

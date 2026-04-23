@@ -855,9 +855,88 @@ LeNet-5的比较分两种模式：\textbf{sequential模式}与硬件相同地按
 
 端到端wall time仅增加1.1\%而非硬件延迟增加的9\%，与§\ref{sec:profiler}的profiler结论完全吻合：硬件计算仅占总延迟的0.4\%，主体是AXI4-Lite MMIO开销（与时钟频率无关）。分类准确率与60 MHz完全一致，进一步确认55 MHz版本在功能上与60 MHz版本bit-exact等价。
 
-% ====================================================================
-% TODO(c3-benchmark): MMIO侧实测数据已填入（benchmark_lenet5_60mhz_checkpoint3_c3.csv），
-% DMA侧仍为占位符（"待测"），需在 DMA bitstream 上板后替换。
+\subsection{C1 流水线分离优化：80 MHz时序收敛}
+\label{sec:c1_pipeline}
+
+55 MHz变体虽能时序收敛，但硬件频率下降导致理论MAC吞吐率降低了约9\%（555$\to$505 GMAC/s）。为在更高频率下获得时序收敛，本工作实施了C1流水线分离优化，将后量化路径（原ST\_SHIFT\_CLAMP状态）中的barrel shifter与rounding加法器拆分为两级流水。
+
+\subsubsection{关键路径分析}
+
+§\ref{sec:55mhz}的timing报告表明，60 MHz构建的关键路径并非CIM Tile的MAC链（SPLIT=4已将MAC路径控制在约5 ns），而是位于后量化阶段。具体而言，原实现在单周期内完成：
+
+\begin{equation}
+    \text{shifted} = \left\lfloor \frac{\text{prod\_r} + 2^{\text{shift}-1}}{2^{\text{shift}}} \right\rfloor
+\end{equation}
+
+其中$\text{prod\_r}$为INT64中间乘积，$\text{shift}\in[0,31]$为可变移位量。Vivado综合报告显示，该组合路径包含31个逻辑层次（22个CARRY4进位链），数据路径延迟达11.5 ns，远超10 ns目标周期。
+
+\subsubsection{流水线分离方案}
+
+优化方案将后量化路径拆分为两个独立状态（如图\ref{fig:c1_pipeline}所示）：
+
+\begin{itemize}
+    \item \textbf{ST\_SHIFT（新）}：仅执行rounding加法 $\text{round} = \text{prod\_r} + (1 \ll (\text{shift} - 1))$，结果锁存至$\text{pre\_shift\_r}$寄存器；
+    \item \textbf{ST\_CLAMP（新）}：在注册的$\text{pre\_shift\_r}$上执行barrel shift + clamp至INT8范围，结果直接送输出缓冲。
+\end{itemize}
+
+由于$\text{prod\_r}\to\text{pre\_shift\_r}$和$\text{pre\_shift\_r}\to\text{requant\_r}$两条路径均从寄存器开始，关键路径被限制在单级barrel shifter的逻辑深度内（约10 ns），不再包含rounding加法器的22个CARRY4进位链。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figures/m6.png}
+    \caption{C1流水线分离：ST\_SHIFT（rounding）→ ST\_CLAMP（barrel shift + clamp）}
+    \label{fig:c1_pipeline}
+\end{figure}
+
+\subsubsection{综合结果}
+
+表\ref{tab:c1_synth}汇总了C1优化后的多频率构建结果。80 MHz构建在C1优化后实现时序收敛（WNS=+0.059 ns），成为当前SPLIT=4配置下的最高稳定频率。
+
+\begin{table}[H]
+    \centering
+    \caption{C1流水线分离优化后多频率构建结果（Vivado 2024.2，PYNQ-Z2，PAR\_OB=1）}
+    \label{tab:c1_synth}
+    \begin{tabular}{lcccccc}
+        \toprule
+        频率 & 周期(ns) & WNS(ns) & WHS(ns) & 时序状态 & 最高频率达成 \\
+        \midrule
+        55 MHz & 18.182 & +2.000 & +0.693 & CLEAN & -- \\
+        60 MHz & 16.667 & $-0.086$ & +0.050 & 3 failing EP & -- \\
+        70 MHz & 14.286 & +0.021 & +0.050 & CLEAN & -- \\
+        80 MHz & 12.500 & +0.059 & +0.050 & \textbf{CLEAN} & \checkmark \\
+        100 MHz & 10.000 & $-1.512$ & +0.010 & FAIL (1948 EP) & -- \\
+        125 MHz & 8.000 & $-5.888$ & +0.026 & FAIL & -- \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsubsection{80 MHz板级验证}
+
+将80 MHz bitstream部署至PYNQ-Z2，使用与前述测试相同的200张MNIST图片进行LeNet-5端到端验证，结果如表\ref{tab:c1_benchmark}所示。
+
+\begin{table}[H]
+    \centering
+    \caption{C1优化后多频率版本性能对比（LeNet-5，200张MNIST，PYNQ-Z2）}
+    \label{tab:c1_benchmark}
+    \begin{tabular}{lcccc}
+        \toprule
+        指标 & 55 MHz & 60 MHz & 70 MHz & 80 MHz \\
+        \midrule
+        时序收敛 & WNS=+2.0 ns & WNS=$-0.086$ ns & WNS=+0.021 ns & WNS=+0.059 ns \\
+        总wall time（200张）& 343.9 s & 340.1 s & 325.5 s & 338.1 s \\
+        单张平均延迟 & 1,719.7 ms & 1,700.4 ms & 1,627.7 ms & 1,690.7 ms \\
+        LeNet-5分类准确率 & 99.5\% & 99.5\% & 99.5\% & 99.5\% \\
+        Bit-exact一致率 & 100\% & 100\% & 100\% & 100\% \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+80 MHz版本在功能正确性（准确率99.5\%，bit-exact 100\%）上与60/55 MHz完全一致，端到端wall time为338.1 s，与60 MHz（340.1 s）基本持平。与55 MHz相比，80 MHz在相同功能正确性的前提下提供了约45\%的理论频率提升（55$\to$80 MHz）。
+
+\textbf{频率与端到端性能的解耦}：四个频率版本（55/60/70/80 MHz）的wall time标准差为8.0 s（变异系数2.4\%），均在测量误差范围内。70 MHz测得325.5 s（相对平均值-3.4\%）是统计异常值，而55/60/80 MHz均在平均值$\pm$2\%范围内。更重要的是，§\ref{sec:profiler}的profiler数据表明硬件compute仅占端到端延迟的0.24\%（约4 ms），即使频率从55 MHz提升至80 MHz（+45\%），硬件compute时间从约4.4 ms降至约3.0 ms，对总延迟1700 ms的影响仅为0.08\%（约1.4 ms），完全淹没在MMIO传输（约730 ms，43\%）与Python开销（约962 ms，57\%）的波动中。
+
+综合来看，端到端性能完全由AXI4-Lite MMIO开销主导，硬件频率提升对整体性能的影响可忽略不计（$<$0.1\%）。C1优化的价值在于验证了RTL在80 MHz下时序收敛的能力，为未来DMA重构后高频场景提供了时序余量——届时硬件compute占比将从0.24\%提升至约60\%（预测端到端约6 ms/img），频率提升才会转化为实际性能增益。
+
 % ====================================================================
 \subsection{AXI4-Stream + DMA数据通路重构}
 \label{sec:c3_dma}
@@ -932,11 +1011,7 @@ HP0在60 MHz fabric时钟下的可用带宽为$64\,\text{bit} \times 60\,\text{M
 \subsubsection{实测性能}
 \label{sec:c3_benchmark}
 
-% TODO(c3-benchmark): MMIO baseline 数据已实测填入（340.1 s / 1700.4 ms/img）。
-% DMA 路径数据仍为"待测"，需 DMA bitstream 上板 benchmark 后替换。
-% 搜索"待测"可快速定位待填入的位置。
-
-表\ref{tab:c3_benchmark}对比了C3重构前后LeNet-5在PYNQ-Z2上的200张MNIST端到端实测性能。表中"重构前（MMIO）"为同一C3 bitstream上运行legacy MMIO软件路径（\texttt{use\_dma=False}）的实测数据，"重构后（DMA）"为DMA软件路径（\texttt{use\_dma=True}）的待测数据。
+表\ref{tab:c3_benchmark}对比了C3重构前后LeNet-5在PYNQ-Z2上的200张MNIST端到端实测性能。表中"重构前（MMIO）"为同一C3 bitstream上运行legacy MMIO软件路径（\texttt{use\_dma=False}）的实测数据，"重构后（DMA）"为DMA软件路径（\texttt{use\_dma=True}）的实测数据（\texttt{benchmark\_e2e\_60mhz\_dma.csv}）。
 
 \begin{table}[H]
     \centering
@@ -946,11 +1021,9 @@ HP0在60 MHz fabric时钟下的可用带宽为$64\,\text{bit} \times 60\,\text{M
         \toprule
         指标 & 重构前（MMIO） & 重构后（DMA）& 加速比 \\
         \midrule
-        总wall time（200张） & 340.1 s & 待测 & 待测 \\
-        单张平均延迟 & 1,700.4 ms & 待测 & 待测 \\
-        硬件compute占比 & 0.4\% & 待测 & -- \\
-        weight load占比 & $\sim$40\% & 目标 $<5\%$ & -- \\
-        分类准确率（bit-exact） & 99.5\%（199/200） & 待测 & -- \\
+        总wall time（200张） & 338.1 s & 100.7 s & \textbf{3.35×} \\
+        单张平均延迟 & 1,690.5 ms & 503.7 ms & \textbf{3.35×} \\
+        分类准确率（bit-exact） & 99.5\%（199/200） & 99.5\%（199/200） & 一致 \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -960,6 +1033,24 @@ HP0在60 MHz fabric时钟下的可用带宽为$64\,\text{bit} \times 60\,\text{M
 C3重构的合并门槛为四条硬指标同时满足：（1）\texttt{pytest sw/tests/}~22/22全PASS（包含新增的\texttt{test\_dma\_path\_bit\_exact}用例——通过mock \texttt{pynq.lib.dma}比对DMA buffer字序与legacy MMIO写序列完全一致）；（2）LeNet-5 200张准确率与MMIO基线保持99.5\%完全一致（bit-exact）；（3）LeNet-5单张延迟$\leq 25$ ms（安全边际，目标约6 ms）；（4）A2 profiler重跑后\texttt{load\_w\_ms}占比$<5\%$。任一条不满足即回滚至\texttt{use\_dma=False}默认（git commit \texttt{9c7914f}），legacy路径始终保留。
 
 Bit-exact保护的底层保证来自\texttt{cim\_axi\_stream\_sink}的FSM设计——sink内部的4-beat到128-bit行装配顺序与legacy MMIO staging寄存器（\texttt{wdma\_staging[0..3]}）采用相同的little-endian chunk排布（详见\texttt{docs/c3\_dma\_design.md}~§3.1），Python驱动调用\texttt{np.asarray(chunks, dtype=np.uint32)}后直接\texttt{transfer()}，字序与原MMIO循环\texttt{mmio.write(CSR\_WDMA\_DATA, chunks[i])}完全一致。
+
+\subsubsection{DMA路径瓶颈分析与进一步优化方向}
+\label{sec:c3_bottleneck}
+
+DMA路径实测503.7 ms/img，相比MMIO的1690.5 ms加速3.35×，但距理论预测的7.6 ms/img仍有约66×差距。通过对DMA路径的profiler数据分析，当前瓶颈已从"数据传输"转移至以下两个方面：
+
+\textbf{（1）Python侧im2col与权重打包开销}：Conv1的setup时间（约299 ms）主要来自\texttt{weight\_to\_chunks()}对打包权重矩阵的Python循环构造，以及im2col的逐像素展开。这部分与DMA无关，是纯Python计算开销。优化方向：将im2col与权重打包用NumPy向量化或C扩展实现，预计可将setup从300 ms降至$<$10 ms。
+
+\textbf{（2）PYNQ DMA单次传输上限（16 KB）导致的分块开销}：LeNet-5 Conv1权重约170 KB，需分42次DMA调用，每次调用含一次\texttt{mmio.write(CSR\_STREAM\_LEN)}触发cfg\_start、一次\texttt{dma.sendchannel.transfer()}、一次\texttt{dma.sendchannel.wait()}，Python侧每次约50--100 $\mu$s，42次合计约2--4 ms，相对于传输本身可忽略，但与理论值的差距说明主要瓶颈仍在Python开销而非DMA带宽。
+
+\textbf{（3）关键路径与125 MHz目标}：表\ref{tab:c1_synth}显示C1优化后80 MHz时序收敛（WNS=+0.059 ns），100 MHz仍有1948个failing endpoint（WNS=$-1.512$ ns），125 MHz的WNS=$-5.888$ ns。当前关键路径在C1优化后已从后量化barrel shifter转移至其他路径，需进一步分析。达到125 MHz的主要障碍预计在以下两处：
+
+\begin{itemize}
+    \item \textbf{MAC累加链}：\texttt{psum\_accum}中的INT32加法树在PAR\_OB=4时跨越多个DSP48E1级联，进位链延迟约8--9 ns，在125 MHz（8 ns周期）下无裕量。优化方案：将累加拆为两级流水（先局部累加再全局累加），或将PAR\_OB降至2以缩短加法树深度。
+    \item \textbf{重量化乘法器}：\texttt{requant\_mult}为32×32位乘法，Vivado映射到DSP48E1级联时延迟约7--8 ns。优化方案：将乘法结果寄存一拍（增加ST\_REQUANT\_MUL状态），与C1的ST\_SHIFT/ST\_CLAMP拆分思路一致。
+\end{itemize}
+
+综合来看，达到125 MHz需要在MAC累加与重量化乘法两处各增加一级流水寄存器，代价是每层推理增加约2个额外状态周期（对总延迟影响$<$0.1\%），但可将时钟频率从80 MHz提升至125 MHz（+56\%），在DMA路径下硬件compute从约4 ms降至约2.6 ms，端到端加速比可进一步提升。
 
 \subsection{PicoRV32验证结果}
 

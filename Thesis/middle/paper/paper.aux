@@ -166,38 +166,52 @@
 \newlabel{sec:55mhz}{{4.7}{29}{55 MHz时序收敛变体}{subsection.4.7}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {14}{\ignorespaces 60 MHz与55 MHz版本性能对比（LeNet-5，200张MNIST，PYNQ-Z2）}}{30}{table.14}\protected@file@percent }
 \newlabel{tab:55mhz_compare}{{14}{30}{60 MHz与55 MHz版本性能对比（LeNet-5，200张MNIST，PYNQ-Z2）}{table.14}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.8}AXI4-Stream + DMA数据通路重构}{30}{subsection.4.8}\protected@file@percent }
-\newlabel{sec:c3_dma}{{4.8}{30}{AXI4-Stream + DMA数据通路重构}{subsection.4.8}{}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.8.1}系统拓扑}{30}{subsubsection.4.8.1}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces AXI4-Stream + \texttt  {axi\_dma} 数据通路系统拓扑（C3）}}{30}{figure.16}\protected@file@percent }
-\newlabel{fig:c3_topology}{{16}{30}{AXI4-Stream + \texttt {axi\_dma} 数据通路系统拓扑（C3）}{figure.16}{}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.8.2}关键设计决策}{31}{subsubsection.4.8.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.8.3}RTL改动规模}{31}{subsubsection.4.8.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {15}{\ignorespaces C3重构RTL改动范围}}{31}{table.15}\protected@file@percent }
-\newlabel{tab:c3_rtl_scope}{{15}{31}{C3重构RTL改动范围}{table.15}{}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.8.4}理论带宽与预测延迟}{32}{subsubsection.4.8.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.8.5}实测性能}{32}{subsubsection.4.8.5}\protected@file@percent }
-\newlabel{sec:c3_benchmark}{{4.8.5}{32}{实测性能}{subsubsection.4.8.5}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {16}{\ignorespaces C3重构前后LeNet-5端到端性能对比（200张MNIST，PYNQ-Z2，60 MHz）}}{32}{table.16}\protected@file@percent }
-\newlabel{tab:c3_benchmark}{{16}{32}{C3重构前后LeNet-5端到端性能对比（200张MNIST，PYNQ-Z2，60 MHz）}{table.16}{}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.8.6}验收标准与bit-exact保障}{32}{subsubsection.4.8.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.9}PicoRV32验证结果}{33}{subsection.4.9}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {17}{\ignorespaces PicoRV32模式资源占用（PYNQ-Z2）}}{33}{table.17}\protected@file@percent }
-\newlabel{tab:util_rv32}{{17}{33}{PicoRV32模式资源占用（PYNQ-Z2）}{table.17}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {18}{\ignorespaces PicoRV32模式时序与功耗}}{33}{table.18}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.9.1}PicoRV32功能验证}{33}{subsubsection.4.9.1}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {19}{\ignorespaces PicoRV32推理验证结果（784→16→10 MLP，200张MNIST图片）}}{34}{table.19}\protected@file@percent }
-\newlabel{tab:rv32_verify}{{19}{34}{PicoRV32推理验证结果（784→16→10 MLP，200张MNIST图片）}{table.19}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.10}两种控制模式对比}{34}{subsection.4.10}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {20}{\ignorespaces ARM控制 vs PicoRV32控制模式对比}}{34}{table.20}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces ARM控制与PicoRV32控制模式多维对比雷达图}}{34}{figure.17}\protected@file@percent }
-\newlabel{fig:arm_vs_rv32}{{17}{34}{ARM控制与PicoRV32控制模式多维对比雷达图}{figure.17}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5}总结与展望}{35}{section.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}工作总结}{35}{subsection.5.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}不足与展望}{35}{subsection.5.2}\protected@file@percent }
-\newlabel{sec:future_work}{{5.2}{35}{不足与展望}{subsection.5.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.8}C1 流水线分离优化：80 MHz时序收敛}{30}{subsection.4.8}\protected@file@percent }
+\newlabel{sec:c1_pipeline}{{4.8}{30}{C1 流水线分离优化：80 MHz时序收敛}{subsection.4.8}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.8.1}关键路径分析}{30}{subsubsection.4.8.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.8.2}流水线分离方案}{30}{subsubsection.4.8.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces C1流水线分离：ST\_SHIFT（rounding）→ ST\_CLAMP（barrel shift + clamp）}}{31}{figure.16}\protected@file@percent }
+\newlabel{fig:c1_pipeline}{{16}{31}{C1流水线分离：ST\_SHIFT（rounding）→ ST\_CLAMP（barrel shift + clamp）}{figure.16}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.8.3}综合结果}{31}{subsubsection.4.8.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {15}{\ignorespaces C1流水线分离优化后多频率构建结果（Vivado 2024.2，PYNQ-Z2，PAR\_OB=1）}}{31}{table.15}\protected@file@percent }
+\newlabel{tab:c1_synth}{{15}{31}{C1流水线分离优化后多频率构建结果（Vivado 2024.2，PYNQ-Z2，PAR\_OB=1）}{table.15}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.8.4}80 MHz板级验证}{31}{subsubsection.4.8.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {16}{\ignorespaces C1优化后多频率版本性能对比（LeNet-5，200张MNIST，PYNQ-Z2）}}{32}{table.16}\protected@file@percent }
+\newlabel{tab:c1_benchmark}{{16}{32}{C1优化后多频率版本性能对比（LeNet-5，200张MNIST，PYNQ-Z2）}{table.16}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.9}AXI4-Stream + DMA数据通路重构}{32}{subsection.4.9}\protected@file@percent }
+\newlabel{sec:c3_dma}{{4.9}{32}{AXI4-Stream + DMA数据通路重构}{subsection.4.9}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.9.1}系统拓扑}{33}{subsubsection.4.9.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces AXI4-Stream + \texttt  {axi\_dma} 数据通路系统拓扑（C3）}}{33}{figure.17}\protected@file@percent }
+\newlabel{fig:c3_topology}{{17}{33}{AXI4-Stream + \texttt {axi\_dma} 数据通路系统拓扑（C3）}{figure.17}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.9.2}关键设计决策}{33}{subsubsection.4.9.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.9.3}RTL改动规模}{34}{subsubsection.4.9.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {17}{\ignorespaces C3重构RTL改动范围}}{34}{table.17}\protected@file@percent }
+\newlabel{tab:c3_rtl_scope}{{17}{34}{C3重构RTL改动范围}{table.17}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.9.4}理论带宽与预测延迟}{34}{subsubsection.4.9.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.9.5}实测性能}{34}{subsubsection.4.9.5}\protected@file@percent }
+\newlabel{sec:c3_benchmark}{{4.9.5}{34}{实测性能}{subsubsection.4.9.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {18}{\ignorespaces C3重构前后LeNet-5端到端性能对比（200张MNIST，PYNQ-Z2，60 MHz）}}{35}{table.18}\protected@file@percent }
+\newlabel{tab:c3_benchmark}{{18}{35}{C3重构前后LeNet-5端到端性能对比（200张MNIST，PYNQ-Z2，60 MHz）}{table.18}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.9.6}验收标准与bit-exact保障}{35}{subsubsection.4.9.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.9.7}DMA路径瓶颈分析与进一步优化方向}{35}{subsubsection.4.9.7}\protected@file@percent }
+\newlabel{sec:c3_bottleneck}{{4.9.7}{35}{DMA路径瓶颈分析与进一步优化方向}{subsubsection.4.9.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.10}PicoRV32验证结果}{36}{subsection.4.10}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {19}{\ignorespaces PicoRV32模式资源占用（PYNQ-Z2）}}{36}{table.19}\protected@file@percent }
+\newlabel{tab:util_rv32}{{19}{36}{PicoRV32模式资源占用（PYNQ-Z2）}{table.19}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {20}{\ignorespaces PicoRV32模式时序与功耗}}{36}{table.20}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.10.1}PicoRV32功能验证}{37}{subsubsection.4.10.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {21}{\ignorespaces PicoRV32推理验证结果（784→16→10 MLP，200张MNIST图片）}}{37}{table.21}\protected@file@percent }
+\newlabel{tab:rv32_verify}{{21}{37}{PicoRV32推理验证结果（784→16→10 MLP，200张MNIST图片）}{table.21}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.11}两种控制模式对比}{37}{subsection.4.11}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {22}{\ignorespaces ARM控制 vs PicoRV32控制模式对比}}{37}{table.22}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {18}{\ignorespaces ARM控制与PicoRV32控制模式多维对比雷达图}}{38}{figure.18}\protected@file@percent }
+\newlabel{fig:arm_vs_rv32}{{18}{38}{ARM控制与PicoRV32控制模式多维对比雷达图}{figure.18}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}总结与展望}{38}{section.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}工作总结}{38}{subsection.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}不足与展望}{39}{subsection.5.2}\protected@file@percent }
+\newlabel{sec:future_work}{{5.2}{39}{不足与展望}{subsection.5.2}{}}
 \abx@aux@nociteall
-\@writefile{toc}{\contentsline {section}{\numberline {6}参考文献}{37}{section.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}参考文献}{40}{section.6}\protected@file@percent }
 \abx@aux@read@bbl@mdfivesum{A4862695C23B4AAD82AD2B498C6BF389}
 \abx@aux@defaultrefcontext{0}{10}{none/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{11}{none/global//global/global/global}
@@ -225,4 +239,4 @@
 \abx@aux@defaultrefcontext{0}{29}{none/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{16}{none/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{23}{none/global//global/global/global}
-\gdef \@abspage@last{39}
+\gdef \@abspage@last{43}
