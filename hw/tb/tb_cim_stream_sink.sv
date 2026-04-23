@@ -50,6 +50,7 @@ module tb_cim_stream_sink;
   logic        status_clear;
 
   // Status
+  logic        cfg_continue;
   logic busy, done, overflow, underflow;
 
   // Write ports → memories
@@ -80,6 +81,7 @@ module tb_cim_stream_sink;
       .cfg_len        (cfg_len),
       .cfg_start      (cfg_start),
       .cfg_base_addr  (cfg_base_addr),
+      .cfg_continue   (cfg_continue),
       .status_clear   (status_clear),
       .busy           (busy),
       .done           (done),
@@ -159,6 +161,7 @@ module tb_cim_stream_sink;
     cfg_len       = '0;
     cfg_start     = 1'b0;
     cfg_base_addr = '0;
+    cfg_continue  = 1'b0;
     status_clear  = 1'b0;
     i_zp          = 32'sd0;  // 零点为 0, x_tile 直接等于 BRAM 存的字节
     w_rd_idx      = '0;
@@ -170,15 +173,16 @@ module tb_cim_stream_sink;
   endtask
 
   // 下发一次配置, 并保证 sink 在 cfg_start 采样后进入 RECV.
-  task cfg_load(input logic [1:0] dest, input logic [15:0] len, input logic [15:0] base);
+  task cfg_load(input logic [1:0] dest, input logic [15:0] len, input logic [15:0] base,
+               input logic cont = 1'b0);
     @(posedge clk);
     cfg_dest      <= dest;
     cfg_len       <= len;
     cfg_base_addr <= base;
+    cfg_continue  <= cont;
     cfg_start     <= 1'b1;
     @(posedge clk);
     cfg_start <= 1'b0;
-    // 再等 1 cycle 让 state 转到 RECV (cfg_start 是在上一边沿被采样的)
     @(posedge clk);
   endtask
 
@@ -531,6 +535,50 @@ module tb_cim_stream_sink;
     clear_status();
   endtask
 
+  // Test chunked transfer: 2 tiles (128 beats) split into two cfg_start transactions
+  // with cfg_continue=1 on the second chunk — exercises the staging-preserve path.
+  task test_chunked_weight();
+    automatic logic [31:0] words[$];
+    int err_before;
+    int le;
+    int CHUNK = 68;  // not aligned to 64 — splits mid-tile to stress staging
+
+    $display("------------------------------------------------------------");
+    $display("TEST %0d: Chunked weight (2×cfg_start, cfg_continue=1)", test_cnt+1);
+    $display("------------------------------------------------------------");
+    err_before = err_cnt;
+
+    for (int i = 0; i < 128; i++) words.push_back(32'hBEEF_0000 | i);
+
+    // First chunk: beats 0..CHUNK-1
+    cfg_load(2'd0, 16'(CHUNK), 16'd0, 1'b0);
+    for (int i = 0; i < CHUNK; i++) axis_send(words[i], (i == CHUNK-1));
+    wait_done_or_err(300);
+    if (!done || overflow || underflow) begin
+      $display("  FAIL chunk0 status: done=%0b overflow=%0b underflow=%0b",
+               done, overflow, underflow);
+      err_cnt++;
+    end
+    clear_status();
+
+    // Second chunk: beats CHUNK..127, continue from current position
+    cfg_load(2'd0, 16'(128-CHUNK), 16'd0, 1'b1);
+    for (int i = CHUNK; i < 128; i++) axis_send(words[i], (i == 127));
+    wait_done_or_err(300);
+    if (!done || overflow || underflow) begin
+      $display("  FAIL chunk1 status: done=%0b overflow=%0b underflow=%0b",
+               done, overflow, underflow);
+      err_cnt++;
+    end
+
+    check_weight_tile_content(0, words,  0, le); err_cnt += le;
+    check_weight_tile_content(1, words, 64, le); err_cnt += le;
+
+    if (err_cnt == err_before) $display("  PASS"); else $display("  FAIL");
+    test_cnt++;
+    clear_status();
+  endtask
+
   // ==========================================================================
   // Main
   // ==========================================================================
@@ -548,6 +596,7 @@ module tb_cim_stream_sink;
     test_overflow();
     test_underflow();
     test_back_to_back();
+    test_chunked_weight();
 
     $display("============================================================");
     $display("Total tests: %0d, Errors: %0d", test_cnt, err_cnt);
