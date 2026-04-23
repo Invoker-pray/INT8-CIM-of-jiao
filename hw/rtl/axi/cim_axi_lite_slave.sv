@@ -211,6 +211,7 @@ module cim_axi_lite_slave
   logic [        15:0]    reg_stream_base_addr;
   logic                   reg_stream_continue;
   logic                   cfg_start_r;
+  logic                   cfg_start_pending;  // Delay cfg_start by 1 cycle
   logic                   status_clear_r;
 
   assign stream_path_en = reg_stream_path_en;
@@ -513,6 +514,7 @@ MAX_IN_DIM/TILE_COLS
       reg_stream_base_addr <= 16'd0;
       reg_stream_continue  <= 1'b0;
       cfg_start_r          <= 1'b0;
+      cfg_start_pending    <= 1'b0;
       status_clear_r       <= 1'b0;
     end else begin
       // Self-clearing pulses
@@ -520,7 +522,8 @@ MAX_IN_DIM/TILE_COLS
       soft_rst_pulse <= 1'b0;
       done_irq_clear <= 1'b0;
       reg_wdma_wr    <= 1'b0;
-      cfg_start_r    <= 1'b0;
+      cfg_start_r    <= cfg_start_pending;  // Fire cfg_start 1 cycle after LEN write
+      cfg_start_pending <= 1'b0;
       status_clear_r <= 1'b0;
 
       // Burst auto-increment: fires one cycle AFTER the write pulse,
@@ -574,7 +577,7 @@ MAX_IN_DIM/TILE_COLS
           end
           CSR_STREAM_LEN: begin
             reg_stream_len <= w_data_r[15:0];
-            cfg_start_r   <= 1'b1;  // §3.3 scheme A: LEN write triggers 1-cycle pulse
+            cfg_start_pending <= 1'b1;  // Trigger cfg_start next cycle after reg_stream_len updates
           end
           CSR_STREAM_STATUS: begin
             status_clear_r <= 1'b1;  // any write clears sink sticky status
