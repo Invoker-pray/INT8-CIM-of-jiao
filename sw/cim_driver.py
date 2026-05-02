@@ -310,11 +310,17 @@ class CIMDriver:
     # cim_axi_stream_sink FSM mirroring the MMIO staging logic; see
     # docs/c3_dma_design.md §3.1-3.5 and §7.3 mock test).
     # ------------------------------------------------------------------ #
-    def _stream_load(self, words, dest, buf):
+    def _stream_load(self, words, dest, buf, _dma_timings=None):
         """Push `words` (iterable of uint32) to the stream sink at `dest`.
 
         Synchronous: blocks until DMA completes and sink reports done.
         Automatically chunks large transfers to stay within PYNQ DMA's 16KB limit.
+
+        Args:
+            words: iterable of uint32
+            dest: destination (DEST_WEIGHT/DEST_BIAS/DEST_INPUT)
+            buf: pre-allocated numpy buffer
+            _dma_timings: if not None, dict tracking {n_chunks, setup_ms, transfer_ms}
         """
         n = len(words)
         if n == 0:
@@ -335,6 +341,8 @@ class CIMDriver:
 
         if n <= MAX_DMA_WORDS:
             # Single transfer
+            if _dma_timings is not None:
+                t_setup = time.perf_counter()
             buf[:n] = np.asarray(words, dtype=np.uint32)
             # Clear any previous status before starting new transfer
             self.mmio.write(_CSR_STREAM_STATUS, 0)
@@ -343,8 +351,15 @@ class CIMDriver:
             self.mmio.write(_CSR_STREAM_LEN, n)  # This triggers cfg_start
             # Wait for FSM to enter ST_RECV (cfg_start is 1-cycle pulse, state transition takes 1-2 cycles)
             _ = self.mmio.read(_CSR_STREAM_STATUS)  # Dummy read to ensure write completes + add delay
+            if _dma_timings is not None:
+                t_xfer = time.perf_counter()
+                _dma_timings["setup_ms"] = (t_xfer - t_setup) * 1000
             self.dma.sendchannel.transfer(buf[:n])
             self.dma.sendchannel.wait()
+            if _dma_timings is not None:
+                t_done = time.perf_counter()
+                _dma_timings["transfer_ms"] = (t_done - t_xfer) * 1000
+                _dma_timings["n_chunks"] = _dma_timings.get("n_chunks", 0) + 1
             status = self.mmio.read(_CSR_STREAM_STATUS)
             if status & 0x4:
                 raise RuntimeError(f"stream sink overflow (status=0x{status:08x})")
@@ -359,6 +374,8 @@ class CIMDriver:
                 chunk_size = min(MAX_DMA_WORDS, n - offset)
                 buf[:chunk_size] = words_arr[offset:offset + chunk_size]
                 # Clear any previous status before starting new transfer
+                if _dma_timings is not None:
+                    t_setup = time.perf_counter()
                 self.mmio.write(_CSR_STREAM_STATUS, 0)
                 self.mmio.write(_CSR_STREAM_DEST, int(dest))
                 # First chunk: reset address pointers; subsequent chunks: continue from current position
@@ -366,8 +383,15 @@ class CIMDriver:
                 self.mmio.write(_CSR_STREAM_LEN, chunk_size)  # This triggers cfg_start
                 # Wait for FSM to enter ST_RECV (cfg_start is 1-cycle pulse, state transition takes 1-2 cycles)
                 _ = self.mmio.read(_CSR_STREAM_STATUS)  # Dummy read to ensure write completes + add delay
+                if _dma_timings is not None:
+                    t_xfer = time.perf_counter()
+                    _dma_timings["setup_ms"] = _dma_timings.get("setup_ms", 0) + (t_xfer - t_setup) * 1000
                 self.dma.sendchannel.transfer(buf[:chunk_size])
                 self.dma.sendchannel.wait()
+                if _dma_timings is not None:
+                    t_done = time.perf_counter()
+                    _dma_timings["transfer_ms"] = _dma_timings.get("transfer_ms", 0) + (t_done - t_xfer) * 1000
+                    _dma_timings["n_chunks"] = _dma_timings.get("n_chunks", 0) + 1
                 status = self.mmio.read(_CSR_STREAM_STATUS)
                 if status & 0x4:
                     raise RuntimeError(f"stream sink overflow at offset {offset} (status=0x{status:08x})")
@@ -376,14 +400,14 @@ class CIMDriver:
                 self.mmio.write(_CSR_STREAM_STATUS, 0)
                 offset += chunk_size
 
-    def load_weights(self, chunks):
+    def load_weights(self, chunks, _dma_timings=None):
         """Load weight chunks. Routes to DMA or legacy MMIO based on use_dma."""
         if self.use_dma:
-            self._stream_load(chunks, _DEST_WEIGHT, self._buf_w)
+            self._stream_load(chunks, _DEST_WEIGHT, self._buf_w, _dma_timings)
         else:
             self._load_weights_legacy(chunks)
 
-    def load_input(self, data_u8):
+    def load_input(self, data_u8, _dma_timings=None):
         """Load UINT8 input vector. Routes to DMA or legacy MMIO based on use_dma."""
         if self.use_dma:
             # Pack UINT8 stream into uint32 words, LE: byte0 in bits[7:0], etc.
@@ -395,15 +419,15 @@ class CIMDriver:
             if pad:
                 arr = np.concatenate([arr, np.zeros(pad, dtype=np.uint8)])
             words = arr.view(np.uint32)
-            self._stream_load(words.tolist(), _DEST_INPUT, self._buf_x)
+            self._stream_load(words.tolist(), _DEST_INPUT, self._buf_x, _dma_timings)
         else:
             self._load_input_legacy(data_u8)
 
-    def load_bias(self, bias_u32):
+    def load_bias(self, bias_u32, _dma_timings=None):
         """Load INT32 bias values. Routes to DMA or legacy MMIO based on use_dma."""
         if self.use_dma:
             words = [int(b) & 0xFFFFFFFF for b in bias_u32]
-            self._stream_load(words, _DEST_BIAS, self._buf_b)
+            self._stream_load(words, _DEST_BIAS, self._buf_b, _dma_timings)
         else:
             self._load_bias_legacy(bias_u32)
 
@@ -477,18 +501,21 @@ class CIMDriver:
         if do_t: t0 = time.perf_counter()
         self.configure(in_dim, out_dim, zp, mult, shift, relu)
         if do_t: t1 = time.perf_counter()
-        self.load_weights(w_chunks)
+        dma_w = {} if self.use_dma and do_t else None
+        self.load_weights(w_chunks, dma_w)
         if do_t: t2 = time.perf_counter()
-        self.load_bias(bias_u32)
+        dma_b = {} if self.use_dma and do_t else None
+        self.load_bias(bias_u32, dma_b)
         if do_t: t3 = time.perf_counter()
-        self.load_input(input_u8)
+        dma_x = {} if self.use_dma and do_t else None
+        self.load_input(input_u8, dma_x)
         if do_t: t4 = time.perf_counter()
         cycles, macs = self.start_and_wait()
         if do_t: t5 = time.perf_counter()
         output = self.read_output(out_dim)
         if do_t:
             t6 = time.perf_counter()
-            _timings.append({
+            timing = {
                 "configure_ms": (t1 - t0) * 1000,
                 "load_w_ms": (t2 - t1) * 1000,
                 "load_b_ms": (t3 - t2) * 1000,
@@ -497,7 +524,17 @@ class CIMDriver:
                 "read_out_ms": (t6 - t5) * 1000,
                 "hw_cycles": cycles,
                 "hw_macs": macs,
-            })
+            }
+            # DMA-specific breakdown
+            if self.use_dma:
+                timing["dma_w_setup_ms"] = dma_w.get("setup_ms", 0)
+                timing["dma_w_transfer_ms"] = dma_w.get("transfer_ms", 0)
+                timing["dma_b_setup_ms"] = dma_b.get("setup_ms", 0)
+                timing["dma_b_transfer_ms"] = dma_b.get("transfer_ms", 0)
+                timing["dma_x_setup_ms"] = dma_x.get("setup_ms", 0)
+                timing["dma_x_transfer_ms"] = dma_x.get("transfer_ms", 0)
+                timing["dma_w_chunks"] = dma_w.get("n_chunks", 0)
+            _timings.append(timing)
         return output, cycles
 
     def infer_fc_input_only(self, input_u8, out_dim, _timings=None):
