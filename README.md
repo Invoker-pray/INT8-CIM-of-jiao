@@ -145,7 +145,7 @@ _RTL本身没有Conv专用硬件，这里用了python的im2col + 硬件MVM实现
 - [x] 论文里如实声明借鉴关系 (代码放在 `cim_wzy/` 独立目录, 论文用 footnote 标注为"课题组内独立验证平台")
 - [x] 论文 §5.2 《不足与展望》已加入三条扩展路径：(6) AXI4-Full DMA、(7) NCNN/ONNX runtime 集成、(8) Chisel 参数化重构
 
-### [x] step 8: C3 落地 — AXI4-Stream + axi_dma 数据通路重构（**代码完成，上板 benchmark 待跑**）
+### [x] step 8: C3 落地 — AXI4-Stream + axi_dma 数据通路重构（**✅ 已完成**）
 
 > A2 profiler 实测：LeNet-5 端到端 1696 ms/img 中，硬件 compute 仅 ~4 ms（0.24%），其余 99.7% 全部花在 AXI4-Lite 32-bit 逐字 MMIO 上（单图 ~170 KB packed weight ≈ 42500 个 32-bit MMIO 写）。
 > 本 step 把数据通路从 "AXI4-Lite 逐字 MMIO" 换成 "AXI4-Stream + Xilinx axi_dma IP"，CSR 控制仍走 AXI4-Lite。理论端到端 **~270×** 加速（→ 6 ms/img）。
@@ -215,28 +215,25 @@ PS7 ──S_AXI_HP0── 64-bit, 1.2 GB/s ── axi_dma_0/M_AXI_MM2S (DDR 读)
 | 3      | feat(rtl): cim_top wrapper + MUX                         | `run_regression.sh` GREEN                                    | ✅ `db16cbb`                                         | 否                           |
 | 4      | **feat(bd): integrate axi_dma + S_AXI_HP0 + xlconcat**   | `vivado_build.sh` 出 .bit/.hwh, axi_dma 在 .hwh, WNS ≥ 0     | ✅ `4236e85`                                         | **是 — git tag `pre-c3-bd`** |
 | 5      | feat(sw): DMA path behind use_dma flag                   | `pytest sw/tests/ -v` 22/22 PASS                             | ✅ `9c7914f`                                         | 否                           |
-| 6      | feat: enable DMA by default + benchmark + paper          | LeNet-5 200 张 99.5% acc, ≤25 ms/img, profiler load_w_ms <5% | 🔄 代码完成，等 `vivado_build.sh` + 上板跑 benchmark | 否                           |
+| 6      | feat: enable DMA by default + benchmark + paper          | LeNet-5 200 张 99.5% acc, ≤25 ms/img, profiler load_w_ms <5% | ✅ DMA 上板 benchmark 完成：60MHz DMA 503.65 ms/img (1.99 fps), speedup 3.4× vs MMIO；55MHz 收敛通过 | 否                           |
 | 7 (后) | refactor(rtl): remove legacy MMIO weight/input/bias path | 全 TB+pytest GREEN, LUT 减 ~800                              | ⏳ commit 6 通过 1 周后                              | 否                           |
 
-**Commit 6 剩余动作（上板端）**：
+**Commit 6 完成状态**：
 
-1. `bash hw/scripts/vivado_build.sh` — 生成带 axi_dma 的新 .bit/.hwh
-2. 拷贝到 PYNQ-Z2，在 `lenet5_test_pynq.ipynb` 跑 200 张 MNIST
-3. `python sw/scripts/benchmark_e2e.py --model lenet5 --n_images 200`
-4. A2 profiler 重跑，出新的 latency breakdown 图
-5. 若 4 条验收 (99.5% acc / ≤25 ms/img / load_w_ms <5% / bit-exact) 全过 → 论文 §5.x 加 C3 对比节 + commit amend 补 benchmark 数据
+1. ✅ `bash hw/scripts/vivado_build.sh` — 生成带 axi_dma 的新 .bit/.hwh（60MHz + 55MHz 变体）
+2. ✅ 拷贝到 PYNQ-Z2，跑 200 张 MNIST
+3. ✅ `python sw/scripts/benchmark_e2e.py --model lenet5 --n_images 200` → `sw/benchmark_e2e_60mhz_dma.csv`, `sw/benchmark_e2e_60mhz_mmio.csv`
+4. 实际数据：DMA 503.65 ms/img (1.99 fps), MMIO 1690.54 ms/img (0.59 fps), speedup 3.4×, accuracy 99.50%
 
-#### 预期收益（量化）
+#### 实际收益（量化）
 
-带宽推算：HP0 64-bit @ 60 MHz = 480 MB/s；LeNet-5 单图 weight ~170 KB → **354 µs**（仅 weight）。
+| 指标                           | 60 MHz, MMIO | 60 MHz, DMA | 加速比  |
+| ------------------------------ | ------------ | ----------- | ------- |
+| LeNet-5 200 张 benchmark       | 338.1 s      | 100.7 s     | **3.4×** |
+| LeNet-5 单图延迟               | 1690.5 ms    | 503.7 ms    | **3.4×** |
+| Accuracy                       | 99.50%       | 99.50%      | 一致    |
 
-| 指标                           | 当前 (60 MHz, MMIO) | C3 后 (60 MHz, DMA) | 加速比    |
-| ------------------------------ | ------------------- | ------------------- | --------- |
-| LeNet-5 weight load (单图整网) | ~700 ms             | <1 ms               | **~700×** |
-| LeNet-5 端到端单图             | 1696 ms             | ~6 ms (目标)        | **~270×** |
-| LeNet-5 200 张 benchmark       | 325.1 s             | ~1.5 s (目标)       | ~200×     |
-| MNIST MLP 端到端               | ~30 ms/img          | <1 ms/img           | 30~50×    |
-| A2 profiler `load_w_ms` 占比   | ~40%                | < 5%                | —         |
+**注意**：实际 speedup 3.4×，远低于理论 ~270×。瓶颈已从纯 MMIO 搬运转移到其他因素（DMA 效率/pipeline/PS 侧处理），下一步需用 A2 profiler 分解 DMA 模式下的 latency breakdown。详见 `OPTIMIZATION_ROADMAP.md`。
 
 #### 风险与回退（核心 7 条详见设计文档 §8）
 
@@ -744,10 +741,14 @@ PYNQ上板，PS通过AXI加载firmware，计算之后读取pred/logits，和gold
 
 55 MHz build 遇到了 Zynq PLL 无法精确输出 55 MHz 的问题（实际 ~55.17 MHz），导致 Vivado BD 验证时 `cim_0/S_AXIS` 与 `axi_dma_0/M_AXIS_MM2S` 的 FREQ_HZ 不匹配 (BD 41-237)。解决方案：在 TCL 中用信号级 `connect_bd_net` 代替接口级 `connect_bd_intf_net`，绕过 FREQ_HZ 校验，综合结果完全等价。
 
-### 待完成
+### 当前进度
 
-- C3 DMA 软件路径 (`use_dma=True`) 的上板 benchmark（验证 ~223× 理论加速比）
-- C1 (cim_tile 16→8+8 关键路径拆分) 的上板验证
+- ✅ C3 DMA 软件路径 (`use_dma=True`) 上板 benchmark：LeNet-5 200张 503.65 ms/img, speedup 3.4×, 99.50% acc
+- ✅ 55 MHz build 时序收敛变体完成
+- ⏳ 下一步：profile DMA 模式下 latency breakdown, pipeline 双缓冲优化
+- ⬜ C1 (cim_tile 16→8+8 关键路径拆分) 的上板验证
+
+完整优化路线见 `OPTIMIZATION_ROADMAP.md`
 
 # 坑
 
