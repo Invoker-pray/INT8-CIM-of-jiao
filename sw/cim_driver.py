@@ -492,11 +492,10 @@ class CIMDriver:
         Uses DMA S2MM when available (P0), falls back to serial MMIO.
         """
         if self.dma is not None:
-            # DEBUG: prefer raw MMIO DMA path to isolate recvchannel issues
-            if self._buf_r is not None:
-                return self._read_output_dma_raw(out_dim)
             if self.dma.recvchannel is not None:
                 return self._read_output_dma(out_dim)
+            if self._buf_r is not None:
+                return self._read_output_dma_raw(out_dim)
         return self._read_output_mmio(out_dim)
 
     def _read_output_mmio(self, out_dim):
