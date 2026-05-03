@@ -63,8 +63,11 @@ fastjsonschema==2.21.2
     # via nbformat
 filelock==3.25.2
     # via torch
+fire==0.7.1
+    # via pdf2docx
 fonttools==4.62.1
     # via matplotlib
+    # via pdf2docx
 fqdn==1.5.1
     # via jsonschema
 fsspec==2026.2.0
@@ -185,6 +188,8 @@ notebook-shim==0.2.4
 numpy==2.4.3
     # via contourpy
     # via matplotlib
+    # via opencv-python-headless
+    # via pdf2docx
     # via torchvision
 nvidia-cublas-cu12==12.8.4.1
     # via nvidia-cudnn-cu12
@@ -222,6 +227,8 @@ nvidia-nvshmem-cu12==3.4.5
     # via torch
 nvidia-nvtx-cu12==12.8.90
     # via torch
+opencv-python-headless==4.13.0.92
+    # via pdf2docx
 packaging==26.0
     # via ipykernel
     # via jupyter-events
@@ -234,6 +241,8 @@ pandocfilters==1.5.1
     # via nbconvert
 parso==0.8.6
     # via jedi
+pdf2docx==0.5.12
+    # via sw
 pexpect==4.9.0
     # via ipython
 pillow==12.1.1
@@ -261,6 +270,8 @@ pygments==2.19.2
     # via ipython-pygments-lexers
     # via jupyter-console
     # via nbconvert
+pymupdf==1.27.2.2
+    # via pdf2docx
 pyparsing==3.3.2
     # via matplotlib
 pyserial==3.5
@@ -270,6 +281,7 @@ python-dateutil==2.9.0.post0
     # via jupyter-client
     # via matplotlib
 python-docx==1.2.0
+    # via pdf2docx
     # via sw
 python-json-logger==4.0.0
     # via jupyter-events
@@ -313,6 +325,8 @@ stack-data==0.6.3
     # via ipython
 sympy==1.14.0
     # via torch
+termcolor==3.3.0
+    # via fire
 terminado==0.18.1
     # via jupyter-server
     # via jupyter-server-terminals

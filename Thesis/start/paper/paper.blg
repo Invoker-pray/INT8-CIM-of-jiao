@@ -1,0 +1,18 @@
+[0] Config.pm:328> INFO - This is Biber 2.21
+[0] Config.pm:331> INFO - Logfile is 'paper.blg'
+[61] biber:342> INFO - === Sun Apr 26, 2026, 22:51:38
+[81] Biber.pm:421> INFO - Reading 'paper.bcf'
+[175] Biber.pm:999> INFO - Using all citekeys in bib section 0
+[188] Biber.pm:4487> INFO - Processing section 0
+[204] Biber.pm:4678> INFO - Looking for bibtex file 'refs.bib' for section 0
+[206] bibtex.pm:1713> INFO - LaTeX decoding ...
+[229] bibtex.pm:1519> INFO - Found BibTeX data source 'refs.bib'
+[1018] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
+[1018] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
+[1018] Biber.pm:4307> INFO - Sorting list 'none/global//global/global/global' of type 'entry' with template 'none' and locale 'en-US'
+[1018] Biber.pm:4313> INFO - No sort tailoring available for locale 'en-US'
+[1049] bbl.pm:676> INFO - Writing 'paper.bbl' with encoding 'UTF-8'
+[1075] bbl.pm:779> INFO - Output to paper.bbl
+[1075] Biber.pm:132> WARN - legacy month field 'October' in entry '12' is not an integer - this will probably not sort properly.
+[1075] Biber.pm:132> WARN - legacy month field '11~21' in entry '29' is not an integer - this will probably not sort properly.
+[1075] Biber.pm:134> INFO - WARNINGS: 2
