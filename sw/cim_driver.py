@@ -507,12 +507,7 @@ class CIMDriver:
         return out
 
     def _read_output_dma(self, out_dim):
-        """P0: DMA S2MM read-back — single DMA transfer replaces N serial MMIO reads.
-
-        Triggers the cim_axi_stream_source inside the slave, which reads
-        output_buffer and streams ceil(out_dim/4) 32-bit beats via M_AXIS_RESULT.
-        The DMA recvchannel captures them into a pre-allocated CMA buffer.
-        """
+        """P0: DMA S2MM read-back — single DMA transfer replaces N serial MMIO reads."""
         if out_dim <= 0:
             return []
         n_words = (out_dim + 3) // 4
@@ -523,21 +518,33 @@ class CIMDriver:
             )
         buf = self._buf_r[:n_words]
 
-        # Diagnostic: check source status before trigger
-        s0 = self.mmio.read(_CSR_RESULT_STATUS)
-        print(f"  [S2MM diag] pre-trigger  STATUS=0x{s0:08X} (busy={s0&1}, done={s0&2>>1})")
-
+        # --- Diagnostic: verify MMIO at 0x060-0x068 range ---
+        # Write + read-back CSR_RESULT_LEN
         self.mmio.write(_CSR_RESULT_LEN, out_dim)
-        self.dma.recvchannel.transfer(buf)
-        self.mmio.write(_CSR_RESULT_CTRL, 1)  # triggers cfg_start in RTL
+        rb_len = self.mmio.read(_CSR_RESULT_LEN)
+        print(f"  [S2MM diag] wrote LEN={out_dim}, read-back LEN={rb_len} "
+              f"{'OK' if rb_len == out_dim else 'MISMATCH!'}")
 
-        # Diagnostic: poll RTL source FSM for completion
+        # Check STATUS before CTRL write
+        s0 = self.mmio.read(_CSR_RESULT_STATUS)
+        print(f"  [S2MM diag] pre-CTRL  STATUS=0x{s0:08X} (busy={s0&1}, done={(s0>>1)&1})")
+
+        # Write CTRL
+        self.mmio.write(_CSR_RESULT_CTRL, 1)
+
+        # Read STATUS immediately after
+        s1 = self.mmio.read(_CSR_RESULT_STATUS)
+        print(f"  [S2MM diag] post-CTRL STATUS=0x{s1:08X} (busy={s1&1}, done={(s1>>1)&1})")
+
+        # Now start DMA and wait
+        self.dma.recvchannel.transfer(buf)
+
         import time as _time
         t0 = _time.perf_counter()
         source_done = False
         for _ in range(100000):
             s = self.mmio.read(_CSR_RESULT_STATUS)
-            if s & 2:  # done
+            if s & 2:
                 source_done = True
                 break
         else:
@@ -547,7 +554,6 @@ class CIMDriver:
 
         if source_done:
             print(f"  [S2MM diag] source DONE in {_time.perf_counter()-t0:.6f}s")
-            # Source FSM completed — DMA should have all data
             self.dma.recvchannel.wait()
         else:
             raise RuntimeError(
