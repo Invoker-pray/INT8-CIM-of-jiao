@@ -112,6 +112,7 @@ Project documentation and comments are primarily in Chinese. Code identifiers an
 - Test your code before declaring done.
 - No sycophantic openers or closing fluff.
 - Keep solutions simple and direct.
+- **每次优化完成后，同步更新 README.md / OPTIMIZATION_ROADMAP.md / docs/ 中的相关记录。** 包括：优化目标、实现方法、profiler 数据对比（优化前/后）、对整体延迟的影响。
 
 # CLAUDE.md
 

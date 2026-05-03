@@ -206,8 +206,10 @@ PyTorch model
 
 | 优先级 | 方向 | 预期收益 | 难度 | 时间 |
 |--------|------|----------|------|------|
-| 🔴 P0 | Pipeline 深度优化 (双缓冲/overlap) | 30-50%+ | 中 | 2w |
-| 🔴 P0 | DMA latency 分解 + 底层 profile | 定位热点 | 低 | 1w |
+| ✅ DONE | DMA S2MM read_output (P0) | read_out 257→~1ms | 中 | 2d | 2026-05-03 |
+| 🔴 P0 | load_x 优化 (减少 MMIO 同步 + 预打包) | ~15ms (22%) | 低 | 3d |
+| 🔴 P0 | Pipeline overlap (DMA↔Compute 乒乓) | 30-50%+ (目标 ~125ms/img) | 中 | 2w |
+| 🔴 P0 | DMA latency 分解 + 底层 profile | 定位热点 | 低 | 1w | ✅ 已完成 (2026-05-03) |
 | 🟡 P1 | CIM 编译器 (PyTorch→CIM) | 用研效率 | 高 | 4w |
 | 🟡 P1 | 稀疏权重支持 | 30-40% speedup | 高 | 4w |
 | 🟢 P2 | 时钟提升 (80-100MHz) | 30-60% throughput | 低 | 2w |

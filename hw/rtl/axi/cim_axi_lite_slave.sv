@@ -222,7 +222,7 @@ module cim_axi_lite_slave
 
   // P0: result stream CSRs
   logic [15:0]           reg_result_len;
-  logic                  result_start_pulse;
+  logic                  result_start_pulse_r;
 
   assign stream_path_en = reg_stream_path_en;
   assign cfg_dest       = reg_stream_dest;
@@ -488,17 +488,6 @@ MAX_IN_DIM/TILE_COLS
   // P0: result stream source signals
   logic                                    result_busy, result_done;
   logic [clog2_safe(MAX_OUT_DIM)-1:0]      src_obuf_rd_addr;
-  logic                                    result_start_pulse_r;
-
-  // One-cycle pulse for result_start
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      result_start_pulse_r <= 1'b0;
-    end else begin
-      result_start_pulse_r <= result_start_pulse;
-      if (result_start_pulse_r) result_start_pulse <= 1'b0;
-    end
-  end
 
   // P0: cim_axi_stream_source — read output_buffer, stream via M_AXIS_RESULT
   cim_axi_stream_source #(
@@ -563,15 +552,15 @@ MAX_IN_DIM/TILE_COLS
       cfg_start_r          <= 1'b0;
       cfg_start_pending    <= 1'b0;
       status_clear_r       <= 1'b0;
-      reg_result_len       <= 16'd0;
-      result_start_pulse   <= 1'b0;
+      reg_result_len        <= 16'd0;
+      result_start_pulse_r  <= 1'b0;
     end else begin
       // Self-clearing pulses
       start_pulse    <= 1'b0;
       soft_rst_pulse <= 1'b0;
       done_irq_clear <= 1'b0;
-      reg_wdma_wr    <= 1'b0;
-      result_start_pulse <= 1'b0;
+      reg_wdma_wr       <= 1'b0;
+      result_start_pulse_r <= 1'b0;
       cfg_start_r    <= cfg_start_pending;  // Fire cfg_start 1 cycle after LEN write
       cfg_start_pending <= 1'b0;
       status_clear_r <= 1'b0;
@@ -640,7 +629,7 @@ MAX_IN_DIM/TILE_COLS
             reg_result_len <= w_data_r[15:0];
           end
           CSR_RESULT_CTRL: begin
-            if (w_data_r[0]) result_start_pulse <= 1'b1;
+            if (w_data_r[0]) result_start_pulse_r <= 1'b1;
           end
           default:           ;  // input/bias windows handled by memory blocks
         endcase
