@@ -269,6 +269,11 @@ class CIMDriver:
         self._buf_b = allocate(shape=(_DMA_BUF_BIAS,), dtype=np.uint32)
         self._buf_r = allocate(shape=(_DMA_BUF_RESULT,), dtype=np.uint32)
 
+        # P0 S2MM diagnostic
+        has_s2mm = getattr(self.dma, 'recvchannel', None) is not None
+        print(f"[CIMDriver] DMA initialized: sendchannel={'OK' if self.dma.sendchannel else 'MISSING'}, "
+              f"recvchannel={'OK' if has_s2mm else 'MISSING (P0 disabled)'}")
+
     def set_dma_mode(self, enable):
         """Runtime switch between DMA path and legacy MMIO path.
 
