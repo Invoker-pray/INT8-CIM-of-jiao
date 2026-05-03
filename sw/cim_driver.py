@@ -271,8 +271,14 @@ class CIMDriver:
 
         # P0 S2MM diagnostic
         has_s2mm = getattr(self.dma, 'recvchannel', None) is not None
+        dma_desc = self.overlay.ip_dict.get('axi_dma_0', {})
+        dma_params = dma_desc.get('parameters', {})
+        dma_streams = dma_desc.get('streams', {})
         print(f"[CIMDriver] DMA initialized: sendchannel={'OK' if self.dma.sendchannel else 'MISSING'}, "
               f"recvchannel={'OK' if has_s2mm else 'MISSING (P0 disabled)'}")
+        print(f"[CIMDriver] DMA streams in ip_dict: {dma_streams}")
+        print(f"[CIMDriver] DMA c_include_s2mm param: {dma_params.get('c_include_s2mm', 'NOT FOUND')}")
+        print(f"[CIMDriver] DMA attributes: {[a for a in dir(self.dma) if not a.startswith('_')]}")
 
     def set_dma_mode(self, enable):
         """Runtime switch between DMA path and legacy MMIO path.
