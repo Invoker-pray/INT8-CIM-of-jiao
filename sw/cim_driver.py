@@ -552,21 +552,26 @@ class CIMDriver:
             cycles: clock cycles used
         """
         do_t = _timings is not None
+        dma_x = {} if self.use_dma and do_t else None
         if do_t: t0 = time.perf_counter()
-        self.load_input(input_u8)
+        self.load_input(input_u8, dma_x)
         if do_t: t1 = time.perf_counter()
         cycles, macs = self.start_and_wait()
         if do_t: t2 = time.perf_counter()
         output = self.read_output(out_dim)
         if do_t:
             t3 = time.perf_counter()
-            _timings.append({
+            timing = {
                 "load_x_ms": (t1 - t0) * 1000,
                 "compute_ms": (t2 - t1) * 1000,
                 "read_out_ms": (t3 - t2) * 1000,
                 "hw_cycles": cycles,
                 "hw_macs": macs,
-            })
+            }
+            if self.use_dma:
+                timing["dma_x_setup_ms"] = dma_x.get("setup_ms", 0)
+                timing["dma_x_transfer_ms"] = dma_x.get("transfer_ms", 0)
+            _timings.append(timing)
         return output, cycles
 
 
@@ -770,6 +775,13 @@ class CIMModel:
                         "read_out_ms": mt.get("read_out_ms", 0),
                         "hw_cycles": cycles,
                         "total_ms": (time.perf_counter() - t_layer) * 1000,
+                        "dma_w_setup_ms": mt.get("dma_w_setup_ms", 0),
+                        "dma_w_transfer_ms": mt.get("dma_w_transfer_ms", 0),
+                        "dma_b_setup_ms": mt.get("dma_b_setup_ms", 0),
+                        "dma_b_transfer_ms": mt.get("dma_b_transfer_ms", 0),
+                        "dma_x_setup_ms": mt.get("dma_x_setup_ms", 0),
+                        "dma_x_transfer_ms": mt.get("dma_x_transfer_ms", 0),
+                        "dma_w_chunks": mt.get("dma_w_chunks", 0),
                     })
                 if verify:
                     self._verify_layer(i, layer, x, out, run_id, dump_dir)
@@ -873,7 +885,8 @@ class CIMModel:
 
                 if profile:
                     agg = {}
-                    for key in ("load_x_ms", "compute_ms", "read_out_ms"):
+                    for key in ("load_x_ms", "compute_ms", "read_out_ms",
+                                "dma_x_setup_ms", "dma_x_transfer_ms"):
                         agg[key] = sum(mt.get(key, 0) for mt in mvm_timings) if mvm_timings else 0
                     k_p = packed["k_pack"] if packed else 1
                     prof["layers"].append({
@@ -888,6 +901,8 @@ class CIMModel:
                         "read_out_ms": agg["read_out_ms"],
                         "hw_cycles": layer_cycles,
                         "total_ms": (time.perf_counter() - t_layer) * 1000,
+                        "dma_x_setup_ms": agg["dma_x_setup_ms"],
+                        "dma_x_transfer_ms": agg["dma_x_transfer_ms"],
                     })
 
                 # Reshape to [C_out, out_h, out_w]
