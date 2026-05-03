@@ -55,6 +55,7 @@ set rtl_files [list \
     ${HW_DIR}/rtl/cim_top.sv \
     ${HW_DIR}/rtl/cim_top_wrapper.v \
     ${HW_DIR}/rtl/axi/cim_axi_lite_slave_wrapper.v \
+    ${HW_DIR}/rtl/axi/cim_axi_stream_source.sv \
 ]
 
 add_files -norecurse ${rtl_files}
@@ -89,6 +90,8 @@ set_property -dict [list \
     CONFIG.PCW_USE_M_AXI_GP1             {1} \
     CONFIG.PCW_USE_S_AXI_HP0             {1} \
     CONFIG.PCW_S_AXI_HP0_DATA_WIDTH      {64} \
+    CONFIG.PCW_USE_S_AXI_HP1             {1} \
+    CONFIG.PCW_S_AXI_HP1_DATA_WIDTH      {64} \
     CONFIG.PCW_USE_FABRIC_INTERRUPT      {1} \
     CONFIG.PCW_IRQ_F2P_INTR              {1} \
     CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ  ${FCLK_MHZ} \
@@ -104,7 +107,8 @@ create_bd_cell -type module -reference cim_top_wrapper cim_0
 create_bd_cell -type ip -vlnv xilinx.com:ip:axi_dma:7.1 axi_dma_0
 set_property -dict [list \
     CONFIG.c_include_sg              {0} \
-    CONFIG.c_include_s2mm            {0} \
+    CONFIG.c_include_s2mm            {1} \
+    CONFIG.c_m_axis_s2mm_tdata_width {32} \
     CONFIG.c_sg_include_stscntrl_strm {0} \
     CONFIG.c_m_axi_mm2s_data_width   {64} \
     CONFIG.c_m_axis_mm2s_tdata_width {32} \
@@ -155,15 +159,37 @@ apply_bd_automation -rule xilinx.com:bd_rule:axi4 \
 connect_bd_intf_net [get_bd_intf_pins axi_dma_0/M_AXIS_MM2S] \
                     [get_bd_intf_pins cim_0/S_AXIS]
 
+# P0: cim_0/M_AXIS_RESULT → axi_dma_0/S_AXIS_S2MM (result read-back)
+connect_bd_intf_net [get_bd_intf_pins cim_0/M_AXIS_RESULT] \
+                    [get_bd_intf_pins axi_dma_0/S_AXIS_S2MM]
+
+# P0: axi_dma_0/M_AXI_S2MM → ps7/S_AXI_HP1 (DDR write channel for result read-back)
+# Data width on axi_dma's S2MM AXI master must be set before connecting
+set_property -dict [list \
+    CONFIG.c_m_axi_s2mm_data_width {64} \
+] [get_bd_cells axi_dma_0]
+apply_bd_automation -rule xilinx.com:bd_rule:axi4 \
+    -config [list \
+        Clk_master {/ps7/FCLK_CLK0} \
+        Clk_slave  {Auto} \
+        Clk_xbar   {Auto} \
+        Master     {/axi_dma_0/M_AXI_S2MM} \
+        Slave      {/ps7/S_AXI_HP1} \
+        ddr_seg    {Auto} \
+        intc_ip    {New AXI Interconnect} \
+        master_apm {0} \
+    ] [get_bd_intf_pins ps7/S_AXI_HP1]
+
 # --- 3d. Interrupt concatenation: {dma.mm2s_introut, cim.irq_done} → ps7 IRQ_F2P ---
-# Must reconfigure PS IRQ_F2P width to 2 before wiring.
-set_property -dict [list CONFIG.PCW_IRQ_F2P_INTR {1} CONFIG.PCW_NUM_F2P_INTR_INPUTS {2}] \
+# Must reconfigure PS IRQ_F2P width to 3 before wiring (P0: +S2MM interrupt).
+set_property -dict [list CONFIG.PCW_IRQ_F2P_INTR {1} CONFIG.PCW_NUM_F2P_INTR_INPUTS {3}] \
     [get_bd_cells ps7]
 create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_0
-set_property -dict [list CONFIG.NUM_PORTS {2} CONFIG.IN0_WIDTH {1} CONFIG.IN1_WIDTH {1}] \
+set_property -dict [list CONFIG.NUM_PORTS {3} CONFIG.IN0_WIDTH {1} CONFIG.IN1_WIDTH {1} CONFIG.IN2_WIDTH {1}] \
     [get_bd_cells xlconcat_0]
-connect_bd_net [get_bd_pins cim_0/irq_done]        [get_bd_pins xlconcat_0/In0]
-connect_bd_net [get_bd_pins axi_dma_0/mm2s_introut] [get_bd_pins xlconcat_0/In1]
+connect_bd_net [get_bd_pins cim_0/irq_done]         [get_bd_pins xlconcat_0/In0]
+connect_bd_net [get_bd_pins axi_dma_0/mm2s_introut]  [get_bd_pins xlconcat_0/In1]
+connect_bd_net [get_bd_pins axi_dma_0/s2mm_introut]  [get_bd_pins xlconcat_0/In2]
 connect_bd_net [get_bd_pins xlconcat_0/dout]        [get_bd_pins ps7/IRQ_F2P]
 
 # --- 3d.1 Dedicated proc_sys_reset for axi_dma ---
@@ -221,13 +247,17 @@ assign_bd_address -offset 0x80400000 -range 64K \
     [get_bd_addr_segs {axi_dma_0/S_AXI_LITE/Reg}]
 assign_bd_address -offset 0x00000000 -range 512M \
     [get_bd_addr_segs {ps7/S_AXI_HP0/HP0_DDR_LOWOCM}]
+# P0: HP1 also maps to DDR for S2MM writes (same 512 MB LOWOCM window)
+assign_bd_address -offset 0x00000000 -range 512M \
+    [get_bd_addr_segs {ps7/S_AXI_HP1/HP1_DDR_LOWOCM}]
 
 # --- 3e'. Associate S_AXIS with S_AXI_ACLK (wrapper lacks X_INTERFACE_INFO) ---
 # Without this, Vivado defaults S_AXIS FREQ_HZ to 100 MHz while DMA's
 # M_AXIS_MM2S is at 60 MHz (tied to FCLK_CLK0) → validate_bd_design fails
 # with BD 41-237 FREQ_HZ mismatch.
-set_property CONFIG.ASSOCIATED_BUSIF {S_AXI:S_AXIS} [get_bd_pins cim_0/S_AXI_ACLK]
+set_property CONFIG.ASSOCIATED_BUSIF {S_AXI:S_AXIS:M_AXIS_RESULT} [get_bd_pins cim_0/S_AXI_ACLK]
 set_property CONFIG.FREQ_HZ [expr {${FCLK_MHZ}*1000000}] [get_bd_intf_pins cim_0/S_AXIS]
+set_property CONFIG.FREQ_HZ [expr {${FCLK_MHZ}*1000000}] [get_bd_intf_pins cim_0/M_AXIS_RESULT]
 
 # --- 3f. Validate ---
 validate_bd_design

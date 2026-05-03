@@ -50,6 +50,12 @@ module cim_top_wrapper #(
     output wire                   S_AXIS_TREADY,
     input  wire                   S_AXIS_TLAST,
 
+    // ---- AXI4-Stream Master for result read-back (to axi_dma_0/S_AXIS_S2MM) ----
+    output wire [AXIS_DATA_W-1:0] M_AXIS_RESULT_TDATA,
+    output wire                   M_AXIS_RESULT_TVALID,
+    input  wire                   M_AXIS_RESULT_TREADY,
+    output wire                   M_AXIS_RESULT_TLAST,
+
     // ---- Interrupt ----
     output wire irq_done
 );
@@ -90,6 +96,11 @@ module cim_top_wrapper #(
       .S_AXIS_TVALID(S_AXIS_TVALID),
       .S_AXIS_TREADY(S_AXIS_TREADY),
       .S_AXIS_TLAST (S_AXIS_TLAST),
+
+      .M_AXIS_RESULT_TDATA (M_AXIS_RESULT_TDATA),
+      .M_AXIS_RESULT_TVALID(M_AXIS_RESULT_TVALID),
+      .M_AXIS_RESULT_TREADY(M_AXIS_RESULT_TREADY),
+      .M_AXIS_RESULT_TLAST (M_AXIS_RESULT_TLAST),
 
       .irq_done(irq_done)
   );

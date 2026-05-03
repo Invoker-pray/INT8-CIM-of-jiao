@@ -61,6 +61,12 @@ module cim_top
     output logic                      S_AXIS_TREADY,
     input  logic                      S_AXIS_TLAST,
 
+    // ---- AXI4-Stream master for result read-back (→ axi_dma S_AXIS_S2MM) ----
+    output logic [AXIS_DATA_W-1:0]    M_AXIS_RESULT_TDATA,
+    output logic                      M_AXIS_RESULT_TVALID,
+    input  logic                      M_AXIS_RESULT_TREADY,
+    output logic                      M_AXIS_RESULT_TLAST,
+
     // ---- Interrupt (→ xlconcat/In0) ----
     output logic                      irq_done
 );
@@ -159,7 +165,13 @@ module cim_top
       .stream_ibuf_wr_tile_data(ibuf_wr_tile_data),
       .stream_bsram_wr_en      (bsram_wr_en),
       .stream_bsram_wr_addr    (bsram_wr_addr),
-      .stream_bsram_wr_data    (bsram_wr_data)
+      .stream_bsram_wr_data    (bsram_wr_data),
+
+      // P0: result stream
+      .M_AXIS_RESULT_TDATA (M_AXIS_RESULT_TDATA),
+      .M_AXIS_RESULT_TVALID(M_AXIS_RESULT_TVALID),
+      .M_AXIS_RESULT_TREADY(M_AXIS_RESULT_TREADY),
+      .M_AXIS_RESULT_TLAST (M_AXIS_RESULT_TLAST)
   );
 
   // ==========================================================================

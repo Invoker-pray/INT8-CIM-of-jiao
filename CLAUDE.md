@@ -68,7 +68,7 @@ cd sw && python3 golden_model.py --mnist-e2e --output-dir <dir>   # generate hex
 - **`pkg/cim_pkg.sv`** — Single source of truth for all parameters: tile geometry (16×16), parallelism (`PAR_OB`), data widths (INT8/INT32), CSR address map, FSM states, requantize function. No magic numbers in RTL modules.
 - **`core/`** — `cim_tile.sv` (16×16 MAC, combinational) → `psum_accum.sv` (partial-sum accumulator) → `cim_accel_core.sv` (main FSM engine, configurable parallelism, multi-stage pipeline, performance counters). One unified engine handles arbitrary layers via CSR configuration.
 - **`mem/`** — `weight_sram.sv` (16 independent banks for BRAM inference, AXI DMA-style 32-bit chunk writes), `bias_sram.sv`, `input_buffer.sv` (with zero-point subtraction), `output_buffer.sv` (with argmax).
-- **`axi/`** + **`cim_top.sv`** — AXI4-Lite slave (CSR + legacy MMIO staging) and cim_axi_stream_sink (AXIS data path) are MUXed inside `cim_axi_lite_slave.sv` on `CSR_CTRL[3]`. `cim_top.sv` wires them together and exposes S_AXI + S_AXIS + irq_done to BD via `cim_top_wrapper.v`. PS data path: S_AXI_HP0 → axi_dma_0 → M_AXIS_MM2S (32-bit) → cim_top/S_AXIS → sink → BRAM; CSR still goes PS M_AXI_GP0 → cim_top/S_AXI. **Spec: `docs/c3_dma_design.md`**. DMA 已实现并 benchmark 完成：200-image LeNet-5 @60MHz → DMA 503.65 ms/img (1.99 fps), MMIO 1690.54 ms/img (0.59 fps), speedup 3.4×。下一步优化见 `OPTIMIZATION_ROADMAP.md`。
+- **`axi/`** + **`cim_top.sv`** — AXI4-Lite slave (CSR + legacy MMIO staging), cim_axi_stream_sink (AXIS MM2S data path), and cim_axi_stream_source (AXIS S2MM result read-back, P0). MUXed inside `cim_axi_lite_slave.sv` on `CSR_CTRL[3]`. `cim_top.sv` wires them together and exposes S_AXI + S_AXIS + M_AXIS_RESULT + irq_done to BD via `cim_top_wrapper.v`. PS data path: S_AXI_HP0 → axi_dma_0 → M_AXIS_MM2S (32-bit) → cim_top/S_AXIS → sink → BRAM; result path: BRAM → cim_axi_stream_source → M_AXIS_RESULT → axi_dma_0/S_AXIS_S2MM → S_AXI_HP1 → DDR. CSR still goes PS M_AXI_GP0 → cim_top/S_AXI. **Spec: `docs/c3_dma_design.md`** (C3) + P0 S2MM. DMA 已实现并 benchmark 完成：200-image LeNet-5 @60MHz → DMA 503.65 ms/img (1.99 fps), MMIO 1690.54 ms/img (0.59 fps), speedup 3.4×。P0 read_output S2MM 已实现（RTL + Python），待上板验证。下一步优化见 `OPTIMIZATION_ROADMAP.md`。
 
 ### PicoRV32 Integration (`picorv32/hw/rtl/riscv/`)
 
@@ -97,7 +97,7 @@ See **`docs/sw_usage.md`** for full file descriptions, CLI usage, and Python API
 - **Weight SRAM**: Split into 16 banks (128-bit each) to enable BRAM inference. Whole-word writes required — bit-select causes Vivado to fall back to registers.
 - **Vivado synthesizer limit**: Single variable must be under 1M bits.
 - **PAR_OB** must divide `N_OB` of the target layer. Set to 1 for synthesis (area), 4 for simulation.
-- **Profiled bottleneck**: LeNet-5 DMA 模式下 ~504 ms/image。DMA 已将数据搬运加速 3.4×，当前瓶颈待进一步 profile（compute vs DMA latency 分解）。
+- **Profiled bottleneck**: LeNet-5 DMA 模式下 ~504 ms/image。Profiler 实测分解：read_output MMIO 257ms (61.7%), load_x 68ms (16.3%), setup 51ms (12.2%), im2col 22ms (5.2%), HW compute 8ms (1.8%)。**P0 S2MM** 目标消除 read_output 串行 MMIO 瓶颈（~257ms → ~1ms），预计端到端 ~250ms/img。
 
 ## Language
 
