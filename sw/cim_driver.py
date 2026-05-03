@@ -329,7 +329,9 @@ class CIMDriver:
             buf: pre-allocated numpy buffer
             _dma_timings: if not None, dict tracking {n_chunks, setup_ms, transfer_ms}
         """
-        n = len(words)
+        # Single asarray conversion — callers may pass lists or numpy arrays
+        words_arr = np.asarray(words, dtype=np.uint32)
+        n = len(words_arr)
         if n == 0:
             return
         if n > len(buf):
@@ -350,14 +352,10 @@ class CIMDriver:
             # Single transfer
             if _dma_timings is not None:
                 t_setup = time.perf_counter()
-            buf[:n] = np.asarray(words, dtype=np.uint32)
-            # Clear any previous status before starting new transfer
-            self.mmio.write(_CSR_STREAM_STATUS, 0)
+            buf[:n] = words_arr
             self.mmio.write(_CSR_STREAM_DEST, int(dest))
-            self.mmio.write(_CSR_STREAM_CONTINUE, 0)  # Reset address pointers
-            self.mmio.write(_CSR_STREAM_LEN, n)  # This triggers cfg_start
-            # Wait for FSM to enter ST_RECV (cfg_start is 1-cycle pulse, state transition takes 1-2 cycles)
-            _ = self.mmio.read(_CSR_STREAM_STATUS)  # Dummy read to ensure write completes + add delay
+            self.mmio.write(_CSR_STREAM_CONTINUE, 0)
+            self.mmio.write(_CSR_STREAM_LEN, n)  # triggers cfg_start
             if _dma_timings is not None:
                 t_xfer = time.perf_counter()
                 _dma_timings["setup_ms"] = (t_xfer - t_setup) * 1000
@@ -375,21 +373,15 @@ class CIMDriver:
             self.mmio.write(_CSR_STREAM_STATUS, 0)
         else:
             # Chunked transfer
-            words_arr = np.asarray(words, dtype=np.uint32)
             offset = 0
             while offset < n:
                 chunk_size = min(MAX_DMA_WORDS, n - offset)
                 buf[:chunk_size] = words_arr[offset:offset + chunk_size]
-                # Clear any previous status before starting new transfer
                 if _dma_timings is not None:
                     t_setup = time.perf_counter()
-                self.mmio.write(_CSR_STREAM_STATUS, 0)
                 self.mmio.write(_CSR_STREAM_DEST, int(dest))
-                # First chunk: reset address pointers; subsequent chunks: continue from current position
                 self.mmio.write(_CSR_STREAM_CONTINUE, 1 if offset > 0 else 0)
-                self.mmio.write(_CSR_STREAM_LEN, chunk_size)  # This triggers cfg_start
-                # Wait for FSM to enter ST_RECV (cfg_start is 1-cycle pulse, state transition takes 1-2 cycles)
-                _ = self.mmio.read(_CSR_STREAM_STATUS)  # Dummy read to ensure write completes + add delay
+                self.mmio.write(_CSR_STREAM_LEN, chunk_size)  # triggers cfg_start
                 if _dma_timings is not None:
                     t_xfer = time.perf_counter()
                     _dma_timings["setup_ms"] = _dma_timings.get("setup_ms", 0) + (t_xfer - t_setup) * 1000
@@ -426,14 +418,14 @@ class CIMDriver:
             if pad:
                 arr = np.concatenate([arr, np.zeros(pad, dtype=np.uint8)])
             words = arr.view(np.uint32)
-            self._stream_load(words.tolist(), _DEST_INPUT, self._buf_x, _dma_timings)
+            self._stream_load(words, _DEST_INPUT, self._buf_x, _dma_timings)
         else:
             self._load_input_legacy(data_u8)
 
     def load_bias(self, bias_u32, _dma_timings=None):
         """Load INT32 bias values. Routes to DMA or legacy MMIO based on use_dma."""
         if self.use_dma:
-            words = [int(b) & 0xFFFFFFFF for b in bias_u32]
+            words = np.asarray(bias_u32, dtype=np.uint32)
             self._stream_load(words, _DEST_BIAS, self._buf_b, _dma_timings)
         else:
             self._load_bias_legacy(bias_u32)
@@ -879,7 +871,7 @@ class CIMModel:
                             packed_input[b * col_len : (b + 1) * col_len] = col_matrix[:, start + b]
 
                         out_packed, cyc = self.drv.infer_fc_input_only(
-                            packed_input.tolist(), packed["packed_out_dim"],
+                            packed_input, packed["packed_out_dim"],
                             _timings=mvm_timings,
                         )
 
