@@ -100,7 +100,9 @@ module cim_axi_stream_source
       obuf_rd_addr  <= '0;
       done          <= 1'b0;
     end else begin
-      done <= 1'b0;
+      // done is sticky — cleared on next cfg_start so SW can poll it
+      if (cfg_start)
+        done <= 1'b0;
 
       // deassert tvalid/tlast after accepted beat
       if (m_axis_tvalid && m_axis_tready) begin

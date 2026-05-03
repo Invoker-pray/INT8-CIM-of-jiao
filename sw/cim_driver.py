@@ -518,48 +518,31 @@ class CIMDriver:
             )
         buf = self._buf_r[:n_words]
 
-        # --- Diagnostic: verify MMIO at 0x060-0x068 range ---
-        # Write + read-back CSR_RESULT_LEN
+        # 1. Configure RTL source length
         self.mmio.write(_CSR_RESULT_LEN, out_dim)
-        rb_len = self.mmio.read(_CSR_RESULT_LEN)
-        print(f"  [S2MM diag] wrote LEN={out_dim}, read-back LEN={rb_len} "
-              f"{'OK' if rb_len == out_dim else 'MISMATCH!'}")
 
-        # Check STATUS before CTRL write
-        s0 = self.mmio.read(_CSR_RESULT_STATUS)
-        print(f"  [S2MM diag] pre-CTRL  STATUS=0x{s0:08X} (busy={s0&1}, done={(s0>>1)&1})")
-
-        # Write CTRL
-        self.mmio.write(_CSR_RESULT_CTRL, 1)
-
-        # Read STATUS immediately after
-        s1 = self.mmio.read(_CSR_RESULT_STATUS)
-        print(f"  [S2MM diag] post-CTRL STATUS=0x{s1:08X} (busy={s1&1}, done={(s1>>1)&1})")
-
-        # Now start DMA and wait
+        # 2. Start DMA S2MM FIRST (so it's armed when source sends data)
         self.dma.recvchannel.transfer(buf)
 
+        # 3. Trigger RTL source
+        self.mmio.write(_CSR_RESULT_CTRL, 1)
+
+        # 4. Poll RTL source done (sticky, cleared on next cfg_start)
         import time as _time
         t0 = _time.perf_counter()
-        source_done = False
         for _ in range(100000):
             s = self.mmio.read(_CSR_RESULT_STATUS)
-            if s & 2:
-                source_done = True
+            if s & 2:  # done
                 break
         else:
-            s = self.mmio.read(_CSR_RESULT_STATUS)
-            print(f"  [S2MM diag] source TIMEOUT after {_time.perf_counter()-t0:.3f}s"
-                  f" STATUS=0x{s:08X} (busy={s&1}, done={(s>>1)&1})")
-
-        if source_done:
-            print(f"  [S2MM diag] source DONE in {_time.perf_counter()-t0:.6f}s")
-            self.dma.recvchannel.wait()
-        else:
             raise RuntimeError(
-                f"RTL source FSM never completed (out_dim={out_dim}). "
+                f"RTL source FSM timeout (out_dim={out_dim}). "
                 f"STATUS=0x{s:08X} (busy={s&1}, done={(s>>1)&1})"
             )
+        print(f"  [S2MM] source done in {_time.perf_counter()-t0:.6f}s")
+
+        # 5. DMA should also be done — wait for it
+        self.dma.recvchannel.wait()
 
         raw = np.frombuffer(buf, dtype=np.uint8)[:out_dim]
         return raw.view(np.int8).tolist()
