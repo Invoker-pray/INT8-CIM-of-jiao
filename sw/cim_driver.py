@@ -523,10 +523,37 @@ class CIMDriver:
             )
         buf = self._buf_r[:n_words]
 
+        # Diagnostic: check source status before trigger
+        s0 = self.mmio.read(_CSR_RESULT_STATUS)
+        print(f"  [S2MM diag] pre-trigger  STATUS=0x{s0:08X} (busy={s0&1}, done={s0&2>>1})")
+
         self.mmio.write(_CSR_RESULT_LEN, out_dim)
         self.dma.recvchannel.transfer(buf)
         self.mmio.write(_CSR_RESULT_CTRL, 1)  # triggers cfg_start in RTL
-        self.dma.recvchannel.wait()
+
+        # Diagnostic: poll RTL source FSM for completion
+        import time as _time
+        t0 = _time.perf_counter()
+        source_done = False
+        for _ in range(100000):
+            s = self.mmio.read(_CSR_RESULT_STATUS)
+            if s & 2:  # done
+                source_done = True
+                break
+        else:
+            s = self.mmio.read(_CSR_RESULT_STATUS)
+            print(f"  [S2MM diag] source TIMEOUT after {_time.perf_counter()-t0:.3f}s"
+                  f" STATUS=0x{s:08X} (busy={s&1}, done={(s>>1)&1})")
+
+        if source_done:
+            print(f"  [S2MM diag] source DONE in {_time.perf_counter()-t0:.6f}s")
+            # Source FSM completed — DMA should have all data
+            self.dma.recvchannel.wait()
+        else:
+            raise RuntimeError(
+                f"RTL source FSM never completed (out_dim={out_dim}). "
+                f"STATUS=0x{s:08X} (busy={s&1}, done={(s>>1)&1})"
+            )
 
         raw = np.frombuffer(buf, dtype=np.uint8)[:out_dim]
         return raw.view(np.int8).tolist()
