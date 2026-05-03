@@ -276,8 +276,20 @@ class CIMDriver:
         dma_streams = dma_desc.get('streams', {})
         print(f"[CIMDriver] DMA initialized: sendchannel={'OK' if self.dma.sendchannel else 'MISSING'}, "
               f"recvchannel={'OK' if has_s2mm else 'MISSING (P0 disabled)'}")
-        print(f"[CIMDriver] DMA streams in ip_dict: {dma_streams}")
-        print(f"[CIMDriver] DMA c_include_s2mm param: {dma_params.get('c_include_s2mm', 'NOT FOUND')}")
+        # PYNQ stores IP under full name; check both keys
+        matching_keys = [k for k in self.overlay.ip_dict if 'dma' in k.lower()]
+        print(f"[CIMDriver] DMA keys in ip_dict: {matching_keys}")
+        if matching_keys:
+            key0 = matching_keys[0]
+            desc0 = self.overlay.ip_dict[key0]
+            print(f"[CIMDriver] '{key0}' has_parameters: {'parameters' in desc0}, has_streams: {'streams' in desc0}")
+            if 'parameters' in desc0:
+                s2mm = desc0['parameters'].get('c_include_s2mm', 'MISSING')
+                print(f"[CIMDriver] '{key0}' c_include_s2mm: {s2mm}")
+            if 'streams' in desc0:
+                print(f"[CIMDriver] '{key0}' streams: {desc0['streams']}")
+        # Also check overlay's IP list
+        print(f"[CIMDriver] Total IPs in overlay: {len(self.overlay.ip_dict)}")
         print(f"[CIMDriver] DMA attributes: {[a for a in dir(self.dma) if not a.startswith('_')]}")
 
     def set_dma_mode(self, enable):
