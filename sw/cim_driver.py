@@ -492,10 +492,11 @@ class CIMDriver:
         Uses DMA S2MM when available (P0), falls back to serial MMIO.
         """
         if self.dma is not None:
-            if self.dma.recvchannel is not None:
-                return self._read_output_dma(out_dim)
+            # DEBUG: prefer raw MMIO DMA path to isolate recvchannel issues
             if self._buf_r is not None:
                 return self._read_output_dma_raw(out_dim)
+            if self.dma.recvchannel is not None:
+                return self._read_output_dma(out_dim)
         return self._read_output_mmio(out_dim)
 
     def _read_output_mmio(self, out_dim):
@@ -532,18 +533,18 @@ class CIMDriver:
         return raw.view(np.int8).tolist()
 
     def _read_output_dma_raw(self, out_dim):
-        """P0 S2MM via raw MMIO — bypasses PYNQ recvchannel when PYNQ fails to
-        detect the S2MM stream from the .hwh.
+        """P0 S2MM via raw MMIO — bypasses PYNQ recvchannel.
 
-        Controls the AXI DMA S2MM registers directly (Direct Register Mode):
-          S2MM_DMACR  (0x30): bit 0=RS, bit 2=Reset, bit 12=IOC_IrqEn
-          S2MM_DMASR  (0x34): bit 0=Halted, bit 1=Idle, bit 12=IOC_Irq
-          S2MM_DA     (0x48): Destination Address (physical)
-          S2MM_LENGTH (0x58): Buffer length in bytes (write starts transfer)
+        Direct Register Mode register map (axi_dma S2MM, offset from base):
+          0x30 DMACR:  bit 0=RS, bit 2=Reset, bit 12=IOC_IrqEn
+          0x34 DMASR:  bit 0=Halted, bit 1=Idle, bit 12=IOC_Irq
+          0x48 DA:      Destination Address (physical, 32-bit)
+          0x58 LENGTH:  Buffer length in bytes (write commits descriptor)
         """
         if out_dim <= 0:
             return []
         n_words = (out_dim + 3) // 4
+        n_bytes = n_words * 4  # source always sends word-aligned byte count
         if n_words > len(self._buf_r):
             raise ValueError(
                 f"Result DMA buffer too small: need {n_words} words, "
@@ -552,40 +553,57 @@ class CIMDriver:
         buf = self._buf_r[:n_words]
         dma_mmio = self.dma.mmio
 
-        # Reset S2MM channel
-        dma_mmio.write(0x30, 0x4)
-        while dma_mmio.read(0x34) & 0x1:
-            pass
+        # 1. Reset S2MM channel
+        dma_mmio.write(0x30, 0x4)        # DMACR: Reset=1
+        for _ in range(1000):
+            if not (dma_mmio.read(0x34) & 0x1):
+                break
+        else:
+            raise RuntimeError("DMA S2MM reset timeout")
 
-        # Set destination physical address
+        # 2. Set destination physical address + buffer length
         phys = buf.physical_address
         dma_mmio.write(0x48, int(phys) & 0xFFFFFFFF)
 
-        # Pre-configure RTL result stream source
+        # 3. Pre-configure RTL source length
         self.mmio.write(_CSR_RESULT_LEN, out_dim)
 
-        # Write buffer length to S2MM_LENGTH — starts DMA S2MM receiver
-        dma_mmio.write(0x58, out_dim)
+        # 4. Write LENGTH (commits S2MM descriptor, DMA starts waiting for AXIS)
+        dma_mmio.write(0x58, n_bytes)
 
-        # Trigger RTL source (DMA is now waiting for data)
+        # 5. Start DMA S2MM channel (RS=1, IOC_IrqEn=1)
+        dma_mmio.write(0x30, 0x1001)
+
+        # 6. Trigger RTL source — DMA is now armed and waiting
         self.mmio.write(_CSR_RESULT_CTRL, 1)
 
-        # Start DMA (RS=1)
-        dma_mmio.write(0x30, 0x1001)  # RS=1, IOC_IrqEn=1
-
-        # Poll for completion
-        for _ in range(1000000):
+        # 7. Poll for IOC_Irq
+        for i in range(100000):
             status = dma_mmio.read(0x34)
-            if status & 0x1000:  # IOC_Irq
+            if status & 0x1000:
                 break
+            if i == 0:
+                # First read diagnostic
+                halted = bool(status & 0x1)
+                idle = bool(status & 0x2)
+                print(f"  [raw S2MM] initial DMASR=0x{status:08X} "
+                      f"(Halted={halted}, Idle={idle})")
         else:
-            raise RuntimeError("DMA S2MM raw timeout")
+            # Timeout — dump final status
+            status = dma_mmio.read(0x34)
+            dma_mmio.write(0x30, 0x4)  # hold DMA in reset
+            for _ in range(100):
+                if dma_mmio.read(0x34) & 0x1:
+                    break
+            raise RuntimeError(
+                f"DMA S2MM raw timeout: DMASR=0x{status:08X} "
+                f"(Halted={bool(status&1)}, Idle={bool(status&2)}, "
+                f"IOC_Irq={bool(status&0x1000)})"
+            )
         # Clear IOC_Irq
         dma_mmio.write(0x34, 0x1000)
 
-        # Invalidate cache to see DMA-written data
         buf.invalidate()
-
         raw = np.frombuffer(buf.copy(), dtype=np.uint8)[:out_dim]
         return raw.view(np.int8).tolist()
 
