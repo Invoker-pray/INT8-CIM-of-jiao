@@ -9,12 +9,16 @@
 //   - 每 4 个 INT8 值打包为一个 32-bit beat (小端序: byte0 在 [7:0])
 //   - 末拍 tlast=1，DMA 自动结束接收
 //
-// 时序:
-//   output_buffer rd_data 有 1-cycle 延迟 → 用一个 pipeline stage
-//   Cycle N:   设置 rd_addr, 捕获 rd_data (对应 rd_addr-1)
-//   Cycle N+1: rd_data 有效 (对应 rd_addr), 移入 word_buf
+// 时序 (BRAM read 有 2-cycle 延迟):
+//   1 cycle: obuf_rd_addr 经过 slave 中 always_comb MUX 传播到 output_buffer
+//   1 cycle: output_buffer 寄存器读 (rd_data <= buf_mem[rd_addr])
+//   总计:   set rd_addr=N at cycle T → rd_data valid at cycle T+2
+// Pipeline: obuf_rd_addr 始终比当前抓取的 byte 领先 2 个地址
 //
-// tvalid 只在 4-byte word 完成时有效。tready 阻塞管道推进。
+// Fixes v2:
+//   - 修正 BRAM 2-cycle 延迟 (增加 S_WAIT 状态)
+//   - 修正 tlast 判定: byte_cnt == n_bytes_r-1 时置位 (原 remaining==0 有 off-by-one)
+//   - 支持非 4 对齐的末字 (partial last word)
 // ============================================================================
 
 `timescale 1ns / 1ps
@@ -23,7 +27,6 @@ module cim_axi_stream_source
   import cim_pkg::*;
 #(
     parameter int DATA_W = 32,
-    // OBUF_ADDR_W matches output_buffer's address width
     parameter int OBUF_ADDR_W = clog2_safe(MAX_OUT_DIM)
 ) (
     input logic clk,
@@ -40,8 +43,8 @@ module cim_axi_stream_source
     // ------------------------------------------------------------------
     // Configuration
     // ------------------------------------------------------------------
-    input  logic [15:0] cfg_len,       // number of INT8 elements to stream
-    input  logic        cfg_start,     // 1-cycle pulse: latch cfg_len, start
+    input  logic [15:0] cfg_len,
+    input  logic        cfg_start,
 
     // ------------------------------------------------------------------
     // Status
@@ -50,20 +53,21 @@ module cim_axi_stream_source
     output logic done,
 
     // ------------------------------------------------------------------
-    // Output buffer read port (shared with legacy MMIO path)
+    // Output buffer read port
     // ------------------------------------------------------------------
-    output logic [OBUF_ADDR_W-1:0]    obuf_rd_addr,
+    output logic [OBUF_ADDR_W-1:0]     obuf_rd_addr,
     input  logic signed [OUTPUT_W-1:0] obuf_rd_data
 );
 
   // ==========================================================================
-  // FSM
+  // FSM — 5 states
   // ==========================================================================
-  typedef enum logic [1:0] {
+  typedef enum logic [2:0] {
     S_IDLE,
-    S_WARMUP,      // first read issued, waiting for rd_data
-    S_READ,        // pipeline running: issue next addr + capture prev data
-    S_SEND         // word complete, waiting for tready
+    S_WAIT,        // MUX propagation cycle
+    S_WARMUP,      // BRAM read cycle, then capture first byte
+    S_READ,        // pipeline: capture byte[byte_cnt], issue rd_addr=byte_cnt+2
+    S_SEND         // word presented on AXIS, waiting for tready
   } src_state_t;
 
   src_state_t state;
@@ -71,11 +75,11 @@ module cim_axi_stream_source
   // ==========================================================================
   // Counters
   // ==========================================================================
-  logic [15:0] n_bytes_r;      // latched cfg_len
-  logic [15:0] byte_cnt;       // next byte index to read (rd_addr)
-  logic [ 1:0] sub_idx;        // 0..3 within current 4-byte word
-  logic [31:0] word_buf;       // accumulating 4 bytes into 32-bit word
-  logic        is_last_word;   // this word contains the final byte
+  logic [15:0] n_bytes_r;      // latched cfg_len (total bytes to send)
+  logic [15:0] byte_cnt;       // index of byte being captured THIS cycle
+  logic [ 1:0] sub_idx;        // byte position within current word (0..3)
+  logic [31:0] word_buf;       // accumulating word
+  logic        is_last_word;
 
   assign busy = (state != S_IDLE);
 
@@ -84,22 +88,21 @@ module cim_axi_stream_source
   // ==========================================================================
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-      state        <= S_IDLE;
-      n_bytes_r    <= '0;
-      byte_cnt     <= '0;
-      sub_idx      <= '0;
-      word_buf     <= '0;
-      is_last_word <= 1'b0;
+      state         <= S_IDLE;
+      n_bytes_r     <= '0;
+      byte_cnt      <= '0;
+      sub_idx       <= '0;
+      word_buf      <= '0;
+      is_last_word  <= 1'b0;
       m_axis_tvalid <= 1'b0;
       m_axis_tlast  <= 1'b0;
       m_axis_tdata  <= '0;
       obuf_rd_addr  <= '0;
       done          <= 1'b0;
     end else begin
-      // One-cycle pulse for done
       done <= 1'b0;
 
-      // m_axis_tvalid deasserts after accepted beat (unless reasserted this cycle)
+      // deassert tvalid/tlast after accepted beat
       if (m_axis_tvalid && m_axis_tready) begin
         m_axis_tvalid <= 1'b0;
         m_axis_tlast  <= 1'b0;
@@ -109,42 +112,46 @@ module cim_axi_stream_source
         // --------------------------------------------------------------
         S_IDLE: begin
           if (cfg_start) begin
-            n_bytes_r <= cfg_len;
-            byte_cnt  <= '0;
-            sub_idx   <= '0;
-            word_buf  <= '0;
-            obuf_rd_addr <= '0;  // issue first read (addr=0)
-            state     <= S_WARMUP;
+            n_bytes_r    <= cfg_len;
+            byte_cnt     <= '0;
+            sub_idx      <= '0;
+            word_buf     <= '0;
+            obuf_rd_addr <= '0;     // issue rd_addr=0
+            state        <= S_WAIT;
           end
         end
 
         // --------------------------------------------------------------
-        // First read was issued on IDLE→WARMUP transition; rd_data
-        // available this cycle.
+        S_WAIT: begin
+          // rd_addr=0 propagates through MUX → output_buffer this cycle.
+          // Keep pipeline ahead: issue rd_addr=1.
+          obuf_rd_addr <= 'd1;
+          state        <= S_WARMUP;
+        end
+
+        // --------------------------------------------------------------
         S_WARMUP: begin
-          // Capture rd_data (from addr=0), issue next read
-          word_buf[7:0] <= obuf_rd_data;
+          // BRAM returned buf_mem[0] — valid this cycle.
+          word_buf[7:0] <= obuf_rd_data;   // byte 0
 
           if (n_bytes_r == 16'd1) begin
-            // Single-byte transfer: present immediately
+            // Single-byte transfer
             m_axis_tdata  <= {24'd0, obuf_rd_data};
             m_axis_tvalid <= 1'b1;
             m_axis_tlast  <= 1'b1;
             is_last_word  <= 1'b1;
             state         <= S_SEND;
           end else begin
-            // Issue next read
-            byte_cnt    <= 16'd1;
-            obuf_rd_addr <= 'd1;
-            sub_idx     <= 2'd1;
-            state       <= S_READ;
+            byte_cnt     <= 16'd1;          // next byte to capture = 1
+            obuf_rd_addr <= 'd2;            // rd_addr = byte_cnt+1
+            sub_idx      <= 2'd1;
+            state        <= S_READ;
           end
         end
 
         // --------------------------------------------------------------
-        // Pipeline running: rd_data (from byte_cnt-1) valid, issue next
         S_READ: begin
-          // Capture rd_data (from previous rd_addr = byte_cnt-1)
+          // Capture byte[byte_cnt] from obuf_rd_data (valid now)
           case (sub_idx)
             2'd0: word_buf[7:0]   <= obuf_rd_data;
             2'd1: word_buf[15:8]  <= obuf_rd_data;
@@ -152,48 +159,45 @@ module cim_axi_stream_source
             2'd3: word_buf[31:24] <= obuf_rd_data;
           endcase
 
-          if (sub_idx == 2'd3) begin
-            // Word complete
-            logic [15:0] remaining;
-            remaining = n_bytes_r - byte_cnt;
-
-            // Build tdata: top byte = rd_data (just captured), rest from word_buf
-            m_axis_tdata <= {obuf_rd_data, word_buf[23:0]};
-
-            if (remaining == 16'd0) begin
-              // No more bytes — this is the last word
-              m_axis_tvalid <= 1'b1;
-              m_axis_tlast  <= 1'b1;
-              is_last_word  <= 1'b1;
-              state <= S_SEND;
-            end else begin
-              m_axis_tvalid <= 1'b1;
-              m_axis_tlast  <= 1'b0;
-              state <= S_SEND;
-            end
+          // Check if this is the last byte
+          if (byte_cnt == n_bytes_r - 16'd1) begin
+            // Last byte — present (possibly partial) word immediately
+            case (sub_idx)
+              2'd0: m_axis_tdata <= {24'd0, obuf_rd_data};
+              2'd1: m_axis_tdata <= {16'd0, obuf_rd_data, word_buf[7:0]};
+              2'd2: m_axis_tdata <= {8'd0, obuf_rd_data, word_buf[15:0]};
+              2'd3: m_axis_tdata <= {obuf_rd_data, word_buf[23:0]};
+            endcase
+            m_axis_tvalid <= 1'b1;
+            m_axis_tlast  <= 1'b1;
+            is_last_word  <= 1'b1;
+            state         <= S_SEND;
+          end else if (sub_idx == 2'd3) begin
+            // Full word, not last
+            m_axis_tdata  <= {obuf_rd_data, word_buf[23:0]};
+            m_axis_tvalid <= 1'b1;
+            m_axis_tlast  <= 1'b0;
+            state         <= S_SEND;
           end else begin
-            // Continue collecting bytes
-            byte_cnt    <= byte_cnt + 16'd1;
-            obuf_rd_addr <= byte_cnt + 16'd1;  // next read = (byte_cnt+1), since byte_cnt was just incremented
-            sub_idx     <= sub_idx + 2'd1;
+            // Continue accumulating bytes
+            byte_cnt     <= byte_cnt + 16'd1;
+            obuf_rd_addr <= byte_cnt + 16'd2;   // two ahead
+            sub_idx      <= sub_idx + 2'd1;
           end
         end
 
         // --------------------------------------------------------------
-        // Word presented on AXIS; wait for tready
         S_SEND: begin
           if (m_axis_tready) begin
-            // tvalid/tlast deasserted by common block above
             if (is_last_word) begin
               done  <= 1'b1;
               state <= S_IDLE;
             end else begin
-              // Advance to next word
-              sub_idx     <= '0;
-              word_buf    <= '0;
-              byte_cnt    <= byte_cnt + 16'd1;
-              obuf_rd_addr <= byte_cnt + 16'd1;
-              state       <= S_READ;
+              sub_idx      <= '0;
+              word_buf     <= '0;
+              byte_cnt     <= byte_cnt + 16'd1;
+              obuf_rd_addr <= byte_cnt + 16'd2;
+              state        <= S_READ;
             end
           end
         end
