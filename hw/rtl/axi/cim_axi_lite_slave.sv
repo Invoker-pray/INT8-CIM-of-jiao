@@ -74,7 +74,13 @@ module cim_axi_lite_slave
     input logic [cim_pkg::TILE_COLS*cim_pkg::INPUT_W-1:0]    stream_ibuf_wr_tile_data,
     input logic                                              stream_bsram_wr_en,
     input logic [clog2_safe(cim_pkg::BSRAM_DEPTH)-1:0]       stream_bsram_wr_addr,
-    input logic [                                   31:0]    stream_bsram_wr_data
+    input logic [                                   31:0]    stream_bsram_wr_data,
+
+    // P0: AXI4-Stream master for result read-back (→ axi_dma S_AXIS_S2MM)
+    output logic [AXI_DATA_W-1:0]                             M_AXIS_RESULT_TDATA,
+    output logic                                              M_AXIS_RESULT_TVALID,
+    input  logic                                              M_AXIS_RESULT_TREADY,
+    output logic                                              M_AXIS_RESULT_TLAST
 );
 
   logic clk, rst_n;
@@ -213,6 +219,10 @@ module cim_axi_lite_slave
   logic                   cfg_start_r;
   logic                   cfg_start_pending;  // Delay cfg_start by 1 cycle
   logic                   status_clear_r;
+
+  // P0: result stream CSRs
+  logic [15:0]           reg_result_len;
+  logic                  result_start_pulse;
 
   assign stream_path_en = reg_stream_path_en;
   assign cfg_dest       = reg_stream_dest;
@@ -475,11 +485,48 @@ MAX_IN_DIM/TILE_COLS
       .pred_class(pred_class)
   );
 
+  // P0: result stream source signals
+  logic                                    result_busy, result_done;
+  logic [clog2_safe(MAX_OUT_DIM)-1:0]      src_obuf_rd_addr;
+  logic                                    result_start_pulse_r;
+
+  // One-cycle pulse for result_start
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      result_start_pulse_r <= 1'b0;
+    end else begin
+      result_start_pulse_r <= result_start_pulse;
+      if (result_start_pulse_r) result_start_pulse <= 1'b0;
+    end
+  end
+
+  // P0: cim_axi_stream_source — read output_buffer, stream via M_AXIS_RESULT
+  cim_axi_stream_source #(
+      .DATA_W(32),
+      .OBUF_ADDR_W(clog2_safe(MAX_OUT_DIM))
+  ) u_result_source (
+      .clk            (clk),
+      .rst_n          (rst_n),
+      .m_axis_tdata   (M_AXIS_RESULT_TDATA),
+      .m_axis_tvalid  (M_AXIS_RESULT_TVALID),
+      .m_axis_tready  (M_AXIS_RESULT_TREADY),
+      .m_axis_tlast   (M_AXIS_RESULT_TLAST),
+      .cfg_len        (reg_result_len),
+      .cfg_start      (result_start_pulse_r),
+      .busy           (result_busy),
+      .done           (result_done),
+      .obuf_rd_addr   (src_obuf_rd_addr),
+      .obuf_rd_data   (obuf_rd_data)
+  );
+
   // FIX5: Output buffer read address — set one cycle early (RD_IDLE or RD_WAIT)
+  // P0 MUX: when result source is active, it owns obuf_rd_addr
   // In RD_IDLE, use the incoming ARADDR directly for minimum latency.
   // In RD_WAIT, use the latched ar_addr_r.
   always_comb begin
-    if (rd_state == RD_IDLE && S_AXI_ARVALID && S_AXI_ARADDR >= CSR_LOGIT_BASE)
+    if (result_busy)
+      obuf_rd_addr = src_obuf_rd_addr;
+    else if (rd_state == RD_IDLE && S_AXI_ARVALID && S_AXI_ARADDR >= CSR_LOGIT_BASE)
       obuf_rd_addr = (S_AXI_ARADDR - CSR_LOGIT_BASE) >> 2;
     else if (ar_addr_r >= CSR_LOGIT_BASE) obuf_rd_addr = (ar_addr_r - CSR_LOGIT_BASE) >> 2;
     else obuf_rd_addr = '0;
@@ -516,12 +563,15 @@ MAX_IN_DIM/TILE_COLS
       cfg_start_r          <= 1'b0;
       cfg_start_pending    <= 1'b0;
       status_clear_r       <= 1'b0;
+      reg_result_len       <= 16'd0;
+      result_start_pulse   <= 1'b0;
     end else begin
       // Self-clearing pulses
       start_pulse    <= 1'b0;
       soft_rst_pulse <= 1'b0;
       done_irq_clear <= 1'b0;
       reg_wdma_wr    <= 1'b0;
+      result_start_pulse <= 1'b0;
       cfg_start_r    <= cfg_start_pending;  // Fire cfg_start 1 cycle after LEN write
       cfg_start_pending <= 1'b0;
       status_clear_r <= 1'b0;
@@ -585,6 +635,13 @@ MAX_IN_DIM/TILE_COLS
           CSR_STREAM_CONTINUE: begin
             reg_stream_continue <= w_data_r[0];
           end
+          // P0: result stream registers
+          CSR_RESULT_LEN: begin
+            reg_result_len <= w_data_r[15:0];
+          end
+          CSR_RESULT_CTRL: begin
+            if (w_data_r[0]) result_start_pulse <= 1'b1;
+          end
           default:           ;  // input/bias windows handled by memory blocks
         endcase
       end
@@ -633,6 +690,8 @@ MAX_IN_DIM/TILE_COLS
       CSR_STREAM_LEN:      return {16'd0, reg_stream_len};
       CSR_STREAM_STATUS:   return {28'd0, stream_underflow, stream_overflow, stream_done, stream_busy};
       CSR_STREAM_CONTINUE: return {31'd0, reg_stream_continue};
+      CSR_RESULT_LEN:    return {16'd0, reg_result_len};
+      CSR_RESULT_STATUS: return {30'd0, result_done, result_busy};
       default: begin
         if (addr >= CSR_LOGIT_BASE && addr < MEM_INPUT_BASE)
           return {{(32 - OUTPUT_W) {obuf_rd_data[OUTPUT_W-1]}}, obuf_rd_data};

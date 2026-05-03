@@ -163,6 +163,13 @@ package cim_pkg;
   parameter logic [13:0] CSR_STREAM_STATUS = 14'h058;   // [0]=busy, [1]=done, [2]=overflow, [3]=underflow (W1C on done/ovf/und)
   parameter logic [13:0] CSR_STREAM_CONTINUE = 14'h05C; // [0]=continue (0=reset addr ptrs, 1=continue from current position)
 
+  // --- P0: AXI4-Stream Source (result read-back via DMA S2MM) ---
+  // Writing CSR_RESULT_LEN configures the number of INT8 output elements to
+  // stream back. Writing CSR_RESULT_CTRL[0]=1 triggers the stream.
+  parameter logic [13:0] CSR_RESULT_LEN    = 14'h060;  // [15:0]=n_elements (INT8 count)
+  parameter logic [13:0] CSR_RESULT_CTRL   = 14'h064;  // [0]=start (write-1 triggers)
+  parameter logic [13:0] CSR_RESULT_STATUS = 14'h068;  // [0]=busy, [1]=done
+
   // ==========================================================================
   // 8. Activation Function Modes
   // ==========================================================================

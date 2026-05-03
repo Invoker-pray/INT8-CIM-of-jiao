@@ -113,11 +113,17 @@ _DEST_WEIGHT = 0
 _DEST_INPUT = 1
 _DEST_BIAS = 2
 
+# P0: result stream CSRs
+_CSR_RESULT_LEN = 0x060    # [15:0]=n_elements (INT8 count)
+_CSR_RESULT_CTRL = 0x064   # [0]=start (write-1 triggers)
+_CSR_RESULT_STATUS = 0x068  # [0]=busy, [1]=done
+
 # CMA buffer sizing upper bounds — cover any single-layer load for LeNet-5 / MNIST-MLP.
 # LeNet-5 Conv2 packed weight is the largest: col_len=150*16=2400 chunks; headroom 4×.
 _DMA_BUF_WEIGHTS = 20000      # 32-bit words (up to ~80 KB)
 _DMA_BUF_INPUT = (MAX_IN_DIM + 15) // 4  # packed UINT8 → uint32 words
 _DMA_BUF_BIAS = MAX_OUT_DIM
+_DMA_BUF_RESULT = (MAX_OUT_DIM + 3) // 4  # packed INT8 → uint32 words
 
 
 # ============================================================================
@@ -261,6 +267,7 @@ class CIMDriver:
         self._buf_w = allocate(shape=(_DMA_BUF_WEIGHTS,), dtype=np.uint32)
         self._buf_x = allocate(shape=(_DMA_BUF_INPUT,), dtype=np.uint32)
         self._buf_b = allocate(shape=(_DMA_BUF_BIAS,), dtype=np.uint32)
+        self._buf_r = allocate(shape=(_DMA_BUF_RESULT,), dtype=np.uint32)
 
     def set_dma_mode(self, enable):
         """Runtime switch between DMA path and legacy MMIO path.
@@ -465,12 +472,46 @@ class CIMDriver:
         return cycles, macs
 
     def read_output(self, out_dim):
-        """Read output buffer as list of signed INT8."""
+        """Read output buffer as list of signed INT8.
+
+        Uses DMA S2MM when available (P0), falls back to serial MMIO.
+        """
+        if self.dma is not None:
+            return self._read_output_dma(out_dim)
+        return self._read_output_mmio(out_dim)
+
+    def _read_output_mmio(self, out_dim):
+        """Legacy serial MMIO read_output."""
         out = []
         for i in range(out_dim):
             v = self.mmio.read(_LOGIT_BASE + 4 * i)
-            out.append(np.uint8(v & 0xFF).view(np.int8))
+            out.append(np.int8(v & 0xFF))
         return out
+
+    def _read_output_dma(self, out_dim):
+        """P0: DMA S2MM read-back — single DMA transfer replaces N serial MMIO reads.
+
+        Triggers the cim_axi_stream_source inside the slave, which reads
+        output_buffer and streams ceil(out_dim/4) 32-bit beats via M_AXIS_RESULT.
+        The DMA recvchannel captures them into a pre-allocated CMA buffer.
+        """
+        if out_dim <= 0:
+            return []
+        n_words = (out_dim + 3) // 4
+        if n_words > len(self._buf_r):
+            raise ValueError(
+                f"Result DMA buffer too small: need {n_words} words, "
+                f"have {len(self._buf_r)}. Increase _DMA_BUF_RESULT."
+            )
+        buf = self._buf_r[:n_words]
+
+        self.mmio.write(_CSR_RESULT_LEN, out_dim)
+        self.dma.recvchannel.transfer(buf)
+        self.mmio.write(_CSR_RESULT_CTRL, 1)  # triggers cfg_start in RTL
+        self.dma.recvchannel.wait()
+
+        raw = np.frombuffer(buf, dtype=np.uint8)[:out_dim]
+        return raw.view(np.int8).tolist()
 
     def read_pred_class(self):
         """Read hardware argmax result."""
