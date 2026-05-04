@@ -8,6 +8,19 @@ INT8 Compute-in-Memory (CIM) SoC verification platform targeting PYNQ-Z2 (Zynq-7
 
 Two control modes: (1) ARM PS via Python/MMIO, (2) PicoRV32 RISC-V soft-core replacing ARM for pure-PL autonomous inference.
 
+## Environment Setup
+
+```bash
+# Python environment
+source sw/.venv/bin/activate    # activate virtual env
+rye add <package>               # add new dependency
+
+# Vivado / HLS — available directly from command line (no sourcing needed)
+
+# VCS / Verdi — first start license manager, then use directly
+lmg                         # start license manager daemon
+```
+
 ## Build & Simulation Commands
 
 ### RTL Simulation (VCS)
