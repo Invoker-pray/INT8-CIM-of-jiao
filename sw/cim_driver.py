@@ -188,18 +188,19 @@ def im2col(feature_map, kernel_h, kernel_w, stride=1, padding=0):
     out_w = (W_pad - kernel_w) // stride + 1
     col_len = C_in * kernel_h * kernel_w
 
-    col_matrix = np.zeros((col_len, out_h * out_w), dtype=feature_map.dtype)
-    col_idx = 0
-    for oh in range(out_h):
-        for ow in range(out_w):
-            h_start = oh * stride
-            w_start = ow * stride
-            patch = padded[
-                :, h_start : h_start + kernel_h, w_start : w_start + kernel_w
-            ]
-            col_matrix[:, col_idx] = patch.flatten()
-            col_idx += 1
-
+    # as_strided: build 5D view (C, out_h, out_w, K_h, K_w) without copying
+    win_shape = (C_in, out_h, out_w, kernel_h, kernel_w)
+    win_strides = (
+        padded.strides[0],
+        stride * padded.strides[1],
+        stride * padded.strides[2],
+        padded.strides[1],
+        padded.strides[2],
+    )
+    windows = np.lib.stride_tricks.as_strided(padded, shape=win_shape, strides=win_strides)
+    # Bring kernel dims next to channel, copy to make contiguous, then reshape
+    # (C, out_h, out_w, K_h, K_w) → (out_h, out_w, C, K_h, K_w) → copy → (out_h*out_w, col_len) → T
+    col_matrix = windows.transpose(1, 2, 0, 3, 4).copy().reshape(out_h * out_w, col_len).T
     return col_matrix, out_h, out_w
 
 
@@ -1111,6 +1112,247 @@ class CIMModel:
             prof["total_ms"] = (time.perf_counter() - t_total_start) * 1000
             return pred, x, prof
         return pred, x
+
+    def predict_batch(self, images, verbose=False, profile=False):
+        """
+        Process a batch of images layer-by-layer.
+
+        Layer-wise batching loads weights/bias ONCE per layer for the entire
+        batch, eliminating redundant DMA transfers. Conv input columns are
+        pre-packed with numpy vectorization to reduce Python overhead.
+
+        Args:
+            images: list of uint8 numpy arrays in input_shape format
+            verbose: print per-layer info
+            profile: if True, return (results, profile_data)
+
+        Returns:
+            list of (pred_class, logits) tuples when profile=False
+            (list_of_results, profile_data) when profile=True
+        """
+        n_img = len(images)
+        curr = [np.asarray(img, dtype=np.uint8) for img in images]
+        total_cycles = 0
+
+        if profile:
+            prof = {"layers": [], "n_images": n_img}
+            t_total_start = time.perf_counter()
+
+        for i, layer in enumerate(self.layers):
+            if layer["type"] == "fc":
+                if profile:
+                    t_layer = time.perf_counter()
+                    setup_ms = 0.0
+                    load_x_total = 0.0
+                    compute_total = 0.0
+                    read_out_total = 0.0
+
+                # Setup once for all images
+                if profile: t_setup = time.perf_counter()
+                self.drv.configure(
+                    layer["in_dim"], layer["out_dim"],
+                    layer["zp"], layer["mult"], layer["shift"], layer["relu"],
+                )
+                self.drv.load_weights(layer["w_chunks"])
+                self.drv.load_bias(layer["bias_u32"])
+                if profile:
+                    setup_ms = (time.perf_counter() - t_setup) * 1000
+
+                next_act = []
+                for x in curr:
+                    # Flatten + ensure uint8
+                    if isinstance(x, np.ndarray):
+                        if x.ndim > 1:
+                            x = x.flatten()
+                        if x.dtype == np.int8:
+                            x = x.view(np.uint8)
+                    elif isinstance(x, list):
+                        x = [int(v) & 0xFF for v in x]
+
+                    if profile: t_x = time.perf_counter()
+                    out, cyc = self.drv.infer_fc_input_only(x, layer["out_dim"])
+                    if profile:
+                        t_done = time.perf_counter()
+                        load_x_total += (t_done - t_x) * 1000  # rough: all in one call
+
+                    total_cycles += cyc
+                    next_act.append(out)
+
+                if profile:
+                    prof["layers"].append({
+                        "name": f"fc_{layer['in_dim']}x{layer['out_dim']}",
+                        "type": "fc",
+                        "n_mvm": 1,
+                        "k_pack": 1,
+                        "im2col_ms": 0.0,
+                        "setup_ms": setup_ms,
+                        "load_x_ms": load_x_total / n_img,
+                        "compute_ms": compute_total / n_img if compute_total else 0,
+                        "read_out_ms": read_out_total / n_img if read_out_total else 0,
+                        "total_ms": (time.perf_counter() - t_layer) * 1000 / n_img,
+                    })
+
+                curr = next_act
+
+            elif layer["type"] == "conv":
+                C_out = layer["C_out"]
+                col_len = layer["col_len"]
+                packed = layer.get("_packed")
+
+                if profile:
+                    t_layer = time.perf_counter()
+                    im2col_total = 0.0
+                    load_x_total = 0.0
+                    compute_total = 0.0
+                    read_out_total = 0.0
+
+                if packed is not None and packed["k_pack"] > 1:
+                    k_pack = packed["k_pack"]
+
+                    # Setup once for all images
+                    if profile: t_setup = time.perf_counter()
+                    self.drv.configure(
+                        packed["packed_in_dim"], packed["packed_out_dim"],
+                        layer["zp"], layer["mult"], layer["shift"], layer["relu"],
+                    )
+                    self.drv.load_weights(packed["w_chunks"])
+                    self.drv.load_bias(packed["bias_u32"])
+                    if profile:
+                        setup_ms = (time.perf_counter() - t_setup) * 1000
+
+                    n_mvm_total = 0
+                    next_act = []
+                    for x in curr:
+                        if profile: t_im2col = time.perf_counter()
+                        col_matrix, out_h, out_w = im2col(
+                            x, layer["K_h"], layer["K_w"], layer["stride"], layer["padding"]
+                        )
+                        if profile:
+                            im2col_total += (time.perf_counter() - t_im2col) * 1000
+
+                        n_pixels = out_h * out_w
+                        n_batches = (n_pixels + k_pack - 1) // k_pack
+
+                        # Pre-pack all column batches (vectorized numpy)
+                        padded_cols = np.zeros((col_len, n_batches * k_pack), dtype=np.uint8)
+                        padded_cols[:, :n_pixels] = col_matrix
+                        all_packed = (
+                            padded_cols
+                            .reshape(col_len, n_batches, k_pack)
+                            .transpose(1, 2, 0)
+                            .reshape(n_batches, k_pack * col_len)
+                            .copy()
+                        )
+
+                        output_flat = np.zeros((C_out, n_pixels), dtype=np.int8)
+                        for b in range(n_batches):
+                            batch_size = min(k_pack, n_pixels - b * k_pack)
+                            if profile: t_x = time.perf_counter()
+                            out_packed, cyc = self.drv.infer_fc_input_only(
+                                all_packed[b], packed["packed_out_dim"]
+                            )
+                            if profile:
+                                t_done = time.perf_counter()
+                                load_x_total += (t_done - t_x) * 1000
+
+                            total_cycles += cyc
+                            for bi in range(batch_size):
+                                output_flat[:, b * k_pack + bi] = out_packed[bi * C_out : (bi + 1) * C_out]
+                            n_mvm_total += 1
+
+                        next_act.append(output_flat.reshape(C_out, out_h, out_w))
+
+                    if verbose:
+                        print(
+                            f"  Layer {i} (Conv {layer['C_in']}ch "
+                            f"{layer['K_h']}x{layer['K_w']}->{C_out}ch): "
+                            f"{n_mvm_total} packed MVMs total ({n_mvm_total // n_img}/img, k_pack={k_pack}), "
+                            f"{total_cycles} cycles"
+                        )
+
+                else:
+                    # Unpacked path
+                    if profile: t_setup = time.perf_counter()
+                    self.drv.configure(
+                        col_len, C_out,
+                        layer["zp"], layer["mult"], layer["shift"], layer["relu"],
+                    )
+                    self.drv.load_weights(layer["w_chunks"])
+                    self.drv.load_bias(layer["bias_u32"])
+                    if profile:
+                        setup_ms = (time.perf_counter() - t_setup) * 1000
+
+                    n_mvm_total = 0
+                    next_act = []
+                    for x in curr:
+                        if profile: t_im2col = time.perf_counter()
+                        col_matrix, out_h, out_w = im2col(
+                            x, layer["K_h"], layer["K_w"], layer["stride"], layer["padding"]
+                        )
+                        if profile:
+                            im2col_total += (time.perf_counter() - t_im2col) * 1000
+
+                        n_pixels = out_h * out_w
+                        output_flat = np.zeros((C_out, n_pixels), dtype=np.int8)
+                        for p in range(n_pixels):
+                            if profile: t_x = time.perf_counter()
+                            out_p, cyc = self.drv.infer_fc_input_only(
+                                col_matrix[:, p], C_out
+                            )
+                            if profile:
+                                load_x_total += (time.perf_counter() - t_x) * 1000
+
+                            total_cycles += cyc
+                            output_flat[:, p] = out_p
+                            n_mvm_total += 1
+
+                        next_act.append(output_flat.reshape(C_out, out_h, out_w))
+
+                if profile:
+                    prof["layers"].append({
+                        "name": f"conv_{layer['C_in']}x{layer['K_h']}x{layer['K_w']}_to_{C_out}",
+                        "type": "conv",
+                        "n_mvm": n_mvm_total,
+                        "k_pack": packed["k_pack"] if packed else 1,
+                        "im2col_ms": im2col_total / n_img,
+                        "setup_ms": setup_ms / n_img,
+                        "load_x_ms": load_x_total / n_img,
+                        "compute_ms": 0,
+                        "read_out_ms": 0,
+                        "total_ms": (time.perf_counter() - t_layer) * 1000 / n_img,
+                    })
+
+                curr = next_act
+
+            elif layer["type"] == "pool":
+                if profile: t_layer = time.perf_counter()
+                # Max pooling: int8 input → int8 output → view as uint8 for next layer
+                next_act = []
+                for x in curr:
+                    x_i8 = x.view(np.int8) if x.dtype == np.uint8 else x
+                    pooled = maxpool2d(x_i8, layer["kernel"], layer["stride"])
+                    next_act.append(pooled.view(np.uint8))
+                curr = next_act
+                if profile:
+                    prof["layers"].append({
+                        "name": f"pool_{layer['kernel']}x{layer['kernel']}",
+                        "type": "pool",
+                        "total_ms": (time.perf_counter() - t_layer) * 1000 / n_img,
+                    })
+
+            else:
+                raise ValueError(f"Unknown layer type: {layer['type']}")
+
+        # Final predictions
+        results = []
+        for logits in curr:
+            pred = int(np.argmax(np.asarray(logits).flatten()))
+            results.append((pred, logits))
+
+        if profile:
+            prof["total_ms"] = (time.perf_counter() - t_total_start) * 1000
+            return results, prof
+        return results
 
     def clear(self):
         """Remove all layers."""
