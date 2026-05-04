@@ -571,8 +571,6 @@ class CIMDriver:
         """
         if out_dim <= 0:
             return []
-        import time as _time
-
         n_words = (out_dim + 3) // 4  # buffer capacity check
         n_padded = n_words * 4          # round to 4-byte boundary
         # DMA LENGTH and source cfg_len must agree on byte count.
@@ -631,13 +629,11 @@ class CIMDriver:
                 f"DMASR=0x{dma.read(0x34):08X}"
             )
 
-        # Invalidate cache and return
+        # Invalidate cache and return.
+        # No drain delay needed — source done + DMA idle already guarantee
+        # all data is written to DDR.
         buf.invalidate()
         raw = np.frombuffer(buf, dtype=np.uint8)[:out_dim]
-
-        # Give the AXI write path a moment to drain.
-        _time.sleep(0.001)
-
         return raw.view(np.int8).tolist()
 
     def read_pred_class(self):
