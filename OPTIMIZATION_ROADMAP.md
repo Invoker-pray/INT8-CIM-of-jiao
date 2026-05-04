@@ -5,6 +5,29 @@
 
 ---
 
+## 2025 CIM 领域文献调研 (2026-05-04)
+
+基于 [BUAA CIM Literature List](https://github.com/BUAA-CI-LAB/Literatures-on-SRAM-based-CIM) 的 2025 年最新论文分析：
+
+### 2025 年 CIM 领域主要趋势
+
+| 趋势 | 代表工作 | 与我们的相关性 |
+|------|----------|---------------|
+| **稀疏计算** | ISSCC 14.4 (51.6 TFLOPS/W), CICC 2025 (zero weight skipping), TACO Shift-CIM | 我们的 roadmap 1.2 稀疏权重支持方向正确 |
+| **混合精度** | Nature 2025 (memristor+SRAM), LSSC 2025 (segmented precision), ASPDAC 2025 (layer-wise mixed) | 验证了我们 INT4/8 混合精度方向 |
+| **Transformer/LLM 加速** | DAC 2025 (ViT+CIM), SHMT (SRAM+HBM), JSSC 2025 (LLM outlier-aware) | CIMple + Transformer attention 方向有强学术支撑 |
+| **数字 CIM 设计自动化** | CIMFlow (DAC), SEGA-DCIM (DATE), DAMIL-DCIM (DATE) | 我们的 CIM 编译器计划符合行业趋势 |
+| **误差弹性** | ER-DCIM (HPCA), MEJ 2025 (PVT-insensitive) | 验证了误差建模方向 |
+| **混合存储架构** | JSSC 2025 (SRAM/ROM hybrid, >95% weight loading 减少), SHMT (SRAM+HBM) | 中长期可探索方向 |
+
+### 关键发现：我们的独特性
+
+**No 2025 paper explicitly addresses** im2col, double buffering, DMA pipeline overlap, or ping-pong buffering in titles. CIM 论文集中在 macro/circuit 层级创新，而**软件侧的数据搬运优化（setup、load_x、im2col）在学术文献中很少讨论**——这正是我们当前 66% 延迟瓶颈所在。我们的优化方向（AXI DMA 双向数据通路 + Python 侧优化）在工程上具有差异化价值。
+
+**数据搬运瓶颈的间接验证：** JSSC 2025 的 Hybrid SRAM/ROM CIM 架构提到"reducing >95% weight data loading from DRAM"——说明即使是最先进的 CIM 芯片，weight loading 也是关键瓶颈。我们在 FPGA 上通过 DMA 优化 weight loading 的方向是正确的。
+
+---
+
 ## 项目当前状态
 
 | 模块 | 状态 | 瓶颈 |
@@ -259,8 +282,30 @@ PyTorch model
 
 # References
 
+## 领域前沿论文 (2025-2026)
+
+### Macro/Circuit 层级
+- **ISSCC 2025 14.4** "51.6 TFLOPS/W Full-Datapath CIM Macro Approaching Sparsity Bound" — 稀疏约束下的全数据路径 CIM
+- **ISSCC 2025 14.5** "192.3 TFLOPS/W Accurate/Approximate Dual-Mode-Transpose Digital 6T-SRAM CIM" — 支持浮点训练+推理
+- **CICC 2025** "20.9-137.2 TOPS/W Output-Stationary CIM with Dynamic Look-ahead Zero Weight Skipping" — 零权重跳过
+- **Nature 2025** "Mixed-precision memristor and SRAM CIM AI processor" — 混合存储介质的 CIM 处理器
+- **JSSC 2025** "109.3-249.5 TFLOPS/W Outlier-Aware Floating-Point SRAM CIM for LLMs" — 面向 LLM 的浮点 CIM
+
+### 架构层级
+- **JSSC 2025** "Hybrid SRAM/ROM CIM for High Task-Level Energy Efficiency in Transformer" — 混合存储减少 >95% weight loading
+- **DAC 2025** "Efficient Edge ViT Accelerator with Decoupled Chunk Attention and Hybrid CIM" — ViT + CIM
+- **TCAS-I 2025** "FlexDCIM: 400 MHz 249.1 TOPS/W Flexible Digital CIM for CNN" — 数字 CIM 高频设计
+- **TACO 2025** "Shift-CIM: In-SRAM Alignment for General-Purpose Bit-level Sparsity" — 比特级稀疏
+- **HPCA 2025** "ER-DCIM: Error-Resilient Digital CIM with Run-Time MAC-Cell Error Correction" — 误差纠正
+
+### 软件/工具链
+- **CIMFlow** (DAC 2025): 数字 CIM 架构的系统化设计评估框架
+- **SEGA-DCIM** (DATE 2025): 设计空间探索引导的自动数字 CIM 编译器（支持多精度）
+- **DAMIL-DCIM** (DATE 2025): 数据流感知的数字 CIM 布局综合框架
+
+### 直接相关 (本项目)
 - **CIMple** (arxiv 2026.04): Standard-cell SRAM CIM with LUT-based softmax for attention
-  — 首次将 CIM 扩展到 Transformer attention
+  — 首次将 CIM 扩展到 Transformer attention，LUT-based softmax 可借鉴
 - **Hardware-Software Co-Design for Transformer with CIM** (arxiv 2025.02)
   — Transformer 推理的软硬件协同设计方法论
 - **TinyMOA** ([GitHub](https://github.com/EzraWolf/TinyMOA)): RISC-V + SRAM CIM integrated chip
@@ -270,5 +315,5 @@ PyTorch model
 - **PSumSim** ([GitHub](https://github.com/Joschua-Conrad/PSumSim))
   — 模拟 MVM 中 partial-sum 量化误差的工具
 - **BUAA CIM Literature List** ([GitHub](https://github.com/BUAA-CI-LAB/Literatures-on-SRAM-based-CIM))
-  — SRAM CIM 领域论文汇总
+  — SRAM CIM 领域论文汇总（2025.05 更新）
 - **CONV-SRAM** (本项目参考论文): Energy-Efficient SRAM With In-Memory Dot-Product for Low-Power CNN
