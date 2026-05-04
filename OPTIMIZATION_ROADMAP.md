@@ -11,25 +11,59 @@
 |------|------|------|
 | CIM Tile (16×16 MAC) | ✅ 完成 | 组合逻辑延迟 → 60MHz 上限 |
 | CIM Accel Core | ✅ 完成 | pipeline 已多级 |
-| AXI DMA 数据通路 | ✅ 完成 | DMA 503ms/img, MMIO 1690ms/img → speedup 3.4× |
+| AXI DMA 数据通路 | ✅ 完成 | MM2S + S2MM direct register mode, P0 完成 |
 | LeNet-5 e2e benchmark | ✅ 完成 | accuracy 99.50% @200 images |
-| 下一步瓶颈 | ❓ 待 profile | DMA→compute 延迟分解, pipeline 利用率 |
+| 当前瓶颈 | setup 41ms + load_x 23ms + im2col 21ms | 见下方 profile |
+
+### LeNet-5 Latency Breakdown (2026-05-04)
+
+| Phase | ms/img | % |
+|-------|--------|---|
+| setup (configure + load_w + load_b) | 41.05 | 32.0% |
+| load_x (per-MVM input) | 23.01 | 17.9% |
+| im2col (Python-side) | 20.58 | 16.0% |
+| read_out (S2MM DMA) | 19.65 | 15.3% |
+| dma_x_setup (stream sink arm) | 8.87 | 6.9% |
+| compute (hardware) | 7.17 | 5.6% |
+| dma_x_transfer | 5.55 | 4.3% |
+| dma_w_transfer | 0.81 | 0.6% |
+| dma_w_setup | 0.73 | 0.6% |
+| dma_b_setup | 0.62 | 0.5% |
+| dma_b_transfer | 0.37 | 0.3% |
+| **TOTAL** | **128.4** | **100%** |
+
+优化历程：
+- MMIO path: 1690.54 ms/img (0.59 fps)
+- DMA (C3 MM2S only, P0 read_out via MMIO): 503.65 ms/img (1.99 fps), speedup 3.4×
+- DMA (C3 MM2S + P0 S2MM direct reg mode): **128.4 ms/img (7.8 fps), speedup 13.2× vs MMIO**
+- read_out: 257ms → 19.65ms (**13× faster**)
 
 # 1. 性能优化（短期 — 1~2 月）
 
-## 1.1 DMA 性能深度分析（最高优先级）
+## 1.1 当前瓶颈优化
 
-**现状：** DMA 已跑通，end-to-end benchmark 完成：
-- LeNet-5 200-image @60MHz: DMA 503.65 ms/img (1.99 fps), MMIO 1690.54 ms/img (0.59 fps)
-- Speedup 3.4×，Accuracy 99.50%
-- benchmark CSV: `sw/benchmark_e2e_60mhz_dma.csv`, `sw/benchmark_e2e_60mhz_mmio.csv`
+**已解决 — P0 S2MM (2026-05-03/04):**
+- ✅ RTL: `cim_axi_stream_source.sv` — BRAM 2-cycle latency fix, tlast off-by-one, done sticky, is_last_word sticky
+- ✅ SW: direct register mode bypass PYNQ _SDMAChannel (MM2S + S2MM), double-buffer
+- ✅ read_out 串行 MMIO (257ms) → S2MM DMA (19.65ms), 13× speedup
+- ✅ 端到端: 503ms → 128ms/img, 3.9× speedup vs pre-P0 DMA
 
-**待做：**
-- **Latency 分解：** 用 performance counter 拆解每层 weight_load / compute / result_read 占比
-- **DMA burst 分析：** 当前 DMA 是否有 fragmented transfer？burst size 是否最优？
-- **Ping-pong buffer：** compute 和 DMA load 重叠 → 理论上可接近 pure compute latency
+**待优化 — 按优先级:**
 
-**验证标准：** 完成 latency breakdown report，定位下一步优化热点
+1. **setup_ms (41ms, 32%):** configure + load_weights + load_bias 每层重复
+   - 方向: layer-wise weight/bias 预加载 + CSR 批量写入
+   - 预期: 41ms → ~10ms (减少重复 configure)
+
+2. **load_x_ms (23ms, 18%):** 51 次 MVM 调用，每次需 stream sink arm + DMA transfer
+   - 方向: 批量输入预打包，减少 DMA 启动次数
+   - 预期: 23ms → ~10ms
+
+3. **im2col_ms (21ms, 16%):** Python 循环构建 col_matrix
+   - 方向: numpy stride_tricks / numba JIT / 预计算索引
+   - 预期: 21ms → ~5ms
+
+4. **Ping-pong buffer:** compute 和下一层 DMA load 重叠
+   - 预期: 隐藏大部分 load/setup 延迟，总延迟 → ~60-80ms/img (12-16 fps)
 
 ## 1.2 Pipeline 深度优化
 
@@ -206,10 +240,12 @@ PyTorch model
 
 | 优先级 | 方向 | 预期收益 | 难度 | 时间 |
 |--------|------|----------|------|------|
-| ✅ DONE | DMA S2MM read_output (P0) — direct reg mode, bypass PYNQ recvchannel, double-buffer | read_out 257→~1ms | 中 | 2d | 2026-05-03 |
-| 🔴 P0 | load_x 优化 (减少 MMIO 同步 + 预打包) | ~15ms (22%) | 低 | 3d |
-| 🔴 P0 | Pipeline overlap (DMA↔Compute 乒乓) | 30-50%+ (目标 ~125ms/img) | 中 | 2w |
-| 🔴 P0 | DMA latency 分解 + 底层 profile | 定位热点 | 低 | 1w | ✅ 已完成 (2026-05-03) |
+| ✅ DONE | DMA S2MM read_output (P0) — direct reg mode, bypass PYNQ recvchannel, double-buffer | read_out 257→19.65ms (13×) | 中 | 2d | 2026-05-04 |
+| ✅ DONE | DMA latency 分解 + 底层 profile | 定位热点: setup 41ms, load_x 23ms, im2col 21ms | 低 | 1w | 2026-05-04 |
+| 🔴 P0 | setup 优化 (layer-wise 预加载 + CSR 批量写) | 41→~10ms (24%) | 低 | 2d |
+| 🔴 P0 | load_x 优化 (批量输入预打包, 减少 DMA 启动) | 23→~10ms (10%) | 低 | 3d |
+| 🔴 P0 | im2col 加速 (numpy stride_tricks / numba) | 21→~5ms (12%) | 低 | 2d |
+| 🔴 P0 | Pipeline overlap (DMA↔Compute 乒乓) | 目标 ~60-80ms/img (12-16 fps) | 中 | 2w |
 | 🟡 P1 | CIM 编译器 (PyTorch→CIM) | 用研效率 | 高 | 4w |
 | 🟡 P1 | 稀疏权重支持 | 30-40% speedup | 高 | 4w |
 | 🟢 P2 | 时钟提升 (80-100MHz) | 30-60% throughput | 低 | 2w |
