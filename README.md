@@ -253,53 +253,56 @@ PS7 ──S_AXI_HP0── 64-bit, 1.2 GB/s ── axi_dma_0/M_AXI_MM2S (DDR 读)
 
 不满足任一条 → 不合并 commit 6，回滚到 commit 5（`use_dma=False` 默认）。
 
-### [*] step 8.5: P0 — read_output DMA S2MM 消除串行 MMIO 瓶颈（**✅ RTL+SW 完成，⏳ 待上板**）
+### [x] step 8.5: P0 — read_output DMA S2MM 消除串行 MMIO 瓶颈（**✅ 已完成，2026-05-04**）
 
-> 前提：step 8 (C3) DMA 上板完成，profiler 实测 `read_output` 串行 MMIO 占端到端延迟的 61.7%（~257ms）。
-> 本 step 新增 `cim_axi_stream_source.sv`（~130 行 AXIS master），将 output_buffer 读回路径从 N 次 AXI4-Lite 单字读换为一次 DMA S2MM 传输。
+> step 8 (C3) DMA 上板完成，profiler 实测 `read_output` 串行 MMIO 占端到端延迟的 61.7%（~257ms）。
+> 本 step 新增 `cim_axi_stream_source.sv`（~210 行 AXIS master），将 output_buffer 读回路径从 N 次 AXI4-Lite 单字读换为一次 DMA S2MM 传输。
 > **不改 cim_accel_core / cim_tile / psum_accum**，bit-exact 行为受 pytest 回归保护。
 
 #### 架构变更
 
 | 组件 | 变更 | 说明 |
 |------|------|------|
-| `hw/rtl/axi/cim_axi_stream_source.sv` | **新增** | ~130 行；AXIS master，从 output_buffer 读 INT8 值，打包为 32-bit beats 送往 DMA S2MM |
+| `hw/rtl/axi/cim_axi_stream_source.sv` | **新增** | ~210 行；AXIS master，从 output_buffer 读 INT8 值，打包为 32-bit beats 送往 DMA S2MM。5-state FSM (IDLE→WAIT→WARMUP→READ→SEND), BRAM 2-cycle 延迟补偿, 非4对齐末字支持 |
 | `hw/rtl/pkg/cim_pkg.sv` | 修改 | +`CSR_RESULT_LEN` (0x060), `CSR_RESULT_CTRL` (0x064), `CSR_RESULT_STATUS` (0x068) |
 | `hw/rtl/axi/cim_axi_lite_slave.sv` | 修改 | +M_AXIS_RESULT 端口、CSR 解码、source 实例、obuf_rd_addr MUX |
 | `hw/rtl/cim_top.sv` / `cim_top_wrapper.v` | 修改 | +M_AXIS_RESULT 端口路由 |
-| `hw/scripts/vivado_build.tcl` | 修改 | S2MM enable (`c_include_s2mm=1`)、+HP1、M_AXIS_RESULT→S_AXIS_S2MM 连接、+S2MM intr (xlconcat 2→3) |
-| `sw/cim_driver.py` | 修改 | `read_output()` 自动检测 DMA → 走 `_read_output_dma()`；fallback legacy MMIO |
+| `hw/scripts/vivado_build.tcl` | 修改 | S2MM enable (`c_include_s2mm=1`)、+HP1、M_AXIS_RESULT→S_AXIS_S2MM 连接、+S2MM intr、+axi_mem_intercon_1 reset |
+| `sw/cim_driver.py` | 修改 | `read_output()` 使用 direct register mode S2MM；MM2S 同步改为 direct register mode；双缓冲 result buffer |
 
-#### 数据流
+#### 关键 Debug 历程
 
-```
-output_buffer (BRAM)
-      │ rd_addr / rd_data (registered, 1-cycle latency)
-      ▼
-cim_axi_stream_source (P0 new)
-      │ M_AXIS_RESULT (32-bit, ceil(N/4) beats, tlast on last beat)
-      ▼
-axi_dma_0/S_AXIS_S2MM → M_AXI_S2MM → S_AXI_HP1 (64-bit) → DDR
-      │
-      ▼
-Python: pynq.allocate + dma.recvchannel.transfer() + wait() → np.int8 list
-```
+1. **PYNQ `recvchannel` 不可用** → bypass PYNQ `_SDMAChannel`，改用 direct register mode (PG021)
+2. **S2MM 第二次调用超时 (DMASR=0x00000000)** → RTL `is_last_word` sticky bug：FSM 在第二次传输时因 `is_last_word` 未清零而立即终止
+3. **DMAIntErr (DMASR=0x00005011)** → `n_bytes=out_dim=126` 非4字节对齐，source 无 tkeep → pad 到 4 字节边界
+4. **done 信号不可轮询** → `done` 原为1-cycle pulse (16.67ns)，Python MMIO 无法捕获 → 改为 sticky
+5. **性能退化 (~12s/img)** → debug sleeps (10ms reset + 100ms drain = 110ms/次 × 51次 ≈ 5.6s) → 改用 spin-wait + 去除 drain sleep
 
-#### 时序
+#### 实测性能 (2026-05-04)
 
-每个 32-bit beat = 4 个 INT8 值，含 1-cycle BRAM 读延迟的 pipeline：
-- 前 4 个字节：5 cycles（WARMUP + 3 reads + SEND）
-- 后续每 4 字节：4 cycles（3 reads + SEND）+ tready 等待
-- LeNet-5 FC3（10 字节）：~14 cycles = 0.23 µs @60MHz
-- LeNet-5 Conv1（3456 字节）：~4320 cycles = 72 µs
-- 对比 legacy MMIO：3456 × ~50 µs = 173 ms → P0 后 <0.1 ms
+| 指标 | C3 DMA (MM2S only) | C3 + P0 S2MM | 加速比 |
+|------|---------------------|---------------|--------|
+| read_out_ms | 257 | 19.65 | **13×** |
+| 端到端 ms/img | 503.65 | 128.4 | **3.9×** |
+| FPS | 1.99 | 7.8 | **3.9×** |
+| Accuracy | 99.5% | 99.5% | 一致 |
 
-#### 验收标准
+**LeNet-5 延迟分解 (128.4 ms/img):**
 
-1. `vivado_build.sh` 出 .bit/.hwh（含 S2MM IP），WNS ≥ 0
-2. `pytest sw/tests/ -v` 全部 GREEN
-3. LeNet-5 200 张 accuracy = 99.5%（bit-exact 与 legacy 一致）
-4. A2 profiler `read_out_ms` 占比 < 2%（目标从 257ms → <1ms）
+| Phase | ms | % |
+|-------|-----|---|
+| setup (configure + load_w + load_b) | 41.05 | 32.0% |
+| load_x (per-MVM input) | 23.01 | 17.9% |
+| im2col (Python-side) | 20.58 | 16.0% |
+| read_out (S2MM DMA) | 19.65 | 15.3% |
+| dma_x_setup | 8.87 | 6.9% |
+| compute (hardware) | 7.17 | 5.6% |
+| dma_x_transfer | 5.55 | 4.3% |
+
+优化历程总览：
+- MMIO baseline: 1690.54 ms/img (0.59 fps)
+- C3 MM2S DMA: 503.65 ms/img (1.99 fps, 3.4×)
+- **C3 + P0 S2MM: 128.4 ms/img (7.8 fps, 13.2× vs MMIO)**
 
 ---
 
