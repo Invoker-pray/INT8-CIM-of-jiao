@@ -41,6 +41,8 @@ def parse_args():
                    help="Directory for CSV output (default: results/)")
     p.add_argument("--use-dma",   action="store_true",
                    help="Enable experimental DMA data path (default: legacy MMIO)")
+    p.add_argument("--batch",     action="store_true",
+                   help="Use layer-wise batching (predict_batch) for optimized throughput")
     p.add_argument("--verbose",   action="store_true",
                    help="Print per-image prediction")
     return p.parse_args()
@@ -158,22 +160,58 @@ def main():
     # ---------------------------------------------------------------------------
     correct = 0
     wrong_list = []
-    t_start = time.time()
 
+    # Load all images + labels
+    all_images = []
+    all_labels = []
+    all_names = []
     for img_path in img_files:
         name = os.path.basename(img_path).replace(".hex", "")
         img_u8 = np.array(read_hex_u8(img_path), dtype=np.uint8)
         label_path = os.path.join(img_dir, f"{name}_label.txt")
         label = int(open(label_path).read().strip())
+        all_images.append(img_u8.reshape(input_shape))
+        all_labels.append(label)
+        all_names.append(name)
 
-        pred, _ = model.predict(img_u8.reshape(input_shape))
+    t_start = time.time()
 
-        if pred == label:
-            correct += 1
-        else:
-            wrong_list.append((name, pred, label))
-            if args.verbose:
-                print(f"  WRONG {name}: pred={pred} label={label}")
+    if args.batch:
+        # Layer-wise batching: load weights ONCE per layer
+        results, prof = model.predict_batch(all_images, profile=True)
+        for (pred, _), label, name in zip(results, all_labels, all_names):
+            if pred == label:
+                correct += 1
+            else:
+                wrong_list.append((name, pred, label))
+                if args.verbose:
+                    print(f"  WRONG {name}: pred={pred} label={label}")
+
+        # Print batch profiler report
+        print("\n--- Batch Profiler (per-image avg) ---")
+        if prof:
+            total = prof.get("total_ms", 0)
+            print(f"  {'Phase':<30s} {'avg_ms':>8s}  {'pct':>6s}")
+            print(f"  {'-'*30}  {'-'*8}  {'-'*6}")
+            agg = {}
+            for l in prof.get("layers", []):
+                for k in ("setup_ms", "load_x_ms", "im2col_ms", "compute_ms", "read_out_ms"):
+                    agg[k] = agg.get(k, 0) + l.get(k, 0)
+            for k, v in agg.items():
+                pct = v / (total / prof["n_images"]) * 100 if total else 0
+                print(f"  {k:<30s} {v:8.2f}  {pct:5.1f}%")
+            print(f"  {'-'*30}  {'-'*8}  {'-'*6}")
+            print(f"  {'TOTAL':<30s} {total/prof['n_images']:8.2f}")
+            print()
+    else:
+        for name, img_u8, label in zip(all_names, all_images, all_labels):
+            pred, _ = model.predict(img_u8)
+            if pred == label:
+                correct += 1
+            else:
+                wrong_list.append((name, pred, label))
+                if args.verbose:
+                    print(f"  WRONG {name}: pred={pred} label={label}")
 
     t_end = time.time()
 
