@@ -206,7 +206,7 @@ PyTorch model
 
 | 优先级 | 方向 | 预期收益 | 难度 | 时间 |
 |--------|------|----------|------|------|
-| ✅ DONE | DMA S2MM read_output (P0) | read_out 257→~1ms | 中 | 2d | 2026-05-03 |
+| ✅ DONE | DMA S2MM read_output (P0) — direct reg mode, bypass PYNQ recvchannel, double-buffer | read_out 257→~1ms | 中 | 2d | 2026-05-03 |
 | 🔴 P0 | load_x 优化 (减少 MMIO 同步 + 预打包) | ~15ms (22%) | 低 | 3d |
 | 🔴 P0 | Pipeline overlap (DMA↔Compute 乒乓) | 30-50%+ (目标 ~125ms/img) | 中 | 2w |
 | 🔴 P0 | DMA latency 分解 + 底层 profile | 定位热点 | 低 | 1w | ✅ 已完成 (2026-05-03) |

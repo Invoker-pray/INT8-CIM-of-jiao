@@ -263,11 +263,14 @@ class CIMDriver:
                 "Bitstream does not expose axi_dma_0 — rebuild with "
                 "hw/scripts/vivado_build.sh after C3 BD integration (commit 4)."
             ) from e
+
         from pynq import allocate
         self._buf_w = allocate(shape=(_DMA_BUF_WEIGHTS,), dtype=np.uint32)
         self._buf_x = allocate(shape=(_DMA_BUF_INPUT,), dtype=np.uint32)
         self._buf_b = allocate(shape=(_DMA_BUF_BIAS,), dtype=np.uint32)
         self._buf_r = allocate(shape=(_DMA_BUF_RESULT,), dtype=np.uint32)
+        self._buf_r_alt = allocate(shape=(_DMA_BUF_RESULT,), dtype=np.uint32)
+        self._buf_r_toggle = False  # flip between _buf_r and _buf_r_alt
 
         # P0 S2MM diagnostic
         has_s2mm = getattr(self.dma, 'recvchannel', None) is not None
@@ -275,7 +278,7 @@ class CIMDriver:
         dma_params = dma_desc.get('parameters', {})
         dma_streams = dma_desc.get('streams', {})
         print(f"[CIMDriver] DMA initialized: sendchannel={'OK' if self.dma.sendchannel else 'MISSING'}, "
-              f"recvchannel={'OK' if has_s2mm else 'MISSING (P0 disabled)'}")
+              f"recvchannel={'OK' if has_s2mm else 'MISSING (P0 via direct reg mode)'}")
         # PYNQ stores IP under full name; check both keys
         matching_keys = [k for k in self.overlay.ip_dict if 'dma' in k.lower()]
         print(f"[CIMDriver] DMA keys in ip_dict: {matching_keys}")
@@ -291,6 +294,26 @@ class CIMDriver:
         # Also check overlay's IP list
         print(f"[CIMDriver] Total IPs in overlay: {len(self.overlay.ip_dict)}")
         print(f"[CIMDriver] DMA attributes: {[a for a in dir(self.dma) if not a.startswith('_')]}")
+        # Probe register_map structure for S2MM register layout
+        try:
+            _rm = self.dma.register_map
+            print(f"[CIMDriver] register_map keys: {[k for k in dir(_rm) if not k.startswith('_')]}")
+            if hasattr(_rm, 'S2MM'):
+                _s2mm = _rm.S2MM
+                print(f"[CIMDriver] S2MM keys: {[k for k in dir(_s2mm) if not k.startswith('_')]}")
+                for _reg_name in ('DMACR', 'DMASR', 'DA', 'LENGTH'):
+                    if hasattr(_s2mm, _reg_name):
+                        _reg = getattr(_s2mm, _reg_name)
+                        print(f"[CIMDriver] S2MM.{_reg_name}: addr=0x{_reg.address:04X}")
+            if hasattr(_rm, 'MM2S'):
+                _mm2s = _rm.MM2S
+                print(f"[CIMDriver] MM2S keys: {[k for k in dir(_mm2s) if not k.startswith('_')]}")
+                for _reg_name in ('DMACR', 'DMASR', 'SA', 'LENGTH'):
+                    if hasattr(_mm2s, _reg_name):
+                        _reg = getattr(_mm2s, _reg_name)
+                        print(f"[CIMDriver] MM2S.{_reg_name}: addr=0x{_reg.address:04X}")
+        except Exception as _e:
+            print(f"[CIMDriver] register_map probe failed: {_e}")
 
     def set_dma_mode(self, enable):
         """Runtime switch between DMA path and legacy MMIO path.
@@ -346,13 +369,15 @@ class CIMDriver:
         Synchronous: blocks until DMA completes and sink reports done.
         Automatically chunks large transfers to stay within PYNQ DMA's 16KB limit.
 
+        Uses direct register mode for MM2S (bypasses PYNQ _SDMAChannel) — same
+        approach as _read_output_dma for S2MM.
+
         Args:
             words: iterable of uint32
             dest: destination (DEST_WEIGHT/DEST_BIAS/DEST_INPUT)
             buf: pre-allocated numpy buffer
             _dma_timings: if not None, dict tracking {n_chunks, setup_ms, transfer_ms}
         """
-        # Single asarray conversion — callers may pass lists or numpy arrays
         words_arr = np.asarray(words, dtype=np.uint32)
         n = len(words_arr)
         if n == 0:
@@ -362,6 +387,35 @@ class CIMDriver:
                 f"stream_load: {n} words exceeds pre-allocated buffer capacity {len(buf)}. "
                 f"Increase _DMA_BUF_* at top of cim_driver.py."
             )
+
+        dma_mmio = self.dma.mmio
+        # MM2S direct register offsets (PG021)
+        _MM2S_DMACR = 0x00
+        _MM2S_DMASR = 0x04
+        _MM2S_SA = 0x18
+        _MM2S_LENGTH = 0x28
+
+        def _do_mm2s_xfer(data_buf, n_words):
+            """Transfer n_words from data_buf via MM2S direct register mode."""
+            n_padded = n_words * 4
+            phys = int(data_buf.physical_address) & 0xFFFFFFFF
+            dma_mmio.write(_MM2S_SA, phys)
+            dma_mmio.write(_MM2S_DMACR, 0x1001)    # RS=1, IOC_IrqEn
+            dma_mmio.write(_MM2S_LENGTH, n_padded)   # write last → commits
+            for _ in range(100000):
+                dm_asr = dma_mmio.read(_MM2S_DMASR)
+                if dm_asr & 0x2:   # Idle
+                    break
+                if dm_asr & 0x1:   # Halted
+                    raise RuntimeError(
+                        f"MM2S DMA halted (DMASR=0x{dm_asr:08X})"
+                    )
+            else:
+                raise RuntimeError(
+                    f"MM2S DMA timeout (DMASR=0x{dma_mmio.read(_MM2S_DMASR):08X})"
+                )
+            # Clear IOC_Irq by writing 1 to DMASR[12] (to avoid stuck Idle next time)
+            dma_mmio.write(_MM2S_DMASR, 0x1000)
 
         # PYNQ DMA limit: 16383 bytes = 4095 words (uint32)
         # For DEST_WEIGHT: align chunks to 4-word boundaries (128-bit rows)
@@ -382,8 +436,7 @@ class CIMDriver:
             if _dma_timings is not None:
                 t_xfer = time.perf_counter()
                 _dma_timings["setup_ms"] = (t_xfer - t_setup) * 1000
-            self.dma.sendchannel.transfer(buf[:n])
-            self.dma.sendchannel.wait()
+            _do_mm2s_xfer(buf, n)
             if _dma_timings is not None:
                 t_done = time.perf_counter()
                 _dma_timings["transfer_ms"] = (t_done - t_xfer) * 1000
@@ -408,8 +461,7 @@ class CIMDriver:
                 if _dma_timings is not None:
                     t_xfer = time.perf_counter()
                     _dma_timings["setup_ms"] = _dma_timings.get("setup_ms", 0) + (t_xfer - t_setup) * 1000
-                self.dma.sendchannel.transfer(buf[:chunk_size])
-                self.dma.sendchannel.wait()
+                _do_mm2s_xfer(buf, chunk_size)
                 if _dma_timings is not None:
                     t_done = time.perf_counter()
                     _dma_timings["transfer_ms"] = _dma_timings.get("transfer_ms", 0) + (t_done - t_xfer) * 1000
@@ -489,13 +541,15 @@ class CIMDriver:
     def read_output(self, out_dim):
         """Read output buffer as list of signed INT8.
 
-        Uses DMA S2MM when available (P0), falls back to serial MMIO.
+        Uses DMA S2MM direct register mode (P0), falls back to serial MMIO.
         """
         if self.dma is not None:
-            if self.dma.recvchannel is not None:
+            try:
                 return self._read_output_dma(out_dim)
-            if self._buf_r is not None:
-                return self._read_output_dma_raw(out_dim)
+            except RuntimeError as e:
+                print(f"  [S2MM] failed: {e}")
+                print(f"  [S2MM] falling back to serial MMIO")
+                return self._read_output_mmio(out_dim)
         return self._read_output_mmio(out_dim)
 
     def _read_output_mmio(self, out_dim):
@@ -507,119 +561,83 @@ class CIMDriver:
         return out
 
     def _read_output_dma(self, out_dim):
-        """P0: DMA S2MM read-back — single DMA transfer replaces N serial MMIO reads."""
+        """P0: DMA S2MM read-back — single DMA transfer replaces N serial MMIO reads.
+
+        Bypasses PYNQ recvchannel.  Direct Register Mode programming per PG021:
+          0x30 DMACR:  bit 0=RS, bit 2=Reset, bit 12=IOC_IrqEn
+          0x34 DMASR:  bit 0=Halted, bit 1=Idle, bit 12=IOC_Irq
+          0x48 DA:      32-bit destination address
+          0x58 LENGTH:  buffer length in bytes (write last — commits descriptor)
+        """
         if out_dim <= 0:
             return []
-        n_words = (out_dim + 3) // 4
-        if n_words > len(self._buf_r):
+        import time as _time
+
+        n_words = (out_dim + 3) // 4  # buffer capacity check
+        n_padded = n_words * 4          # round to 4-byte boundary
+        # DMA LENGTH and source cfg_len must agree on byte count.
+        # The source has no tkeep — every beat counts as 4 bytes in the DMA.
+        # Using out_dim directly when out_dim % 4 ≠ 0 would cause DMAIntErr.
+        # We pad both to the 4-byte boundary; extra bytes are discarded below.
+        # Alternate between two buffers to isolate buffer-reuse issues
+        self._buf_r_toggle = not self._buf_r_toggle
+        buf = self._buf_r if self._buf_r_toggle else self._buf_r_alt
+        if n_words > len(buf):
             raise ValueError(
                 f"Result DMA buffer too small: need {n_words} words, "
-                f"have {len(self._buf_r)}. Increase _DMA_BUF_RESULT."
+                f"have {len(buf)}. Increase _DMA_BUF_RESULT."
             )
-        buf = self._buf_r[:n_words]
+        dma = self.dma.mmio
+        phys = int(buf.physical_address) & 0xFFFFFFFF
 
-        # 1. Configure RTL source length
-        self.mmio.write(_CSR_RESULT_LEN, out_dim)
+        # Reset S2MM, then re-arm.  Reset is self-clearing (~4 cycles at
+        # 60 MHz = ~67 ns); a short delay covers it with generous margin.
+        dma.write(0x30, 0x4)                 # DMACR Reset=1
+        if dma.read(0x30) & 0x4:             # spin until Reset auto-clears
+            pass
 
-        # 2. Start DMA S2MM FIRST (so it's armed when source sends data)
-        self.dma.recvchannel.transfer(buf)
+        # Arm: RS=1 + IOC_IrqEn, then DA, then LENGTH last.
+        dma.write(0x30, 0x1003)                  # RS=1, IOC_IrqEn
+        dma.write(0x48, phys)
+        dma.write(0x58, n_padded)                 # LENGTH last → commits, starts xfer
 
-        # 3. Trigger RTL source
+        # Trigger RTL source: write LEN, then pulse CTRL[0] (0→1 clean edge).
+        self.mmio.write(_CSR_RESULT_LEN, n_padded)
+        self.mmio.write(_CSR_RESULT_CTRL, 0)
         self.mmio.write(_CSR_RESULT_CTRL, 1)
 
-        # 4. Poll RTL source done (sticky, cleared on next cfg_start)
-        import time as _time
-        t0 = _time.perf_counter()
+        # Poll RTL source done
         for _ in range(100000):
-            s = self.mmio.read(_CSR_RESULT_STATUS)
-            if s & 2:  # done
+            if self.mmio.read(_CSR_RESULT_STATUS) & 2:
                 break
         else:
             raise RuntimeError(
                 f"RTL source FSM timeout (out_dim={out_dim}). "
-                f"STATUS=0x{s:08X} (busy={s&1}, done={(s>>1)&1})"
+                f"STATUS=0x{self.mmio.read(_CSR_RESULT_STATUS):08X}"
             )
-        print(f"  [S2MM] source done in {_time.perf_counter()-t0:.6f}s")
 
-        # 5. DMA should also be done — wait for it
-        self.dma.recvchannel.wait()
-
-        raw = np.frombuffer(buf, dtype=np.uint8)[:out_dim]
-        return raw.view(np.int8).tolist()
-
-    def _read_output_dma_raw(self, out_dim):
-        """P0 S2MM via raw MMIO — bypasses PYNQ recvchannel.
-
-        Direct Register Mode register map (axi_dma S2MM, offset from base):
-          0x30 DMACR:  bit 0=RS, bit 2=Reset, bit 12=IOC_IrqEn
-          0x34 DMASR:  bit 0=Halted, bit 1=Idle, bit 12=IOC_Irq
-          0x48 DA:      Destination Address (physical, 32-bit)
-          0x58 LENGTH:  Buffer length in bytes (write commits descriptor)
-        """
-        if out_dim <= 0:
-            return []
-        n_words = (out_dim + 3) // 4
-        n_bytes = n_words * 4  # source always sends word-aligned byte count
-        if n_words > len(self._buf_r):
-            raise ValueError(
-                f"Result DMA buffer too small: need {n_words} words, "
-                f"have {len(self._buf_r)}. Increase _DMA_BUF_RESULT."
-            )
-        buf = self._buf_r[:n_words]
-        dma_mmio = self.dma.mmio
-
-        # 1. Reset S2MM channel
-        dma_mmio.write(0x30, 0x4)        # DMACR: Reset=1
-        for _ in range(1000):
-            if not (dma_mmio.read(0x34) & 0x1):
+        # Poll DMA idle
+        for _ in range(100000):
+            status = dma.read(0x34)
+            if status & 0x2:                 # Idle
                 break
+            if status & 0x1:                 # Halted = error
+                raise RuntimeError(
+                    f"DMA S2MM halted (DMASR=0x{status:08X}, out_dim={out_dim})"
+                )
         else:
-            raise RuntimeError("DMA S2MM reset timeout")
-
-        # 2. Set destination physical address + buffer length
-        phys = buf.physical_address
-        dma_mmio.write(0x48, int(phys) & 0xFFFFFFFF)
-
-        # 3. Pre-configure RTL source length
-        self.mmio.write(_CSR_RESULT_LEN, out_dim)
-
-        # 4. Write LENGTH (commits S2MM descriptor, DMA starts waiting for AXIS)
-        dma_mmio.write(0x58, n_bytes)
-
-        # 5. Start DMA S2MM channel (RS=1, IOC_IrqEn=1)
-        dma_mmio.write(0x30, 0x1001)
-
-        # 6. Trigger RTL source — DMA is now armed and waiting
-        self.mmio.write(_CSR_RESULT_CTRL, 1)
-
-        # 7. Poll for IOC_Irq
-        for i in range(100000):
-            status = dma_mmio.read(0x34)
-            if status & 0x1000:
-                break
-            if i == 0:
-                # First read diagnostic
-                halted = bool(status & 0x1)
-                idle = bool(status & 0x2)
-                print(f"  [raw S2MM] initial DMASR=0x{status:08X} "
-                      f"(Halted={halted}, Idle={idle})")
-        else:
-            # Timeout — dump final status
-            status = dma_mmio.read(0x34)
-            dma_mmio.write(0x30, 0x4)  # hold DMA in reset
-            for _ in range(100):
-                if dma_mmio.read(0x34) & 0x1:
-                    break
             raise RuntimeError(
-                f"DMA S2MM raw timeout: DMASR=0x{status:08X} "
-                f"(Halted={bool(status&1)}, Idle={bool(status&2)}, "
-                f"IOC_Irq={bool(status&0x1000)})"
+                f"DMA S2MM timeout (out_dim={out_dim}). "
+                f"DMASR=0x{dma.read(0x34):08X}"
             )
-        # Clear IOC_Irq
-        dma_mmio.write(0x34, 0x1000)
 
+        # Invalidate cache and return
         buf.invalidate()
-        raw = np.frombuffer(buf.copy(), dtype=np.uint8)[:out_dim]
+        raw = np.frombuffer(buf, dtype=np.uint8)[:out_dim]
+
+        # Give the AXI write path a moment to drain.
+        _time.sleep(0.001)
+
         return raw.view(np.int8).tolist()
 
     def read_pred_class(self):
