@@ -235,6 +235,9 @@ reconnect_reset_pins [get_bd_pins psr_dma/peripheral_aresetn] [list \
     [get_bd_pins axi_mem_intercon/ARESETN] \
     [get_bd_pins axi_mem_intercon/M00_ARESETN] \
     [get_bd_pins axi_mem_intercon/S00_ARESETN] \
+    [get_bd_pins axi_mem_intercon_1/ARESETN] \
+    [get_bd_pins axi_mem_intercon_1/M00_ARESETN] \
+    [get_bd_pins axi_mem_intercon_1/S00_ARESETN] \
 ]
 
 # --- 3e. Address mapping ---

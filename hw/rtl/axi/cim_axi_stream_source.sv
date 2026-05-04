@@ -118,6 +118,7 @@ module cim_axi_stream_source
             byte_cnt     <= '0;
             sub_idx      <= '0;
             word_buf     <= '0;
+            is_last_word  <= 1'b0;   // clear sticky from previous xfer
             obuf_rd_addr <= '0;     // issue rd_addr=0
             state        <= S_WAIT;
           end
