@@ -127,6 +127,17 @@
 
 **下一阶段目标: Pipeline overlap (DMA↔Compute 乒乓) → ~30-40 ms/img (25-33 fps)**
 
+### 已解决 — RTL k_pack 扩展 (2026-05-05)
+
+**方法:** 将 `MAX_IN_DIM` 784→1024, `MAX_OUT_DIM` 128→256，扩大 block-diagonal weight packing 容量。
+- Conv1 k_pack: 21 → 40, MVM 28 → 15 (-46%)
+- Conv2 k_pack: 5 → 6, MVM 13 → 11 (-15%)
+- 总 MVM 调用数: 44 → 29 (-34%)
+- 合成结果: BRAM 70/140 (50%), WNS +1.336ns (clean)
+- 预期延迟: 56.2 → ~39-42 ms/img (24-26 fps)
+
+**上板验证待进行:** `python scripts/benchmark_e2e.py --use-dma --batch --n_images 200`
+
 ## 1.2 Pipeline 深度优化
 
 **现状：** 已有 weight load → compute → store 三级流水
@@ -305,6 +316,7 @@ PyTorch model
 | ✅ DONE | DMA S2MM read_output (P0) — direct reg mode, bypass PYNQ recvchannel, double-buffer | read_out 257→19.65ms (13×) | 中 | 2d | 2026-05-04 |
 | ✅ DONE | DMA latency 分解 + 底层 profile | 定位热点: setup 41ms, load_x 23ms, im2col 21ms | 低 | 1w | 2026-05-04 |
 | ✅ DONE | 软件侧全优化 (im2col + predict_batch + maxpool + ndarray unpack) | 128.4→56.2ms/img (2.3×, 17.8 fps) | 低 | 2d | 2026-05-05 |
+| ✅ DONE | RTL k_pack 扩展 (MAX_IN_DIM 784→1024, MAX_OUT_DIM 128→256) | MVM 44→29 (-34%), 预期 ~39-42ms/img | 低 | 1d | 2026-05-05 |
 | 🔴 P0 | Pipeline overlap (DMA↔Compute 乒乓) | 目标 ~30-40ms/img (25-33 fps) | 中 | 2w |
 | 🟡 P1 | CIM 编译器 (PyTorch→CIM) | 用研效率 | 高 | 4w |
 | 🟡 P1 | 稀疏权重支持 | 30-40% speedup | 高 | 4w |
