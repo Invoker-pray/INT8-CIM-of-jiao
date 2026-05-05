@@ -85,7 +85,13 @@
 
 **2026-05-05 上板实测: 128.1 ms/img (7.8 fps), 与优化前持平。im2col 改善已确认 (1.2ms), 但总延迟未下降 — setup 节省的 ~40ms 被未追踪的 overhead 抵消。已修复 profiler (commit c427a6f), 待重新上板测试以定位瓶颈。**
 
-**预期端到端: ~60 ms/img (16-17 fps) — 尚未达成**
+**2026-05-05 profiler 修复 v2 (commit 35db304):**
+- **修复 double-counting:** `dma_x_setup_ms` / `dma_x_transfer_ms` 是 `load_x_ms` 的子组件，不再计入 `prof_sum`
+- **新增 phase tracking:** `pack_ms` (Conv 预打包), `pool_ms` (maxpool), `final_ms` (argmax)
+- **maxpool2d 向量化:** as_strided 替代 Python 三层循环
+- **真实 gap:** 剔除 double-counting 后，预期未追踪时间约 ~85ms (vs 显示的 70ms)
+
+**预期端到端: ~60 ms/img (16-17 fps) — 尚未达成，待 profiler v2 数据定位瓶颈**
 
 | Phase | 优化前 | 优化后 (预期) | 方法 |
 |-------|--------|---------------|------|
