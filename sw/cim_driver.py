@@ -1139,13 +1139,11 @@ class CIMModel:
             t_total_start = time.perf_counter()
 
         for i, layer in enumerate(self.layers):
+            layer_cycles = 0
+
             if layer["type"] == "fc":
                 if profile:
                     t_layer = time.perf_counter()
-                    setup_ms = 0.0
-                    load_x_total = 0.0
-                    compute_total = 0.0
-                    read_out_total = 0.0
 
                 # Setup once for all images
                 if profile: t_setup = time.perf_counter()
@@ -1159,6 +1157,7 @@ class CIMModel:
                     setup_ms = (time.perf_counter() - t_setup) * 1000
 
                 next_act = []
+                mvm_timings = [] if profile else None
                 for x in curr:
                     # Flatten + ensure uint8
                     if isinstance(x, np.ndarray):
@@ -1169,26 +1168,37 @@ class CIMModel:
                     elif isinstance(x, list):
                         x = [int(v) & 0xFF for v in x]
 
-                    if profile: t_x = time.perf_counter()
-                    out, cyc = self.drv.infer_fc_input_only(x, layer["out_dim"])
-                    if profile:
-                        t_done = time.perf_counter()
-                        load_x_total += (t_done - t_x) * 1000  # rough: all in one call
-
-                    total_cycles += cyc
+                    out, cyc = self.drv.infer_fc_input_only(
+                        x, layer["out_dim"], _timings=mvm_timings,
+                    )
+                    layer_cycles += cyc
                     next_act.append(out)
 
+                total_cycles += layer_cycles
+                if verbose:
+                    print(
+                        f"  Layer {i} (FC {layer['in_dim']}->{layer['out_dim']}): "
+                        f"{len(curr)} images, {layer_cycles} cycles"
+                    )
+
                 if profile:
+                    agg = {}
+                    for key in ("load_x_ms", "compute_ms", "read_out_ms",
+                                "dma_x_setup_ms", "dma_x_transfer_ms"):
+                        agg[key] = sum(mt.get(key, 0) for mt in mvm_timings) if mvm_timings else 0
                     prof["layers"].append({
                         "name": f"fc_{layer['in_dim']}x{layer['out_dim']}",
                         "type": "fc",
                         "n_mvm": 1,
                         "k_pack": 1,
                         "im2col_ms": 0.0,
-                        "setup_ms": setup_ms,
-                        "load_x_ms": load_x_total / n_img,
-                        "compute_ms": compute_total / n_img if compute_total else 0,
-                        "read_out_ms": read_out_total / n_img if read_out_total else 0,
+                        "setup_ms": setup_ms / n_img,
+                        "load_x_ms": agg["load_x_ms"] / n_img,
+                        "compute_ms": agg["compute_ms"] / n_img,
+                        "read_out_ms": agg["read_out_ms"] / n_img,
+                        "dma_x_setup_ms": agg["dma_x_setup_ms"] / n_img,
+                        "dma_x_transfer_ms": agg["dma_x_transfer_ms"] / n_img,
+                        "hw_cycles": layer_cycles,
                         "total_ms": (time.perf_counter() - t_layer) * 1000 / n_img,
                     })
 
@@ -1202,9 +1212,6 @@ class CIMModel:
                 if profile:
                     t_layer = time.perf_counter()
                     im2col_total = 0.0
-                    load_x_total = 0.0
-                    compute_total = 0.0
-                    read_out_total = 0.0
 
                 if packed is not None and packed["k_pack"] > 1:
                     k_pack = packed["k_pack"]
@@ -1222,6 +1229,7 @@ class CIMModel:
 
                     n_mvm_total = 0
                     next_act = []
+                    mvm_timings = [] if profile else None
                     for x in curr:
                         if profile: t_im2col = time.perf_counter()
                         col_matrix, out_h, out_w = im2col(
@@ -1247,27 +1255,24 @@ class CIMModel:
                         output_flat = np.zeros((C_out, n_pixels), dtype=np.int8)
                         for b in range(n_batches):
                             batch_size = min(k_pack, n_pixels - b * k_pack)
-                            if profile: t_x = time.perf_counter()
                             out_packed, cyc = self.drv.infer_fc_input_only(
-                                all_packed[b], packed["packed_out_dim"]
+                                all_packed[b], packed["packed_out_dim"],
+                                _timings=mvm_timings,
                             )
-                            if profile:
-                                t_done = time.perf_counter()
-                                load_x_total += (t_done - t_x) * 1000
-
-                            total_cycles += cyc
+                            layer_cycles += cyc
                             for bi in range(batch_size):
                                 output_flat[:, b * k_pack + bi] = out_packed[bi * C_out : (bi + 1) * C_out]
                             n_mvm_total += 1
 
                         next_act.append(output_flat.reshape(C_out, out_h, out_w))
 
+                    total_cycles += layer_cycles
                     if verbose:
                         print(
                             f"  Layer {i} (Conv {layer['C_in']}ch "
                             f"{layer['K_h']}x{layer['K_w']}->{C_out}ch): "
                             f"{n_mvm_total} packed MVMs total ({n_mvm_total // n_img}/img, k_pack={k_pack}), "
-                            f"{total_cycles} cycles"
+                            f"{layer_cycles} cycles"
                         )
 
                 else:
@@ -1284,6 +1289,7 @@ class CIMModel:
 
                     n_mvm_total = 0
                     next_act = []
+                    mvm_timings = [] if profile else None
                     for x in curr:
                         if profile: t_im2col = time.perf_counter()
                         col_matrix, out_h, out_w = im2col(
@@ -1295,20 +1301,23 @@ class CIMModel:
                         n_pixels = out_h * out_w
                         output_flat = np.zeros((C_out, n_pixels), dtype=np.int8)
                         for p in range(n_pixels):
-                            if profile: t_x = time.perf_counter()
                             out_p, cyc = self.drv.infer_fc_input_only(
-                                col_matrix[:, p], C_out
+                                col_matrix[:, p], C_out,
+                                _timings=mvm_timings,
                             )
-                            if profile:
-                                load_x_total += (time.perf_counter() - t_x) * 1000
-
-                            total_cycles += cyc
+                            layer_cycles += cyc
                             output_flat[:, p] = out_p
                             n_mvm_total += 1
 
                         next_act.append(output_flat.reshape(C_out, out_h, out_w))
 
+                    total_cycles += layer_cycles
+
                 if profile:
+                    agg = {}
+                    for key in ("load_x_ms", "compute_ms", "read_out_ms",
+                                "dma_x_setup_ms", "dma_x_transfer_ms"):
+                        agg[key] = sum(mt.get(key, 0) for mt in mvm_timings) if mvm_timings else 0
                     prof["layers"].append({
                         "name": f"conv_{layer['C_in']}x{layer['K_h']}x{layer['K_w']}_to_{C_out}",
                         "type": "conv",
@@ -1316,9 +1325,12 @@ class CIMModel:
                         "k_pack": packed["k_pack"] if packed else 1,
                         "im2col_ms": im2col_total / n_img,
                         "setup_ms": setup_ms / n_img,
-                        "load_x_ms": load_x_total / n_img,
-                        "compute_ms": 0,
-                        "read_out_ms": 0,
+                        "load_x_ms": agg["load_x_ms"] / n_img,
+                        "compute_ms": agg["compute_ms"] / n_img,
+                        "read_out_ms": agg["read_out_ms"] / n_img,
+                        "dma_x_setup_ms": agg["dma_x_setup_ms"] / n_img,
+                        "dma_x_transfer_ms": agg["dma_x_transfer_ms"] / n_img,
+                        "hw_cycles": layer_cycles,
                         "total_ms": (time.perf_counter() - t_layer) * 1000 / n_img,
                     })
 

@@ -193,13 +193,23 @@ def main():
             total = prof.get("total_ms", 0)
             print(f"  {'Phase':<30s} {'avg_ms':>8s}  {'pct':>6s}")
             print(f"  {'-'*30}  {'-'*8}  {'-'*6}")
+            # Prefer detailed per-phase breakdown from infer_fc_input_only timings
+            phase_keys = ("im2col_ms", "setup_ms", "load_x_ms", "dma_x_setup_ms",
+                          "dma_x_transfer_ms", "compute_ms", "read_out_ms")
             agg = {}
             for l in prof.get("layers", []):
-                for k in ("setup_ms", "load_x_ms", "im2col_ms", "compute_ms", "read_out_ms"):
+                for k in phase_keys:
                     agg[k] = agg.get(k, 0) + l.get(k, 0)
-            for k, v in agg.items():
-                pct = v / (total / prof["n_images"]) * 100 if total else 0
-                print(f"  {k:<30s} {v:8.2f}  {pct:5.1f}%")
+            for k in phase_keys:
+                v = agg.get(k, 0)
+                if v > 0.005:  # skip near-zero phases
+                    pct = v / (total / prof["n_images"]) * 100 if total else 0
+                    print(f"  {k:<30s} {v:8.2f}  {pct:5.1f}%")
+            # Show un-profiled gap
+            prof_sum = sum(agg.values())
+            gap = total / prof["n_images"] - prof_sum
+            if gap > 0.5:
+                print(f"  {'(other/unprofiled)':<30s} {gap:8.2f}")
             print(f"  {'-'*30}  {'-'*8}  {'-'*6}")
             print(f"  {'TOTAL':<30s} {total/prof['n_images']:8.2f}")
             print()
