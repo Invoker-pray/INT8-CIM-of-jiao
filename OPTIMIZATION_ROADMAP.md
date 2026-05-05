@@ -75,7 +75,7 @@
 
 1. **im2col 向量化:** 用 `np.lib.stride_tricks.as_strided` 替换 Python 嵌套循环
    - 方法: 构建 5D 视图 (C, out_h, out_w, K_h, K_w) → transpose → copy → reshape
-   - 预期: 20.6ms → ~2ms (**10×**)
+   - **实测: 20.6ms → 1.2ms (17×)** ✅ 已上板确认
 2. **setup 优化 (layer-wise batching):** 新增 `CIMModel.predict_batch()` 方法
    - 方法: 逐层处理全部图像，每层 weight/bias 只加载一次
    - 预期: 41ms → ~0.2ms amortized (**200×** for 200-image batch)
@@ -83,7 +83,9 @@
    - 方法: `(col_len, n_pixels)` → pad → reshape/transpose → `(n_batches, k_pack*col_len)` 一次生成
    - 预期: 23ms → ~14ms (消除 ~9ms Python 分配/拷贝开销)
 
-**预期端到端: ~60 ms/img (16-17 fps)**
+**2026-05-05 上板实测: 128.1 ms/img (7.8 fps), 与优化前持平。im2col 改善已确认 (1.2ms), 但总延迟未下降 — setup 节省的 ~40ms 被未追踪的 overhead 抵消。已修复 profiler (commit c427a6f), 待重新上板测试以定位瓶颈。**
+
+**预期端到端: ~60 ms/img (16-17 fps) — 尚未达成**
 
 | Phase | 优化前 | 优化后 (预期) | 方法 |
 |-------|--------|---------------|------|
@@ -291,8 +293,8 @@ PyTorch model
 |--------|------|----------|------|------|
 | ✅ DONE | DMA S2MM read_output (P0) — direct reg mode, bypass PYNQ recvchannel, double-buffer | read_out 257→19.65ms (13×) | 中 | 2d | 2026-05-04 |
 | ✅ DONE | DMA latency 分解 + 底层 profile | 定位热点: setup 41ms, load_x 23ms, im2col 21ms | 低 | 1w | 2026-05-04 |
-| ✅ DONE | setup + load_x + im2col 软件侧三优化 (predict_batch) | 预计 128→~60ms (53%↓) | 低 | 1d | 2026-05-04 |
-| 🔴 P0 | 上板验证软件优化 + 更新实际 benchmark 数据 | 确认 ~60ms/img 目标 | — | 1d |
+| ✅ DONE | setup + load_x + im2col 软件侧三优化 (predict_batch) | im2col 20.6→1.2ms ✅; total 128ms 未改善 ⏳ | 低 | 1d | 2026-05-04 |
+| 🔴 P0 | 上板验证软件优化 + 修复 performance bug (profiler 已 fix) | 确认瓶颈: setup savings 被何 overhead 抵消 | — | 1d |
 | 🔴 P0 | Pipeline overlap (DMA↔Compute 乒乓) | 目标 ~40-50ms/img (20-25 fps) | 中 | 2w |
 | 🟡 P1 | CIM 编译器 (PyTorch→CIM) | 用研效率 | 高 | 4w |
 | 🟡 P1 | 稀疏权重支持 | 30-40% speedup | 高 | 4w |
