@@ -205,16 +205,20 @@ def im2col(feature_map, kernel_h, kernel_w, stride=1, padding=0):
 
 
 def maxpool2d(feat, kernel=2, stride=2):
-    """Max pooling on signed INT8 feature map [C, H, W]."""
+    """Max pooling on signed INT8 feature map [C, H, W] — vectorized."""
     C, H, W = feat.shape
     oh, ow = H // stride, W // stride
-    out = np.zeros((C, oh, ow), dtype=feat.dtype)
-    for c in range(C):
-        for i in range(oh):
-            for j in range(ow):
-                out[c, i, j] = feat[c, i * stride : i * stride + kernel,
-                                    j * stride : j * stride + kernel].max()
-    return out
+    # as_strided: build 5D view (C, oh, ow, K, K) then max over spatial kernel dims
+    win_shape = (C, oh, ow, kernel, kernel)
+    win_strides = (
+        feat.strides[0],
+        stride * feat.strides[1],
+        stride * feat.strides[2],
+        feat.strides[1],
+        feat.strides[2],
+    )
+    windows = np.lib.stride_tricks.as_strided(feat, shape=win_shape, strides=win_strides)
+    return windows.max(axis=(3, 4))
 
 
 # ============================================================================
@@ -1192,12 +1196,14 @@ class CIMModel:
                         "n_mvm": 1,
                         "k_pack": 1,
                         "im2col_ms": 0.0,
+                        "pack_ms": 0.0,
                         "setup_ms": setup_ms / n_img,
                         "load_x_ms": agg["load_x_ms"] / n_img,
                         "compute_ms": agg["compute_ms"] / n_img,
                         "read_out_ms": agg["read_out_ms"] / n_img,
                         "dma_x_setup_ms": agg["dma_x_setup_ms"] / n_img,
                         "dma_x_transfer_ms": agg["dma_x_transfer_ms"] / n_img,
+                        "pool_ms": 0.0,
                         "hw_cycles": layer_cycles,
                         "total_ms": (time.perf_counter() - t_layer) * 1000 / n_img,
                     })
@@ -1212,6 +1218,7 @@ class CIMModel:
                 if profile:
                     t_layer = time.perf_counter()
                     im2col_total = 0.0
+                    pack_total = 0.0
 
                 if packed is not None and packed["k_pack"] > 1:
                     k_pack = packed["k_pack"]
@@ -1242,6 +1249,7 @@ class CIMModel:
                         n_batches = (n_pixels + k_pack - 1) // k_pack
 
                         # Pre-pack all column batches (vectorized numpy)
+                        if profile: t_pack = time.perf_counter()
                         padded_cols = np.zeros((col_len, n_batches * k_pack), dtype=np.uint8)
                         padded_cols[:, :n_pixels] = col_matrix
                         all_packed = (
@@ -1251,6 +1259,8 @@ class CIMModel:
                             .reshape(n_batches, k_pack * col_len)
                             .copy()
                         )
+                        if profile:
+                            pack_total += (time.perf_counter() - t_pack) * 1000
 
                         output_flat = np.zeros((C_out, n_pixels), dtype=np.int8)
                         for b in range(n_batches):
@@ -1276,7 +1286,8 @@ class CIMModel:
                         )
 
                 else:
-                    # Unpacked path
+                    # Unpacked path — no pre-packing (one MVM per pixel)
+                    pack_total = 0.0
                     if profile: t_setup = time.perf_counter()
                     self.drv.configure(
                         col_len, C_out,
@@ -1324,12 +1335,14 @@ class CIMModel:
                         "n_mvm": n_mvm_total,
                         "k_pack": packed["k_pack"] if packed else 1,
                         "im2col_ms": im2col_total / n_img,
+                        "pack_ms": pack_total / n_img,
                         "setup_ms": setup_ms / n_img,
                         "load_x_ms": agg["load_x_ms"] / n_img,
                         "compute_ms": agg["compute_ms"] / n_img,
                         "read_out_ms": agg["read_out_ms"] / n_img,
                         "dma_x_setup_ms": agg["dma_x_setup_ms"] / n_img,
                         "dma_x_transfer_ms": agg["dma_x_transfer_ms"] / n_img,
+                        "pool_ms": 0.0,
                         "hw_cycles": layer_cycles,
                         "total_ms": (time.perf_counter() - t_layer) * 1000 / n_img,
                     })
@@ -1339,16 +1352,31 @@ class CIMModel:
             elif layer["type"] == "pool":
                 if profile: t_layer = time.perf_counter()
                 # Max pooling: int8 input → int8 output → view as uint8 for next layer
+                pool_ms_total = 0.0
                 next_act = []
                 for x in curr:
                     x_i8 = x.view(np.int8) if x.dtype == np.uint8 else x
+                    if profile: t_pool = time.perf_counter()
                     pooled = maxpool2d(x_i8, layer["kernel"], layer["stride"])
+                    if profile:
+                        pool_ms_total += (time.perf_counter() - t_pool) * 1000
                     next_act.append(pooled.view(np.uint8))
                 curr = next_act
                 if profile:
                     prof["layers"].append({
                         "name": f"pool_{layer['kernel']}x{layer['kernel']}",
                         "type": "pool",
+                        "n_mvm": 0,
+                        "k_pack": 1,
+                        "im2col_ms": 0.0,
+                        "pack_ms": 0.0,
+                        "setup_ms": 0.0,
+                        "load_x_ms": 0.0,
+                        "compute_ms": 0.0,
+                        "read_out_ms": 0.0,
+                        "dma_x_setup_ms": 0.0,
+                        "dma_x_transfer_ms": 0.0,
+                        "pool_ms": pool_ms_total / n_img,
                         "total_ms": (time.perf_counter() - t_layer) * 1000 / n_img,
                     })
 
@@ -1356,12 +1384,15 @@ class CIMModel:
                 raise ValueError(f"Unknown layer type: {layer['type']}")
 
         # Final predictions
+        if profile: t_final = time.perf_counter()
         results = []
         for logits in curr:
             pred = int(np.argmax(np.asarray(logits).flatten()))
             results.append((pred, logits))
 
         if profile:
+            final_ms = (time.perf_counter() - t_final) * 1000
+            prof["final_ms"] = final_ms / n_img
             prof["total_ms"] = (time.perf_counter() - t_total_start) * 1000
             return results, prof
         return results
