@@ -568,24 +568,16 @@ class CIMDriver:
             out[i] = np.int8(v & 0xFF)
         return out
 
-    def _read_output_dma(self, out_dim):
-        """P0: DMA S2MM read-back — single DMA transfer replaces N serial MMIO reads.
+    def _start_read_output_dma(self, out_dim):
+        """P0: Arm S2MM DMA + trigger RTL source. Does NOT wait for completion.
 
-        Bypasses PYNQ recvchannel.  Direct Register Mode programming per PG021:
-          0x30 DMACR:  bit 0=RS, bit 2=Reset, bit 12=IOC_IrqEn
-          0x34 DMASR:  bit 0=Halted, bit 1=Idle, bit 12=IOC_Irq
-          0x48 DA:      32-bit destination address
-          0x58 LENGTH:  buffer length in bytes (write last — commits descriptor)
+        Returns wait_state dict for _finish_read_output_dma().
+        Allows MM2S of next MVM to overlap with S2MM of current MVM.
         """
         if out_dim <= 0:
-            return []
-        n_words = (out_dim + 3) // 4  # buffer capacity check
-        n_padded = n_words * 4          # round to 4-byte boundary
-        # DMA LENGTH and source cfg_len must agree on byte count.
-        # The source has no tkeep — every beat counts as 4 bytes in the DMA.
-        # Using out_dim directly when out_dim % 4 ≠ 0 would cause DMAIntErr.
-        # We pad both to the 4-byte boundary; extra bytes are discarded below.
-        # Alternate between two buffers to isolate buffer-reuse issues
+            return None
+        n_words = (out_dim + 3) // 4
+        n_padded = n_words * 4
         self._buf_r_toggle = not self._buf_r_toggle
         buf = self._buf_r if self._buf_r_toggle else self._buf_r_alt
         if n_words > len(buf):
@@ -596,21 +588,30 @@ class CIMDriver:
         dma = self.dma.mmio
         phys = int(buf.physical_address) & 0xFFFFFFFF
 
-        # Reset S2MM, then re-arm.  Reset is self-clearing (~4 cycles at
-        # 60 MHz = ~67 ns); a short delay covers it with generous margin.
-        dma.write(0x30, 0x4)                 # DMACR Reset=1
-        if dma.read(0x30) & 0x4:             # spin until Reset auto-clears
+        # Reset S2MM (self-clearing)
+        dma.write(0x30, 0x4)
+        if dma.read(0x30) & 0x4:
             pass
 
-        # Arm: RS=1 + IOC_IrqEn, then DA, then LENGTH last.
-        dma.write(0x30, 0x1003)                  # RS=1, IOC_IrqEn
+        # Arm DMA: RS=1, IOC_IrqEn, DA, then LENGTH last
+        dma.write(0x30, 0x1003)
         dma.write(0x48, phys)
-        dma.write(0x58, n_padded)                 # LENGTH last → commits, starts xfer
+        dma.write(0x58, n_padded)
 
-        # Trigger RTL source: write LEN, then pulse CTRL[0] (0→1 clean edge).
+        # Trigger RTL source: LEN, then pulse CTRL[0]
         self.mmio.write(_CSR_RESULT_LEN, n_padded)
         self.mmio.write(_CSR_RESULT_CTRL, 0)
         self.mmio.write(_CSR_RESULT_CTRL, 1)
+
+        return {"buf": buf, "out_dim": out_dim, "n_padded": n_padded}
+
+    def _finish_read_output_dma(self, wait_state):
+        """Wait for S2MM completion and return output array."""
+        if wait_state is None:
+            return np.array([], dtype=np.int8)
+        buf = wait_state["buf"]
+        out_dim = wait_state["out_dim"]
+        dma = self.dma.mmio
 
         # Poll RTL source done
         for _ in range(100000):
@@ -625,9 +626,9 @@ class CIMDriver:
         # Poll DMA idle
         for _ in range(100000):
             status = dma.read(0x34)
-            if status & 0x2:                 # Idle
+            if status & 0x2:
                 break
-            if status & 0x1:                 # Halted = error
+            if status & 0x1:
                 raise RuntimeError(
                     f"DMA S2MM halted (DMASR=0x{status:08X}, out_dim={out_dim})"
                 )
@@ -637,12 +638,14 @@ class CIMDriver:
                 f"DMASR=0x{dma.read(0x34):08X}"
             )
 
-        # Invalidate cache and return.
-        # No drain delay needed — source done + DMA idle already guarantee
-        # all data is written to DDR.
         buf.invalidate()
         raw = np.frombuffer(buf, dtype=np.uint8)[:out_dim]
         return raw.view(np.int8).copy()
+
+    def _read_output_dma(self, out_dim):
+        """P0: DMA S2MM read-back — single DMA transfer (blocking)."""
+        ws = self._start_read_output_dma(out_dim)
+        return self._finish_read_output_dma(ws)
 
     def read_pred_class(self):
         """Read hardware argmax result."""
@@ -1266,17 +1269,76 @@ class CIMModel:
                             pack_total += (time.perf_counter() - t_pack) * 1000
 
                         output_flat = np.zeros((C_out, n_pixels), dtype=np.int8)
+
+                        # Pipelined MVM loop: overlap S2MM read of batch N
+                        # with MM2S load of batch N+1.
+                        # DMA has independent MM2S/S2MM channels; CIM has
+                        # independent input/output paths.
+                        #
+                        # Pattern per batch:
+                        #   load_x (MM2S) → compute → start S2MM (fire+forget)
+                        #   For b>0: finish prev S2MM (done during current load_x)
+                        do_t = profile
+
                         for b in range(n_batches):
                             batch_size = min(k_pack, n_pixels - b * k_pack)
-                            out_packed, cyc = self.drv.infer_fc_input_only(
-                                all_packed[b], packed["packed_out_dim"],
-                                _timings=mvm_timings,
+                            dma_x = {} if self.drv.use_dma and do_t else None
+                            if do_t: t0 = time.perf_counter()
+
+                            # --- Load input (MM2S) ---
+                            # For b>0, previous S2MM completes during this transfer
+                            self.drv.load_input(all_packed[b], dma_x)
+                            if do_t: t1 = time.perf_counter()
+
+                            # --- Finish previous S2MM (should be done by now) ---
+                            # load_input MM2S (~500us) > S2MM (~400us), so fully overlapped
+                            if b > 0:
+                                if do_t: ts2 = time.perf_counter()
+                                out_packed = self.drv._finish_read_output_dma(_s2mm_ws)
+                                if do_t:
+                                    ts3 = time.perf_counter()
+                                    if mvm_timings:
+                                        mvm_timings[-1]["read_out_ms"] = (ts3 - ts2) * 1000
+                                # Unpack previous output
+                                out_2d = out_packed.reshape(k_pack, C_out)[:prev_bs, :]
+                                output_flat[:, (b - 1) * k_pack : (b - 1) * k_pack + prev_bs] = out_2d.T
+
+                            # --- Compute ---
+                            cycles, macs = self.drv.start_and_wait()
+                            if do_t: t2 = time.perf_counter()
+
+                            # --- Start S2MM for this batch ---
+                            if do_t: t3a = time.perf_counter()
+                            _s2mm_ws = self.drv._start_read_output_dma(
+                                packed["packed_out_dim"]
                             )
-                            layer_cycles += cyc
-                            # Vectorized unpack: reshape (k_pack*C_out,) → (batch_size, C_out).T
-                            out_2d = out_packed.reshape(k_pack, C_out)[:batch_size, :]
-                            output_flat[:, b * k_pack : b * k_pack + batch_size] = out_2d.T
+                            read_start_ms = (time.perf_counter() - t3a) * 1000
+                            if do_t and mvm_timings is not None:
+                                timing = {
+                                    "load_x_ms": (t1 - t0) * 1000,
+                                    "compute_ms": (t2 - t1) * 1000,
+                                    "read_out_ms": read_start_ms,
+                                    "hw_cycles": cycles,
+                                    "hw_macs": macs,
+                                }
+                                if self.drv.use_dma:
+                                    timing["dma_x_setup_ms"] = dma_x.get("setup_ms", 0)
+                                    timing["dma_x_transfer_ms"] = dma_x.get("transfer_ms", 0)
+                                mvm_timings.append(timing)
+
+                            layer_cycles += cycles
+                            prev_bs = batch_size
                             n_mvm_total += 1
+
+                        # --- Wait for last S2MM + unpack last batch ---
+                        if do_t: ts2 = time.perf_counter()
+                        out_packed = self.drv._finish_read_output_dma(_s2mm_ws)
+                        if do_t and mvm_timings:
+                            mvm_timings[-1]["read_out_ms"] = (
+                                time.perf_counter() - ts2
+                            ) * 1000
+                        out_2d = out_packed.reshape(k_pack, C_out)[:prev_bs, :]
+                        output_flat[:, (n_batches - 1) * k_pack : (n_batches - 1) * k_pack + prev_bs] = out_2d.T
 
                         next_act.append(output_flat.reshape(C_out, out_h, out_w))
 
