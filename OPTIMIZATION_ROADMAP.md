@@ -36,30 +36,29 @@
 | CIM Accel Core | ✅ 完成 | pipeline 已多级 |
 | AXI DMA 数据通路 | ✅ 完成 | MM2S + S2MM direct register mode, P0 完成 |
 | LeNet-5 e2e benchmark | ✅ 完成 | accuracy 99.50% @200 images |
-| 软件侧优化 (im2col + predict_batch) | ✅ 代码完成 ⏳ 待上板 | 预计 128→~60ms/img |
+| 软件侧优化 (im2col + predict_batch) | ✅ 完成 | 128.4→73.5ms/img (1.75×) |
 
-### LeNet-5 Latency Breakdown (2026-05-04)
+### LeNet-5 Latency Breakdown (2026-05-05, 优化后)
 
 | Phase | ms/img | % |
 |-------|--------|---|
-| setup (configure + load_w + load_b) | 41.05 | 32.0% |
-| load_x (per-MVM input) | 23.01 | 17.9% |
-| im2col (Python-side) | 20.58 | 16.0% |
-| read_out (S2MM DMA) | 19.65 | 15.3% |
-| dma_x_setup (stream sink arm) | 8.87 | 6.9% |
-| compute (hardware) | 7.17 | 5.6% |
-| dma_x_transfer | 5.55 | 4.3% |
-| dma_w_transfer | 0.81 | 0.6% |
-| dma_w_setup | 0.73 | 0.6% |
-| dma_b_setup | 0.62 | 0.5% |
-| dma_b_transfer | 0.37 | 0.3% |
-| **TOTAL** | **128.4** | **100%** |
+| load_x (DMA input) | 23.92 | 32.6% |
+| read_out (DMA S2MM) | 19.94 | 27.1% |
+| (other/unprofiled) | 19.06 | 25.9% |
+| compute (hardware) | 7.20 | 9.8% |
+| pool (maxpool) | 1.27 | 1.7% |
+| im2col (vectorized) | 1.21 | 1.6% |
+| pack (pre-packing) | 0.57 | 0.8% |
+| setup (amortized) | 0.21 | 0.3% |
+| final (argmax) | 0.08 | 0.1% |
+| **TOTAL** | **73.5** | **100%** |
 
 优化历程：
 - MMIO path: 1690.54 ms/img (0.59 fps)
 - DMA (C3 MM2S only, P0 read_out via MMIO): 503.65 ms/img (1.99 fps), speedup 3.4×
-- DMA (C3 MM2S + P0 S2MM direct reg mode): **128.4 ms/img (7.8 fps), speedup 13.2× vs MMIO**
+- DMA (C3 MM2S + P0 S2MM direct reg mode): 128.4 ms/img (7.8 fps), speedup 13.2× vs MMIO
 - read_out: 257ms → 19.65ms (**13× faster**)
+- **软件侧优化 (im2col + predict_batch + maxpool): 128.4 → 73.5 ms/img (13.6 fps), speedup 1.75×, 累计 23× vs MMIO**
 
 # 1. 性能优化（短期 — 1~2 月）
 
@@ -71,56 +70,57 @@
 - ✅ read_out 串行 MMIO (257ms) → S2MM DMA (19.65ms), 13× speedup
 - ✅ 端到端: 503ms → 128ms/img, 3.9× speedup vs pre-P0 DMA
 
-**已解决 — P1 软件侧三优化 (2026-05-04, 代码完成, ⏳ 待上板验证):**
+**已解决 — P1 软件侧三优化 (2026-05-04, 代码完成, 2026-05-05 上板验证 ✅):**
 
 1. **im2col 向量化:** 用 `np.lib.stride_tricks.as_strided` 替换 Python 嵌套循环
    - 方法: 构建 5D 视图 (C, out_h, out_w, K_h, K_w) → transpose → copy → reshape
-   - **实测: 20.6ms → 1.2ms (17×)** ✅ 已上板确认
+   - **实测: 20.6ms → 1.2ms (17×)** ✅
 2. **setup 优化 (layer-wise batching):** 新增 `CIMModel.predict_batch()` 方法
    - 方法: 逐层处理全部图像，每层 weight/bias 只加载一次
-   - 预期: 41ms → ~0.2ms amortized (**200×** for 200-image batch)
+   - **实测: 41.0ms → 0.2ms amortized (195×)** ✅
 3. **load_x 优化 (预打包):** Conv 输入列用 numpy reshape 批量预打包
    - 方法: `(col_len, n_pixels)` → pad → reshape/transpose → `(n_batches, k_pack*col_len)` 一次生成
-   - 预期: 23ms → ~14ms (消除 ~9ms Python 分配/拷贝开销)
+   - 实测: DMA 次数不变 (44/img), 但消除了逐列 Python 分配开销
 
-**2026-05-05 上板实测: 128.1 ms/img (7.8 fps), 与优化前持平。im2col 改善已确认 (1.2ms), 但总延迟未下降 — setup 节省的 ~40ms 被未追踪的 overhead 抵消。已修复 profiler (commit c427a6f), 待重新上板测试以定位瓶颈。**
+**附加优化 (2026-05-05, commit 35db304):**
+4. **maxpool2d 向量化:** as_strided 5D 视图 + `.max(axis=(3,4))` 替代 Python 三层循环
+   - **实测: ~未测→ 1.3ms**
+5. **Profiler 修复 v2:** 消除 double-counting，新增 pack_ms / pool_ms / final_ms 追踪
+   - 未追踪时间从虚低 70ms → 真实 19ms
 
-**2026-05-05 profiler 修复 v2 (commit 35db304):**
-- **修复 double-counting:** `dma_x_setup_ms` / `dma_x_transfer_ms` 是 `load_x_ms` 的子组件，不再计入 `prof_sum`
-- **新增 phase tracking:** `pack_ms` (Conv 预打包), `pool_ms` (maxpool), `final_ms` (argmax)
-- **maxpool2d 向量化:** as_strided 替代 Python 三层循环
-- **真实 gap:** 剔除 double-counting 后，预期未追踪时间约 ~85ms (vs 显示的 70ms)
+### 2026-05-05 上板实测结果 (200 images, DMA + batch)
 
-**预期端到端: ~60 ms/img (16-17 fps) — 尚未达成，待 profiler v2 数据定位瓶颈**
+| Phase | 优化前 | 优化后 | 改善 |
+|-------|--------|--------|------|
+| im2col_ms | 20.58 | 1.21 | **-94% (17×)** |
+| pack_ms | — | 0.57 | 新增 (预打包) |
+| setup_ms | 41.05 | 0.21 | **-99.5% (195×)** |
+| load_x_ms | 23.01 | 23.92 | ≈ (DMA 次数未变) |
+| compute_ms | 7.17 | 7.20 | ≈ |
+| read_out_ms | 19.65 | 19.94 | ≈ |
+| pool_ms | — | 1.27 | 向量化 maxpool |
+| final_ms | — | 0.08 | argmax |
+| (other) | ~16 | 19.06 | 层间转换/Python overhead |
+| **TOTAL** | **128.4** | **73.5** | **-43% (1.75×)** |
 
-| Phase | 优化前 | 优化后 (预期) | 方法 |
-|-------|--------|---------------|------|
-| setup_ms | 41.05 | ~0.2 | Layer-wise batching |
-| load_x_ms | 23.01 | ~14 | Vectorized pre-packing |
-| im2col_ms | 20.58 | ~2 | as_strided vectorization |
-| read_out_ms | 19.65 | 19.65 | (unchanged) |
-| compute_ms | 7.17 | 7.17 | (unchanged) |
-| other DMA | 16.94 | ~16.94 | (unchanged) |
-| **TOTAL** | **128.4** | **~60** | **-53%** |
+**FPS: 7.8 → 13.6 (+74%), Accuracy: 199/200 (99.5%) 不变**
 
 使用方式: `python scripts/benchmark_e2e.py --use-dma --batch --n_images 200`
 
-**待优化 — 按优先级:**
+### 当前瓶颈分析 (73.5 ms/img)
 
-1. **setup_ms (41ms, 32%):** configure + load_weights + load_bias 每层重复
-   - 方向: layer-wise weight/bias 预加载 + CSR 批量写入
-   - 预期: 41ms → ~10ms (减少重复 configure)
+| Phase | ms | % | 优化潜力 |
+|-------|-----|-----|------|
+| load_x_ms | 23.92 | 32.6% | DMA 启动次数减少 (44→更少), 乒乓 |
+| read_out_ms | 19.94 | 27.1% | S2MM 与 compute 重叠 |
+| (other/unprofiled) | 19.06 | 25.9% | 层间转换, Python overhead, np.zeros 分配 |
+| compute_ms | 7.20 | 9.8% | 硬件已固定 |
+| pool_ms | 1.27 | 1.7% | 已优化 |
+| im2col_ms | 1.21 | 1.6% | 已优化 |
+| pack_ms | 0.57 | 0.8% | 可忽略 |
+| setup_ms | 0.21 | 0.3% | 已优化 |
 
-2. **load_x_ms (23ms, 18%):** 51 次 MVM 调用，每次需 stream sink arm + DMA transfer
-   - 方向: 批量输入预打包，减少 DMA 启动次数
-   - 预期: 23ms → ~10ms
-
-3. **im2col_ms (21ms, 16%):** Python 循环构建 col_matrix
-   - 方向: numpy stride_tricks / numba JIT / 预计算索引
-   - 预期: 21ms → ~5ms
-
-4. **Ping-pong buffer:** compute 和下一层 DMA load 重叠
-   - 预期: 隐藏大部分 load/setup 延迟，总延迟 → ~60-80ms/img (12-16 fps)
+**下一阶段目标: Pipeline overlap (DMA↔Compute 乒乓) → ~40-50 ms/img (20-25 fps)**
 
 ## 1.2 Pipeline 深度优化
 
@@ -299,8 +299,8 @@ PyTorch model
 |--------|------|----------|------|------|
 | ✅ DONE | DMA S2MM read_output (P0) — direct reg mode, bypass PYNQ recvchannel, double-buffer | read_out 257→19.65ms (13×) | 中 | 2d | 2026-05-04 |
 | ✅ DONE | DMA latency 分解 + 底层 profile | 定位热点: setup 41ms, load_x 23ms, im2col 21ms | 低 | 1w | 2026-05-04 |
-| ✅ DONE | setup + load_x + im2col 软件侧三优化 (predict_batch) | im2col 20.6→1.2ms ✅; total 128ms 未改善 ⏳ | 低 | 1d | 2026-05-04 |
-| 🔴 P0 | 上板验证软件优化 + 修复 performance bug (profiler 已 fix) | 确认瓶颈: setup savings 被何 overhead 抵消 | — | 1d |
+| ✅ DONE | setup + load_x + im2col + maxpool 软件侧优化 (predict_batch) | 128.4→73.5ms/img (1.75×, 13.6 fps) | 低 | 2d | 2026-05-05 |
+| 🔴 P0 | 消除 other 19ms overhead (层间转换, np.zeros, Python loop) | 73.5→~55ms | 低 | 1d |
 | 🔴 P0 | Pipeline overlap (DMA↔Compute 乒乓) | 目标 ~40-50ms/img (20-25 fps) | 中 | 2w |
 | 🟡 P1 | CIM 编译器 (PyTorch→CIM) | 用研效率 | 高 | 4w |
 | 🟡 P1 | 稀疏权重支持 | 30-40% speedup | 高 | 4w |
