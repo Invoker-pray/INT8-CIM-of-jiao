@@ -1270,15 +1270,13 @@ class CIMModel:
 
                         output_flat = np.zeros((C_out, n_pixels), dtype=np.int8)
 
-                        # Pipelined MVM loop: overlap S2MM read of batch N
-                        # with MM2S load of batch N+1.
-                        # DMA has independent MM2S/S2MM channels; CIM has
-                        # independent input/output paths.
+                        # Pipelined MVM loop: overlap S2MM of batch N with
+                        # load_x + compute of batch N+1.
                         #
-                        # Pattern per batch:
-                        #   load_x (MM2S) → compute → start S2MM (fire+forget)
-                        #   For b>0: finish prev S2MM (done during current load_x)
+                        # Per batch: load_x → compute → wait prev S2MM → arm S2MM → unpack prev
+                        # S2MM(N) runs during load_x(N+1) + compute(N+1) ≈ 856us >> 430us
                         do_t = profile
+                        _s2mm_ws = None   # wait state for S2MM started in previous iteration
 
                         for b in range(n_batches):
                             batch_size = min(k_pack, n_pixels - b * k_pack)
@@ -1286,26 +1284,25 @@ class CIMModel:
                             if do_t: t0 = time.perf_counter()
 
                             # --- Load input (MM2S) ---
-                            # For b>0, previous S2MM completes during this transfer
                             self.drv.load_input(all_packed[b], dma_x)
                             if do_t: t1 = time.perf_counter()
 
-                            # --- Finish previous S2MM (should be done by now) ---
-                            # load_input MM2S (~500us) > S2MM (~400us), so fully overlapped
-                            if b > 0:
+                            # --- Compute ---
+                            cycles, macs = self.drv.start_and_wait()
+                            if do_t: t2 = time.perf_counter()
+
+                            # --- Finish previous S2MM + unpack previous output ---
+                            # By now S2MM(N-1) has had load_x(N) + compute(N) ≈ 856us;
+                            # S2MM needs ~430us, so it should be done.
+                            if _s2mm_ws is not None:
                                 if do_t: ts2 = time.perf_counter()
                                 out_packed = self.drv._finish_read_output_dma(_s2mm_ws)
                                 if do_t:
                                     ts3 = time.perf_counter()
                                     if mvm_timings:
                                         mvm_timings[-1]["read_out_ms"] = (ts3 - ts2) * 1000
-                                # Unpack previous output
                                 out_2d = out_packed.reshape(k_pack, C_out)[:prev_bs, :]
                                 output_flat[:, (b - 1) * k_pack : (b - 1) * k_pack + prev_bs] = out_2d.T
-
-                            # --- Compute ---
-                            cycles, macs = self.drv.start_and_wait()
-                            if do_t: t2 = time.perf_counter()
 
                             # --- Start S2MM for this batch ---
                             if do_t: t3a = time.perf_counter()
