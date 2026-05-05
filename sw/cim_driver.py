@@ -23,7 +23,7 @@ Usage on PYNQ:
   out_map = model.infer_conv(feat_map, weight_4d, bias, zp, mult, shift, stride, padding, relu)
 
 Hardware limits (cim_pkg.sv):
-  MAX_IN_DIM  = 1024
+  MAX_IN_DIM  = 1536
   MAX_OUT_DIM = 256
   TILE_ROWS   = 16
   TILE_COLS   = 16
@@ -50,7 +50,7 @@ TILE_COLS = 16
 ELEMS_PER_CHUNK = 4  # 32 / WEIGHT_W
 CHUNKS_PER_ROW = 4  # TILE_COLS / ELEMS_PER_CHUNK
 CHUNKS_PER_TILE = 64  # TILE_ROWS * CHUNKS_PER_ROW
-MAX_IN_DIM = 1024
+MAX_IN_DIM = 1536
 MAX_OUT_DIM = 256
 
 
