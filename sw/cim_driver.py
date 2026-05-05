@@ -23,8 +23,8 @@ Usage on PYNQ:
   out_map = model.infer_conv(feat_map, weight_4d, bias, zp, mult, shift, stride, padding, relu)
 
 Hardware limits (cim_pkg.sv):
-  MAX_IN_DIM  = 784
-  MAX_OUT_DIM = 128
+  MAX_IN_DIM  = 1024
+  MAX_OUT_DIM = 256
   TILE_ROWS   = 16
   TILE_COLS   = 16
 """
@@ -50,8 +50,8 @@ TILE_COLS = 16
 ELEMS_PER_CHUNK = 4  # 32 / WEIGHT_W
 CHUNKS_PER_ROW = 4  # TILE_COLS / ELEMS_PER_CHUNK
 CHUNKS_PER_TILE = 64  # TILE_ROWS * CHUNKS_PER_ROW
-MAX_IN_DIM = 784
-MAX_OUT_DIM = 128
+MAX_IN_DIM = 1024
+MAX_OUT_DIM = 256
 
 
 # ============================================================================
@@ -387,11 +387,6 @@ class CIMDriver:
         n = len(words_arr)
         if n == 0:
             return
-        if n > len(buf):
-            raise ValueError(
-                f"stream_load: {n} words exceeds pre-allocated buffer capacity {len(buf)}. "
-                f"Increase _DMA_BUF_* at top of cim_driver.py."
-            )
 
         dma_mmio = self.dma.mmio
         # MM2S direct register offsets (PG021)
@@ -432,6 +427,10 @@ class CIMDriver:
 
         if n <= MAX_DMA_WORDS:
             # Single transfer
+            if n > len(buf):
+                raise ValueError(
+                    f"stream_load: {n} words exceeds buffer capacity {len(buf)}"
+                )
             if _dma_timings is not None:
                 t_setup = time.perf_counter()
             buf[:n] = words_arr
@@ -453,7 +452,11 @@ class CIMDriver:
                 raise RuntimeError(f"stream sink underflow (status=0x{status:08x})")
             self.mmio.write(_CSR_STREAM_STATUS, 0)
         else:
-            # Chunked transfer
+            # Chunked transfer — buffer only needs to hold one chunk
+            if MAX_DMA_WORDS > len(buf):
+                raise ValueError(
+                    f"stream_load: chunk size {MAX_DMA_WORDS} exceeds buffer capacity {len(buf)}"
+                )
             offset = 0
             while offset < n:
                 chunk_size = min(MAX_DMA_WORDS, n - offset)
