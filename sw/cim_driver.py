@@ -544,7 +544,7 @@ class CIMDriver:
         return cycles, macs
 
     def read_output(self, out_dim):
-        """Read output buffer as list of signed INT8.
+        """Read output buffer as int8 ndarray.
 
         Uses DMA S2MM direct register mode (P0), falls back to serial MMIO.
         """
@@ -558,11 +558,11 @@ class CIMDriver:
         return self._read_output_mmio(out_dim)
 
     def _read_output_mmio(self, out_dim):
-        """Legacy serial MMIO read_output."""
-        out = []
+        """Legacy serial MMIO read_output — returns int8 ndarray."""
+        out = np.empty(out_dim, dtype=np.int8)
         for i in range(out_dim):
             v = self.mmio.read(_LOGIT_BASE + 4 * i)
-            out.append(np.int8(v & 0xFF))
+            out[i] = np.int8(v & 0xFF)
         return out
 
     def _read_output_dma(self, out_dim):
@@ -639,7 +639,7 @@ class CIMDriver:
         # all data is written to DDR.
         buf.invalidate()
         raw = np.frombuffer(buf, dtype=np.uint8)[:out_dim]
-        return raw.view(np.int8).tolist()
+        return raw.view(np.int8).copy()
 
     def read_pred_class(self):
         """Read hardware argmax result."""
@@ -1270,8 +1270,9 @@ class CIMModel:
                                 _timings=mvm_timings,
                             )
                             layer_cycles += cyc
-                            for bi in range(batch_size):
-                                output_flat[:, b * k_pack + bi] = out_packed[bi * C_out : (bi + 1) * C_out]
+                            # Vectorized unpack: reshape (k_pack*C_out,) → (batch_size, C_out).T
+                            out_2d = out_packed.reshape(k_pack, C_out)[:batch_size, :]
+                            output_flat[:, b * k_pack : b * k_pack + batch_size] = out_2d.T
                             n_mvm_total += 1
 
                         next_act.append(output_flat.reshape(C_out, out_h, out_w))
