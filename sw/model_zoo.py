@@ -34,8 +34,8 @@ TILE_COLS = 16
 ELEMS_PER_CHUNK = 4
 CHUNKS_PER_ROW = 4
 CHUNKS_PER_TILE = 64
-MAX_IN_DIM = 784
-MAX_OUT_DIM = 128
+MAX_IN_DIM = 1024
+MAX_OUT_DIM = 256
 
 
 # ============================================================================

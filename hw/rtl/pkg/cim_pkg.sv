@@ -82,8 +82,8 @@ package cim_pkg;
   // These set the SRAM sizing. Actual layer dims are configured via CSR at runtime.
   // The accelerator can handle any layer up to these limits.
 
-  parameter int MAX_IN_DIM = 784;  // max input vector length
-  parameter int MAX_OUT_DIM = 128;  // max output vector length
+  parameter int MAX_IN_DIM = 1024;  // max input vector length
+  parameter int MAX_OUT_DIM = 256;  // max output vector length
   parameter int MAX_WEIGHT_ELEMS = MAX_IN_DIM * MAX_OUT_DIM;  // worst case
 
   // Derived: max tile blocks
