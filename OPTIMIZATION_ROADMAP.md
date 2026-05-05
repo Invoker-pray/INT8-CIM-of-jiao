@@ -38,20 +38,20 @@
 | LeNet-5 e2e benchmark | ✅ 完成 | accuracy 99.50% @200 images |
 | 软件侧优化 (im2col + predict_batch + ndarray) | ✅ 完成 | 128.4→56.2ms/img (2.3×) |
 
-### LeNet-5 Latency Breakdown (2026-05-05, 最终优化后)
+### LeNet-5 Latency Breakdown (2026-05-05, k_pack 优化后)
 
 | Phase | ms/img | % |
 |-------|--------|---|
-| load_x (DMA input) | 22.69 | 40.4% |
-| read_out (DMA S2MM) | 18.32 | 32.6% |
-| compute (hardware) | 6.98 | 12.4% |
-| (other) | 4.93 | 8.8% |
-| pool (vectorized) | 1.24 | 2.2% |
-| im2col (vectorized) | 1.18 | 2.1% |
-| pack (pre-packing) | 0.55 | 1.0% |
-| setup (amortized) | 0.21 | 0.4% |
+| load_x (DMA input) | 14.95 | 36.9% |
+| read_out (DMA S2MM) | 12.04 | 29.8% |
+| compute (hardware) | 6.74 | 16.6% |
+| (other) | 3.32 | 8.2% |
+| pool (vectorized) | 1.23 | 3.0% |
+| im2col (vectorized) | 1.17 | 2.9% |
+| pack (pre-packing) | 0.55 | 1.4% |
+| setup (amortized) | 0.41 | 1.0% |
 | final (argmax) | 0.05 | 0.1% |
-| **TOTAL** | **56.2** | **100%** |
+| **TOTAL** | **40.5** | **100%** |
 
 优化历程：
 - MMIO path: 1690.54 ms/img (0.59 fps)
@@ -59,8 +59,10 @@
 - DMA (C3 MM2S + P0 S2MM direct reg mode): 128.4 ms/img (7.8 fps), speedup 13.2× vs MMIO
 - read_out: 257ms → 19.65ms (**13× faster**)
 - SW v1 (im2col + predict_batch + maxpool): 128.4 → 73.5 ms/img (13.6 fps), speedup 1.75×
-- **SW v2 (read_output ndarray + vectorized unpack): 73.5 → 56.2 ms/img (17.8 fps), speedup 1.3×**
-- **累计 vs MMIO: 30×**
+- SW v2 (read_output ndarray + vectorized unpack): 73.5 → 56.2 ms/img (17.8 fps), speedup 1.3×
+- **RTL k_pack (MAX_IN_DIM 784→1024, MAX_OUT_DIM 128→256): 56.2 → 40.5 ms/img (24.7 fps), speedup 1.39×**
+- **MVM 调用数: 44 → 29 (-34%), DMA overhead 同比例减少**
+- **累计 vs MMIO: 41.7×**
 
 # 1. 性能优化（短期 — 1~2 月）
 
@@ -112,31 +114,30 @@
 
 使用方式: `python scripts/benchmark_e2e.py --use-dma --batch --n_images 200`
 
-### 当前瓶颈分析 (56.2 ms/img)
+### 当前瓶颈分析 (40.5 ms/img)
 
 | Phase | ms | % | 优化潜力 |
 |-------|-----|-----|------|
-| load_x_ms | 22.69 | 40.4% | DMA 与 compute 重叠 (乒乓) |
-| read_out_ms | 18.32 | 32.6% | S2MM 与 compute 重叠 |
-| compute_ms | 6.98 | 12.4% | 硬件已固定 |
-| (other) | 4.93 | 8.8% | 残余 Python overhead / 系统抖动 |
-| pool_ms | 1.24 | 2.2% | 已优化 |
-| im2col_ms | 1.18 | 2.1% | 已优化 |
-| pack_ms | 0.55 | 1.0% | 可忽略 |
-| setup_ms | 0.21 | 0.4% | 已优化 |
+| load_x_ms | 14.95 | 36.9% | DMA 与 compute 重叠 (乒乓) |
+| read_out_ms | 12.04 | 29.8% | S2MM 与 compute 重叠 |
+| compute_ms | 6.74 | 16.6% | 硬件已固定 (60MHz) |
+| (other) | 3.32 | 8.2% | 残余 Python overhead / 系统抖动 |
+| pool_ms | 1.23 | 3.0% | 已优化 |
+| im2col_ms | 1.17 | 2.9% | 已优化 |
+| pack_ms | 0.55 | 1.4% | 可忽略 |
+| setup_ms | 0.41 | 1.0% | 已优化 |
 
-**下一阶段目标: Pipeline overlap (DMA↔Compute 乒乓) → ~30-40 ms/img (25-33 fps)**
+**下一阶段目标: Pipeline overlap (DMA↔Compute 乒乓) → ~25-30 ms/img (33-40 fps)**
 
-### 已解决 — RTL k_pack 扩展 (2026-05-05)
+### 已解决 — RTL k_pack 扩展 (2026-05-05, 上板验证 ✅)
 
 **方法:** 将 `MAX_IN_DIM` 784→1024, `MAX_OUT_DIM` 128→256，扩大 block-diagonal weight packing 容量。
 - Conv1 k_pack: 21 → 40, MVM 28 → 15 (-46%)
 - Conv2 k_pack: 5 → 6, MVM 13 → 11 (-15%)
-- 总 MVM 调用数: 44 → 29 (-34%)
+- 总 MVM 调用数: 44 → 29 (-34%), DMA overhead 同比例减少
 - 合成结果: BRAM 70/140 (50%), WNS +1.336ns (clean)
-- 预期延迟: 56.2 → ~39-42 ms/img (24-26 fps)
-
-**上板验证待进行:** `python scripts/benchmark_e2e.py --use-dma --batch --n_images 200`
+- **实测: 56.2 → 40.5 ms/img (24.7 fps), speedup 1.39×, accuracy 199/200 不变**
+- **累计 vs MMIO: 41.7×**
 
 ## 1.2 Pipeline 深度优化
 
@@ -316,7 +317,7 @@ PyTorch model
 | ✅ DONE | DMA S2MM read_output (P0) — direct reg mode, bypass PYNQ recvchannel, double-buffer | read_out 257→19.65ms (13×) | 中 | 2d | 2026-05-04 |
 | ✅ DONE | DMA latency 分解 + 底层 profile | 定位热点: setup 41ms, load_x 23ms, im2col 21ms | 低 | 1w | 2026-05-04 |
 | ✅ DONE | 软件侧全优化 (im2col + predict_batch + maxpool + ndarray unpack) | 128.4→56.2ms/img (2.3×, 17.8 fps) | 低 | 2d | 2026-05-05 |
-| ✅ DONE | RTL k_pack 扩展 (MAX_IN_DIM 784→1024, MAX_OUT_DIM 128→256) | MVM 44→29 (-34%), 预期 ~39-42ms/img | 低 | 1d | 2026-05-05 |
+| ✅ DONE | RTL k_pack 扩展 (MAX_IN_DIM 784→1024, MAX_OUT_DIM 128→256) | MVM 44→29 (-34%), 实测 40.5ms/img (24.7 fps, 1.39×) | 低 | 1d | 2026-05-05 |
 | 🔴 P0 | Pipeline overlap (DMA↔Compute 乒乓) | 目标 ~30-40ms/img (25-33 fps) | 中 | 2w |
 | 🟡 P1 | CIM 编译器 (PyTorch→CIM) | 用研效率 | 高 | 4w |
 | 🟡 P1 | 稀疏权重支持 | 30-40% speedup | 高 | 4w |
