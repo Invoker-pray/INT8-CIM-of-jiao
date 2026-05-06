@@ -11,7 +11,9 @@
 // Write: wr_en + wr_tile_idx + wr_tile_data[127:0]
 //        Writes one complete tile (16 bytes packed) in one cycle.
 //
-// Read: rd_tile_idx → 1-cycle latency → x_tile[TILE_COLS] + x_eff[TILE_COLS]
+// Read: rd_tile_idx → 1-cycle latency → rd_word, then registered x_tile/x_eff
+// C1: Added output pipeline register to break BRAM→x_eff combinational path
+//      for 100 MHz timing closure (was ~10.35ns critical path).
 // ============================================================================
 
 module input_buffer
@@ -26,6 +28,10 @@ module input_buffer
     input logic [clog2_safe(MAX_LEN/TILE_COLS)-1:0] wr_tile_idx,
     input logic [            TILE_COLS*INPUT_W-1:0] wr_tile_data, // full 128-bit tile
 
+    // --- Phase B: Bank select ---
+    input logic                                     wr_bank_sel,
+    input logic                                     rd_bank_sel,
+
     // --- Read port ---
     input logic        [clog2_safe(MAX_LEN/TILE_COLS)-1:0] rd_tile_idx,
     input logic signed [                             31:0] input_zp,
@@ -37,39 +43,55 @@ module input_buffer
   localparam int TILE_W = TILE_COLS * INPUT_W;  // 128 bits
   localparam int DEPTH = (MAX_LEN + TILE_COLS - 1) / TILE_COLS;  // 49
 
-  // BRAM: pure whole-word read + write
+  // BRAM: dual-bank
   (* ram_style = "block" *)
-  logic [TILE_W-1:0] mem[DEPTH];
+  logic [TILE_W-1:0] bank0[DEPTH];
+  (* ram_style = "block" *)
+  logic [TILE_W-1:0] bank1[DEPTH];
 
   // Write
   always_ff @(posedge clk) begin
-    if (wr_en) mem[wr_tile_idx] <= wr_tile_data;
+    if (wr_en) begin
+      if (wr_bank_sel) bank1[wr_tile_idx] <= wr_tile_data;
+      else             bank0[wr_tile_idx] <= wr_tile_data;
+    end
   end
 
-  // Read
+  // Read (1-cycle BRAM latency)
   logic [TILE_W-1:0] rd_word;
   always_ff @(posedge clk) begin
-    rd_word <= mem[rd_tile_idx];
+    if (rd_bank_sel) rd_word <= bank1[rd_tile_idx];
+    else             rd_word <= bank0[rd_tile_idx];
   end
 
-  // Unpack
+  // Unpack (combinational)
+  logic [INPUT_W-1:0] x_tile_comb[TILE_COLS];
   genvar gc;
   generate
     for (gc = 0; gc < TILE_COLS; gc++) begin : GEN_UNPACK
-      assign x_tile[gc] = rd_word[gc*INPUT_W+:INPUT_W];
+      assign x_tile_comb[gc] = rd_word[gc*INPUT_W+:INPUT_W];
     end
   endgenerate
 
-  // Zero-point subtraction
+  // Zero-point subtraction (combinational)
   logic signed [31:0] x_full[TILE_COLS];
+  logic [X_EFF_W-1:0] x_eff_comb[TILE_COLS];
   genvar gx;
   generate
     for (gx = 0; gx < TILE_COLS; gx++) begin : GEN_XEFF
-      assign x_full[gx] = $signed({1'b0, x_tile[gx]}) - input_zp;
-      assign x_eff[gx]  = (x_full[gx] < 0)               ? {X_EFF_W{1'b0}} :
-                           (x_full[gx] > (2**X_EFF_W - 1)) ? {X_EFF_W{1'b1}} :
-                                                               x_full[gx][X_EFF_W-1:0];
+      assign x_full[gx] = $signed({1'b0, x_tile_comb[gx]}) - input_zp;
+      assign x_eff_comb[gx] = (x_full[gx] < 0)               ? {X_EFF_W{1'b0}} :
+                               (x_full[gx] > (2**X_EFF_W - 1)) ? {X_EFF_W{1'b1}} :
+                                                                   x_full[gx][X_EFF_W-1:0];
     end
   endgenerate
+
+  // C1: Output pipeline register to break BRAM→core timing path
+  always_ff @(posedge clk) begin
+    for (int c = 0; c < TILE_COLS; c++) begin
+      x_tile[c] <= x_tile_comb[c];
+      x_eff[c]  <= x_eff_comb[c];
+    end
+  end
 
 endmodule

@@ -224,6 +224,9 @@ module cim_axi_lite_slave
   logic [15:0]           reg_result_len;
   logic                  result_start_pulse_r;
 
+  // Phase B: ping-pong bank select
+  logic                  reg_ping_ctrl;
+
   assign stream_path_en = reg_stream_path_en;
   assign cfg_dest       = reg_stream_dest;
   assign cfg_len        = reg_stream_len;
@@ -440,6 +443,8 @@ MAX_IN_DIM/TILE_COLS
       .wr_en       (ibuf_wr_en_mux),
       .wr_tile_idx (ibuf_wr_tile_mux),
       .wr_tile_data(ibuf_wr_data_mux),
+      .wr_bank_sel (~reg_ping_ctrl),
+      .rd_bank_sel (reg_ping_ctrl),
       .rd_tile_idx (ibuf_rd_tile_idx),
       .input_zp    (reg_input_zp),
       .x_tile      (ibuf_x_tile),
@@ -479,6 +484,8 @@ MAX_IN_DIM/TILE_COLS
       .wr_en     (obuf_wr_en),
       .wr_addr   (obuf_wr_addr),
       .wr_data   (obuf_wr_data),
+      .wr_bank_sel (reg_ping_ctrl),
+      .rd_bank_sel (~reg_ping_ctrl),
       .rd_addr   (obuf_rd_addr),
       .rd_data   (obuf_rd_data),
       .out_dim   (reg_out_dim[clog2_safe(MAX_OUT_DIM)-1:0]),
@@ -554,6 +561,7 @@ MAX_IN_DIM/TILE_COLS
       status_clear_r       <= 1'b0;
       reg_result_len        <= 16'd0;
       result_start_pulse_r  <= 1'b0;
+      reg_ping_ctrl         <= 1'b0;
     end else begin
       // Self-clearing pulses
       start_pulse    <= 1'b0;
@@ -631,6 +639,9 @@ MAX_IN_DIM/TILE_COLS
           CSR_RESULT_CTRL: begin
             if (w_data_r[0]) result_start_pulse_r <= 1'b1;
           end
+          CSR_PING_CTRL: begin
+            if (w_data_r[0]) reg_ping_ctrl <= ~reg_ping_ctrl;
+          end
           default:           ;  // input/bias windows handled by memory blocks
         endcase
       end
@@ -681,6 +692,7 @@ MAX_IN_DIM/TILE_COLS
       CSR_STREAM_CONTINUE: return {31'd0, reg_stream_continue};
       CSR_RESULT_LEN:    return {16'd0, reg_result_len};
       CSR_RESULT_STATUS: return {30'd0, result_done, result_busy};
+      CSR_PING_CTRL:    return {31'd0, reg_ping_ctrl};
       default: begin
         if (addr >= CSR_LOGIT_BASE && addr < MEM_INPUT_BASE)
           return {{(32 - OUTPUT_W) {obuf_rd_data[OUTPUT_W-1]}}, obuf_rd_data};

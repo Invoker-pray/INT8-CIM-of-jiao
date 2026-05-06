@@ -54,7 +54,7 @@ package cim_pkg;
   //   PAR_OB=4  → 2 passes, each 49 iterations = 98 tile-cycles
   //   PAR_OB=8  → 1 pass,  49 iterations = 49 tile-cycles (max parallel for this layer)
 
-  parameter int PAR_OB = 1;  // tunable: 1, 2, 4, 8 (must divide N_OB of target layer)
+  parameter int PAR_OB = 4;  // tunable: 1, 2, 4, 8 (must divide N_OB of target layer)
 
   // ==========================================================================
   // 3. Data Widths
@@ -170,6 +170,9 @@ package cim_pkg;
   parameter logic [13:0] CSR_RESULT_CTRL   = 14'h064;  // [0]=start (write-1 triggers)
   parameter logic [13:0] CSR_RESULT_STATUS = 14'h068;  // [0]=busy, [1]=done
 
+  // --- Phase B: Ping-pong bank select ---
+  parameter logic [13:0] CSR_PING_CTRL = 14'h06C;  // [0]=bank_sel; write 1 toggles
+
   // ==========================================================================
   // 8. Activation Function Modes
   // ==========================================================================
@@ -196,6 +199,7 @@ package cim_pkg;
     ST_FETCH       = 5'd3,
     ST_WAIT_SRAM   = 5'd4,
     ST_XEFF_REG    = 5'd5,
+    ST_XEFF_LATCH  = 5'd16,  // C1: extra pipeline stage for ibuf BRAM→x_eff timing
     // MAC pipeline states (number depends on SPLIT_FACTOR):
     // SPLIT=1: ST_MAC (5'd6)
     // SPLIT=2: ST_MAC_LO (5'd6) + ST_MAC_HI (5'd22)

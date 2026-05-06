@@ -280,8 +280,8 @@ module cim_accel_core
         for (int c = 0; c < TILE_COLS; c++) w_tile_reg[fetch_cnt][r][c] <= w_rd_tile[r][c];
       end
 
-      // Stage A: register x_eff
-      if (state == ST_XEFF_REG) begin
+      // Stage A: register x_eff (from ibuf's now-registered output)
+      if (state == ST_XEFF_LATCH) begin
         for (int c = 0; c < TILE_COLS; c++) x_eff_reg[c] <= ibuf_x_eff[c];
       end
 
@@ -443,8 +443,15 @@ module cim_accel_core
         end
       end
 
-      // ====== Stage A: x_eff register ======
+      // ====== Stage A: x_eff register (ibuf pipeline) ======
       ST_XEFF_REG: begin
+        busy          = 1'b1;
+        perf_counting = 1'b1;
+        state_nxt     = ST_XEFF_LATCH;
+      end
+
+      // ====== Stage A2: latch x_eff from ibuf into core ======
+      ST_XEFF_LATCH: begin
         busy          = 1'b1;
         perf_counting = 1'b1;
         if (TILE_SPLIT_FACTOR == 1) state_nxt = ST_MAC_LO;
