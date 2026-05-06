@@ -31,12 +31,17 @@
 ## buffer output pin is the standard approach for Zynq designs.
 ## ============================================================================
 
-## FCLK_CLK0 = 60 MHz → period = 16.667 ns
+## FCLK_CLK0 = 100 MHz → period = 10.000 ns (C1: 60→100MHz with TILE_SPLIT_FACTOR=4)
 ## The exact get_pins path depends on the BD hierarchy; Vivado typically names
 ## the output buffer as shown below. If synthesis warns about the pin not being
 ## found, the auto-generated clock from PS7 IP will still be used.
-create_clock -name fclk0 -period 16.667 \
+create_clock -name fclk0 -period 10.000 \
     [get_pins -quiet system_i/ps7/inst/PS7_i/FCLKCLK[0]]
+
+## C1: Limit fanout on x_eff_reg to prevent synthesis from creating replicas
+## placed far from the DSP column. The critical path at 100MHz is:
+##   x_eff_reg_replica → DSP48E1 → 4×CARRY4 → psum_reg (10.615ns, WNS=-0.800)
+set_property MAX_FANOUT 16 [get_cells -hier -filter {NAME =~ *x_eff_reg_reg*}]
 
 ## ============================================================================
 ## 2. FALSE PATHS / ASYNC CROSSINGS

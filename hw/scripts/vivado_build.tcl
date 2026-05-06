@@ -14,12 +14,14 @@
 # ============================================================================
 
 # --- Configuration ---
-# NOTE: Pipeline-optimized cim_accel_core.sv now splits the post-accumulation
-# path into 4 stages (BIAS_ADD → ACTIVATE → REQUANT → STORE) to meet 125MHz.
+# NOTE: C1 TILE_SPLIT_FACTOR=4 pipeline splits:
+#  - MAC: 16→4+4+4+4 over 4 cycles (ST_MAC_Q0→Q1→Q2→Q3)
+#  - Output: 3 stages (ST_STORE→ST_SHIFT→ST_CLAMP split)
+# Target: 100 MHz (10 ns period). Each quarter ≤4 DSP48 + 1 CARRY4 → ~5 ns.
 set PROJ_NAME  "cim_soc"
 set PART       "xc7z020clg400-1"
 set BOARD_PART "tul.com.tw:pynq-z2:part0:1.0"
-set FCLK_MHZ   60
+set FCLK_MHZ   100  ;# C1: 60→100 MHz with TILE_SPLIT_FACTOR=4 (4+4+4+4 pipeline)
 set N_JOBS     4
 
 # --- Paths (relative to where vivado is invoked, typically project root) ---
@@ -217,7 +219,8 @@ proc reconnect_reset_pins {src_pin dst_pins} {
 # Main GP0/CIM control path reset. Without these explicit connections the
 # generated .hwh showed cim_0/S_AXI_ARESETN and ps7_axi_periph ARESETN pins
 # unconnected, and board MMIO read/write would hard-hang.
-reconnect_reset_pins [get_bd_pins rst_ps7_60M/peripheral_aresetn] [list \
+# PS auto-names its reset module rst_ps7_{FREQ}M (e.g. rst_ps7_100M).
+reconnect_reset_pins [get_bd_pins rst_ps7_${FCLK_MHZ}M/peripheral_aresetn] [list \
     [get_bd_pins cim_0/S_AXI_ARESETN] \
     [get_bd_pins ps7_axi_periph/ARESETN] \
     [get_bd_pins ps7_axi_periph/M00_ARESETN] \

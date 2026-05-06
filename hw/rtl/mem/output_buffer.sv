@@ -18,6 +18,10 @@ module output_buffer
   input  logic                             clk,
   input  logic                             rst_n,
 
+  // --- Phase B: Bank select ---
+  input  logic                             wr_bank_sel,
+  input  logic                             rd_bank_sel,
+
   // --- Write port (from CIM accelerator) ---
   input  logic                             wr_en,
   input  logic [clog2_safe(MAX_LEN)-1:0]   wr_addr,
@@ -35,17 +39,22 @@ module output_buffer
   localparam int ADDR_W = clog2_safe(MAX_LEN);
 
   (* ram_style = "block" *)
-  logic signed [OUTPUT_W-1:0] buf_mem [MAX_LEN];
+  logic signed [OUTPUT_W-1:0] bank0 [MAX_LEN];
+  (* ram_style = "block" *)
+  logic signed [OUTPUT_W-1:0] bank1 [MAX_LEN];
 
   // Write
   always_ff @(posedge clk) begin
-    if (wr_en)
-      buf_mem[wr_addr] <= wr_data;
+    if (wr_en) begin
+      if (wr_bank_sel) bank1[wr_addr] <= wr_data;
+      else             bank0[wr_addr] <= wr_data;
+    end
   end
 
   // Read (registered for timing)
   always_ff @(posedge clk) begin
-    rd_data <= buf_mem[rd_addr];
+    if (rd_bank_sel) rd_data <= bank1[rd_addr];
+    else             rd_data <= bank0[rd_addr];
   end
 
   // -----------------------------------------------------------------------

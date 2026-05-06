@@ -118,6 +118,9 @@ _CSR_RESULT_LEN = 0x060    # [15:0]=n_elements (INT8 count)
 _CSR_RESULT_CTRL = 0x064   # [0]=start (write-1 triggers)
 _CSR_RESULT_STATUS = 0x068  # [0]=busy, [1]=done
 
+# Phase B: Ping-pong bank select (write 1 to toggle)
+_CSR_PING_CTRL = 0x06C
+
 # CMA buffer sizing upper bounds — cover any single-layer load for LeNet-5 / MNIST-MLP.
 # LeNet-5 Conv2 packed weight is the largest: col_len=150*16=2400 chunks; headroom 4×.
 _DMA_BUF_WEIGHTS = 20000      # 32-bit words (up to ~80 KB)
@@ -536,15 +539,34 @@ class CIMDriver:
         for i, x in enumerate(padded):
             self.mmio.write(_MEM_INPUT + 4 * i, int(x) & 0xFF)
 
-    def start_and_wait(self):
-        """Trigger computation and block until done. Returns (cycles, macs)."""
+    def toggle_bank(self):
+        """Toggle both IBUF and OBUF bank select (Phase B ping-pong)."""
+        self.mmio.write(_CSR_PING_CTRL, 1)
+
+    def start_compute(self):
+        """Trigger computation (non-blocking). Returns immediately."""
         self._clear_done()
         self.mmio.write(_CTRL, _CTRL_START | (_CTRL_STREAM_EN if self.use_dma else 0))
+
+    def wait_for_done(self):
+        """Block until computation completes. Returns (cycles, macs)."""
         while not (self.mmio.read(_STATUS) & 0x2):
             pass
         cycles = self.mmio.read(_CYCLE_CNT_LO)
         macs = self.mmio.read(_MAC_CNT_LO)
         return cycles, macs
+
+    def start_and_wait(self):
+        """Trigger computation and block until done. Returns (cycles, macs).
+
+        Phase B dual-bank: toggles bank before compute so DMA-loaded input
+        enters the active bank, and toggles after so results land in the
+        DMA-readable (inactive) bank."""
+        self.toggle_bank()  # make DMA-loaded input the active bank
+        self.start_compute()
+        result = self.wait_for_done()
+        self.toggle_bank()  # make results accessible to DMA read
+        return result
 
     def read_output(self, out_dim):
         """Read output buffer as int8 ndarray.
@@ -745,6 +767,71 @@ class CIMDriver:
                 timing["dma_x_transfer_ms"] = dma_x.get("transfer_ms", 0)
             _timings.append(timing)
         return output, cycles
+
+    def infer_batch_pingpong(self, inputs_u8, out_dim):
+        """Process a batch of inputs with ping-pong DMA/compute overlap.
+
+        Uses dual-bank IBUF/OBUF to pipeline: loads input(N+1) and reads
+        output(N-1) while compute(N) runs.
+
+        Flow:
+          cold: load[0] → toggle → start compute[0]
+          loop: load[i] during compute[i-1] → wait → toggle →
+                start compute[i] → read output[i-1] during compute[i]
+          tail: wait → toggle → read[n-1]
+
+        Both load_x and read_out are hidden behind compute (except cold/tail).
+
+        Args:
+            inputs_u8: list of uint8 input arrays (length n >= 1)
+            out_dim: output dimension (number of INT8 outputs)
+
+        Returns:
+            outputs: list of int8 ndarrays
+            total_cycles: sum of hardware compute cycles
+        """
+        n = len(inputs_u8)
+        outputs = [None] * n
+        total_cycles = 0
+
+        if n == 1:
+            # Single image: use legacy flow (no overlap possible)
+            self.load_input(inputs_u8[0])
+            cycles, _ = self.start_and_wait()
+            total_cycles += cycles
+            outputs[0] = self.read_output(out_dim)
+            return outputs, total_cycles
+
+        # Inference 0: cold start
+        self.load_input(inputs_u8[0])
+        self.toggle_bank()
+        self.start_compute()
+
+        # Inferences 1..n-1: overlap DMA writes/reads with compute
+        for i in range(1, n):
+            # Load next input to inactive bank while compute(i-1) runs
+            self.load_input(inputs_u8[i])
+
+            # Wait for compute(i-1)
+            cycles, _ = self.wait_for_done()
+            total_cycles += cycles
+
+            # Swap banks: completed output now in inactive (DMA-accessible) bank
+            self.toggle_bank()
+
+            # Start compute(i) immediately — input[i] already in active bank
+            self.start_compute()
+
+            # Read output(i-1) from inactive bank while compute(i) runs
+            outputs[i - 1] = self.read_output(out_dim)
+
+        # Wait for last compute and read last output
+        cycles, _ = self.wait_for_done()
+        total_cycles += cycles
+        self.toggle_bank()
+        outputs[n - 1] = self.read_output(out_dim)
+
+        return outputs, total_cycles
 
 
 # ============================================================================
@@ -1164,22 +1251,39 @@ class CIMModel:
                     setup_ms = (time.perf_counter() - t_setup) * 1000
 
                 next_act = []
-                mvm_timings = [] if profile else None
+
+                # Pre-process inputs for FC
+                inputs_list = []
                 for x in curr:
-                    # Flatten + ensure uint8
                     if isinstance(x, np.ndarray):
                         if x.ndim > 1:
                             x = x.flatten()
                         if x.dtype == np.int8:
                             x = x.view(np.uint8)
                     elif isinstance(x, list):
-                        x = [int(v) & 0xFF for v in x]
+                        x = np.array([int(v) & 0xFF for v in x], dtype=np.uint8)
+                    inputs_list.append(np.asarray(x, dtype=np.uint8))
 
-                    out, cyc = self.drv.infer_fc_input_only(
-                        x, layer["out_dim"], _timings=mvm_timings,
+                if self.drv.use_dma:
+                    # Phase B ping-pong: overlap load/read with compute
+                    if profile:
+                        t_pp_start = time.perf_counter()
+                    outputs, cyc = self.drv.infer_batch_pingpong(
+                        inputs_list, layer["out_dim"],
                     )
                     layer_cycles += cyc
-                    next_act.append(out)
+                    next_act.extend(outputs)
+                    if profile:
+                        pp_ms = (time.perf_counter() - t_pp_start) * 1000
+                else:
+                    # Legacy sequential MMIO path
+                    mvm_timings = [] if profile else None
+                    for x in inputs_list:
+                        out, cyc = self.drv.infer_fc_input_only(
+                            x, layer["out_dim"], _timings=mvm_timings,
+                        )
+                        layer_cycles += cyc
+                        next_act.append(out)
 
                 total_cycles += layer_cycles
                 if verbose:
@@ -1189,27 +1293,49 @@ class CIMModel:
                     )
 
                 if profile:
-                    agg = {}
-                    for key in ("load_x_ms", "compute_ms", "read_out_ms",
-                                "dma_x_setup_ms", "dma_x_transfer_ms"):
-                        agg[key] = sum(mt.get(key, 0) for mt in mvm_timings) if mvm_timings else 0
-                    prof["layers"].append({
-                        "name": f"fc_{layer['in_dim']}x{layer['out_dim']}",
-                        "type": "fc",
-                        "n_mvm": 1,
-                        "k_pack": 1,
-                        "im2col_ms": 0.0,
-                        "pack_ms": 0.0,
-                        "setup_ms": setup_ms / n_img,
-                        "load_x_ms": agg["load_x_ms"] / n_img,
-                        "compute_ms": agg["compute_ms"] / n_img,
-                        "read_out_ms": agg["read_out_ms"] / n_img,
-                        "dma_x_setup_ms": agg["dma_x_setup_ms"] / n_img,
-                        "dma_x_transfer_ms": agg["dma_x_transfer_ms"] / n_img,
-                        "pool_ms": 0.0,
-                        "hw_cycles": layer_cycles,
-                        "total_ms": (time.perf_counter() - t_layer) * 1000 / n_img,
-                    })
+                    layer_total_ms = (time.perf_counter() - t_layer) * 1000
+                    if self.drv.use_dma:
+                        # Ping-pong: phases overlap — report total wall time
+                        prof["layers"].append({
+                            "name": f"fc_{layer['in_dim']}x{layer['out_dim']}",
+                            "type": "fc",
+                            "n_mvm": n_img,
+                            "k_pack": 1,
+                            "im2col_ms": 0.0,
+                            "pack_ms": 0.0,
+                            "setup_ms": setup_ms / n_img,
+                            "load_x_ms": 0.0,   # hidden behind compute
+                            "compute_ms": 0.0,   # hidden in total
+                            "read_out_ms": 0.0,   # hidden behind compute
+                            "dma_x_setup_ms": 0.0,
+                            "dma_x_transfer_ms": 0.0,
+                            "pool_ms": 0.0,
+                            "hw_cycles": layer_cycles,
+                            "total_ms": layer_total_ms / n_img,
+                            "pingpong": True,
+                        })
+                    else:
+                        agg = {}
+                        for key in ("load_x_ms", "compute_ms", "read_out_ms",
+                                    "dma_x_setup_ms", "dma_x_transfer_ms"):
+                            agg[key] = sum(mt.get(key, 0) for mt in mvm_timings) if mvm_timings else 0
+                        prof["layers"].append({
+                            "name": f"fc_{layer['in_dim']}x{layer['out_dim']}",
+                            "type": "fc",
+                            "n_mvm": 1,
+                            "k_pack": 1,
+                            "im2col_ms": 0.0,
+                            "pack_ms": 0.0,
+                            "setup_ms": setup_ms / n_img,
+                            "load_x_ms": agg["load_x_ms"] / n_img,
+                            "compute_ms": agg["compute_ms"] / n_img,
+                            "read_out_ms": agg["read_out_ms"] / n_img,
+                            "dma_x_setup_ms": agg["dma_x_setup_ms"] / n_img,
+                            "dma_x_transfer_ms": agg["dma_x_transfer_ms"] / n_img,
+                            "pool_ms": 0.0,
+                            "hw_cycles": layer_cycles,
+                            "total_ms": layer_total_ms / n_img,
+                        })
 
                 curr = next_act
 
@@ -1237,9 +1363,9 @@ class CIMModel:
                     if profile:
                         setup_ms = (time.perf_counter() - t_setup) * 1000
 
-                    n_mvm_total = 0
-                    next_act = []
-                    mvm_timings = [] if profile else None
+                    # Phase 1: Im2col + pack for all images, collect batches
+                    all_batches = []
+                    img_meta = []  # (out_h, out_w, n_pixels, n_batches)
                     for x in curr:
                         if profile: t_im2col = time.perf_counter()
                         col_matrix, out_h, out_w = im2col(
@@ -1251,7 +1377,6 @@ class CIMModel:
                         n_pixels = out_h * out_w
                         n_batches = (n_pixels + k_pack - 1) // k_pack
 
-                        # Pre-pack all column batches (vectorized numpy)
                         if profile: t_pack = time.perf_counter()
                         padded_cols = np.zeros((col_len, n_batches * k_pack), dtype=np.uint8)
                         padded_cols[:, :n_pixels] = col_matrix
@@ -1265,22 +1390,45 @@ class CIMModel:
                         if profile:
                             pack_total += (time.perf_counter() - t_pack) * 1000
 
-                        output_flat = np.zeros((C_out, n_pixels), dtype=np.int8)
-                        for b in range(n_batches):
-                            batch_size = min(k_pack, n_pixels - b * k_pack)
-                            out_packed, cyc = self.drv.infer_fc_input_only(
-                                all_packed[b], packed["packed_out_dim"],
+                        all_batches.extend(all_packed)
+                        img_meta.append((out_h, out_w, n_pixels, n_batches))
+
+                    # Phase 2: Run all MVMs with ping-pong or sequential
+                    if self.drv.use_dma:
+                        if profile:
+                            t_pp = time.perf_counter()
+                        all_outputs, pp_cycles = self.drv.infer_batch_pingpong(
+                            all_batches, packed["packed_out_dim"],
+                        )
+                        layer_cycles += pp_cycles
+                        if profile:
+                            pp_ms = (time.perf_counter() - t_pp) * 1000
+                    else:
+                        all_outputs = []
+                        mvm_timings = [] if profile else None
+                        for batch in all_batches:
+                            out, cyc = self.drv.infer_fc_input_only(
+                                batch, packed["packed_out_dim"],
                                 _timings=mvm_timings,
                             )
                             layer_cycles += cyc
-                            # Vectorized unpack: reshape (k_pack*C_out,) → (batch_size, C_out).T
+                            all_outputs.append(out)
+
+                    # Phase 3: Distribute results back to images
+                    next_act = []
+                    out_idx = 0
+                    for out_h, out_w, n_pixels, n_batches in img_meta:
+                        output_flat = np.zeros((C_out, n_pixels), dtype=np.int8)
+                        for b in range(n_batches):
+                            batch_size = min(k_pack, n_pixels - b * k_pack)
+                            out_packed = all_outputs[out_idx]
+                            out_idx += 1
                             out_2d = out_packed.reshape(k_pack, C_out)[:batch_size, :]
                             output_flat[:, b * k_pack : b * k_pack + batch_size] = out_2d.T
-                            n_mvm_total += 1
-
                         next_act.append(output_flat.reshape(C_out, out_h, out_w))
 
                     total_cycles += layer_cycles
+                    n_mvm_total = len(all_batches)
                     if verbose:
                         print(
                             f"  Layer {i} (Conv {layer['C_in']}ch "
@@ -1329,27 +1477,49 @@ class CIMModel:
                     total_cycles += layer_cycles
 
                 if profile:
-                    agg = {}
-                    for key in ("load_x_ms", "compute_ms", "read_out_ms",
-                                "dma_x_setup_ms", "dma_x_transfer_ms"):
-                        agg[key] = sum(mt.get(key, 0) for mt in mvm_timings) if mvm_timings else 0
-                    prof["layers"].append({
-                        "name": f"conv_{layer['C_in']}x{layer['K_h']}x{layer['K_w']}_to_{C_out}",
-                        "type": "conv",
-                        "n_mvm": n_mvm_total,
-                        "k_pack": packed["k_pack"] if packed else 1,
-                        "im2col_ms": im2col_total / n_img,
-                        "pack_ms": pack_total / n_img,
-                        "setup_ms": setup_ms / n_img,
-                        "load_x_ms": agg["load_x_ms"] / n_img,
-                        "compute_ms": agg["compute_ms"] / n_img,
-                        "read_out_ms": agg["read_out_ms"] / n_img,
-                        "dma_x_setup_ms": agg["dma_x_setup_ms"] / n_img,
-                        "dma_x_transfer_ms": agg["dma_x_transfer_ms"] / n_img,
-                        "pool_ms": 0.0,
-                        "hw_cycles": layer_cycles,
-                        "total_ms": (time.perf_counter() - t_layer) * 1000 / n_img,
-                    })
+                    layer_total_ms = (time.perf_counter() - t_layer) * 1000
+                    if self.drv.use_dma and packed is not None and packed["k_pack"] > 1:
+                        # Ping-pong: phases overlap → report total wall time
+                        prof["layers"].append({
+                            "name": f"conv_{layer['C_in']}x{layer['K_h']}x{layer['K_w']}_to_{C_out}",
+                            "type": "conv",
+                            "n_mvm": n_mvm_total,
+                            "k_pack": packed["k_pack"],
+                            "im2col_ms": im2col_total / n_img,
+                            "pack_ms": pack_total / n_img,
+                            "setup_ms": setup_ms / n_img,
+                            "load_x_ms": 0.0,   # hidden behind compute
+                            "compute_ms": 0.0,   # hidden in total
+                            "read_out_ms": 0.0,   # hidden behind compute
+                            "dma_x_setup_ms": 0.0,
+                            "dma_x_transfer_ms": 0.0,
+                            "pool_ms": 0.0,
+                            "hw_cycles": layer_cycles,
+                            "total_ms": layer_total_ms / n_img,
+                            "pingpong": True,
+                        })
+                    else:
+                        agg = {}
+                        for key in ("load_x_ms", "compute_ms", "read_out_ms",
+                                    "dma_x_setup_ms", "dma_x_transfer_ms"):
+                            agg[key] = sum(mt.get(key, 0) for mt in mvm_timings) if mvm_timings else 0
+                        prof["layers"].append({
+                            "name": f"conv_{layer['C_in']}x{layer['K_h']}x{layer['K_w']}_to_{C_out}",
+                            "type": "conv",
+                            "n_mvm": n_mvm_total,
+                            "k_pack": packed["k_pack"] if packed else 1,
+                            "im2col_ms": im2col_total / n_img,
+                            "pack_ms": pack_total / n_img,
+                            "setup_ms": setup_ms / n_img,
+                            "load_x_ms": agg["load_x_ms"] / n_img,
+                            "compute_ms": agg["compute_ms"] / n_img,
+                            "read_out_ms": agg["read_out_ms"] / n_img,
+                            "dma_x_setup_ms": agg["dma_x_setup_ms"] / n_img,
+                            "dma_x_transfer_ms": agg["dma_x_transfer_ms"] / n_img,
+                            "pool_ms": 0.0,
+                            "hw_cycles": layer_cycles,
+                            "total_ms": layer_total_ms / n_img,
+                        })
 
                 curr = next_act
 
