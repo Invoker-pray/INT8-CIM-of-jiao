@@ -173,6 +173,15 @@ package cim_pkg;
   // --- Phase B: Ping-pong bank select ---
   parameter logic [13:0] CSR_PING_CTRL = 14'h06C;  // [0]=bank_sel; write 1 toggles
 
+  // --- Phase C: Layer Fusion — OBUF→IBUF direct copy ---
+  parameter logic [13:0] CSR_FUSION_CTRL  = 14'h070;  // [0]=start; write 1 triggers copy
+  parameter logic [13:0] CSR_FUSION_LEN   = 14'h074;  // [15:0]=n_elements (INT8 count to copy)
+  parameter logic [13:0] CSR_FUSION_STATUS = 14'h078; // [0]=busy, [1]=done
+
+  // --- Phase C: Multi-layer base offsets for weight/bias SRAM ---
+  parameter logic [13:0] CSR_WEIGHT_BASE = 14'h07C;  // [10:0]=tile offset for weight reads
+  parameter logic [13:0] CSR_BIAS_BASE   = 14'h080;  // [7:0]=word offset for bias reads
+
   // ==========================================================================
   // 8. Activation Function Modes
   // ==========================================================================

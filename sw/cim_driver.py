@@ -121,6 +121,15 @@ _CSR_RESULT_STATUS = 0x068  # [0]=busy, [1]=done
 # Phase B: Ping-pong bank select (write 1 to toggle)
 _CSR_PING_CTRL = 0x06C
 
+# Phase C: Layer Fusion — OBUF→IBUF direct copy
+_CSR_FUSION_CTRL = 0x070   # [0]=start; write 1 triggers copy
+_CSR_FUSION_LEN = 0x074    # [15:0]=n_elements (INT8 count)
+_CSR_FUSION_STATUS = 0x078  # [0]=busy, [1]=done
+
+# Phase C: Multi-layer base offsets for weight/bias SRAM coexistence
+_CSR_WEIGHT_BASE = 0x07C   # [10:0]=tile offset for weight reads
+_CSR_BIAS_BASE = 0x080     # [7:0]=word offset for bias reads
+
 # CMA buffer sizing upper bounds — cover any single-layer load for LeNet-5 / MNIST-MLP.
 # LeNet-5 Conv2 packed weight is the largest: col_len=150*16=2400 chunks; headroom 4×.
 _DMA_BUF_WEIGHTS = 20000      # 32-bit words (up to ~80 KB)
@@ -350,8 +359,14 @@ class CIMDriver:
     def _clear_done(self):
         self.mmio.write(_CTRL, _CTRL_CLEAR_DONE | (_CTRL_STREAM_EN if self.use_dma else 0))
 
-    def configure(self, in_dim, out_dim, zp, mult, shift, relu):
-        """Configure CSR registers for one layer."""
+    def configure(self, in_dim, out_dim, zp, mult, shift, relu,
+                  weight_base=0, bias_base=0):
+        """Configure CSR registers for one layer.
+
+        weight_base: tile offset in weight SRAM (0 = start of SRAM).
+        bias_base:   word offset in bias SRAM (0 = start of SRAM).
+        Set these to non-zero for multi-layer weight coexistence (Phase C fusion).
+        """
         n_ib = (in_dim + 15) // 16
         n_ob = (out_dim + 15) // 16
         m = self.mmio
@@ -363,6 +378,8 @@ class CIMDriver:
         m.write(_REQUANT_SHIFT, shift)
         m.write(_INPUT_ZP, int(zp) & 0xFFFFFFFF)
         m.write(_ACT_MODE, 1 if relu else 0)
+        m.write(_CSR_WEIGHT_BASE, weight_base)
+        m.write(_CSR_BIAS_BASE, bias_base)
 
     # ------------------------------------------------------------------ #
     # C3: data-path dispatchers — route to DMA or legacy MMIO path based
@@ -371,7 +388,7 @@ class CIMDriver:
     # cim_axi_stream_sink FSM mirroring the MMIO staging logic; see
     # docs/c3_dma_design.md §3.1-3.5 and §7.3 mock test).
     # ------------------------------------------------------------------ #
-    def _stream_load(self, words, dest, buf, _dma_timings=None):
+    def _stream_load(self, words, dest, buf, base_addr=0, _dma_timings=None):
         """Push `words` (iterable of uint32) to the stream sink at `dest`.
 
         Synchronous: blocks until DMA completes and sink reports done.
@@ -384,6 +401,9 @@ class CIMDriver:
             words: iterable of uint32
             dest: destination (DEST_WEIGHT/DEST_BIAS/DEST_INPUT)
             buf: pre-allocated numpy buffer
+            base_addr: starting tile/word offset (0 = start of SRAM).
+                       For DEST_WEIGHT this is a tile index.
+                       For DEST_BIAS this is a word offset.
             _dma_timings: if not None, dict tracking {n_chunks, setup_ms, transfer_ms}
         """
         words_arr = np.asarray(words, dtype=np.uint32)
@@ -437,7 +457,7 @@ class CIMDriver:
             if _dma_timings is not None:
                 t_setup = time.perf_counter()
             buf[:n] = words_arr
-            self.mmio.write(_CSR_STREAM_DEST, int(dest))
+            self.mmio.write(_CSR_STREAM_DEST, (int(base_addr) << 16) | int(dest))
             self.mmio.write(_CSR_STREAM_CONTINUE, 0)
             self.mmio.write(_CSR_STREAM_LEN, n)  # triggers cfg_start
             if _dma_timings is not None:
@@ -466,7 +486,8 @@ class CIMDriver:
                 buf[:chunk_size] = words_arr[offset:offset + chunk_size]
                 if _dma_timings is not None:
                     t_setup = time.perf_counter()
-                self.mmio.write(_CSR_STREAM_DEST, int(dest))
+                cur_base = base_addr if offset == 0 else 0
+                self.mmio.write(_CSR_STREAM_DEST, (int(cur_base) << 16) | int(dest))
                 self.mmio.write(_CSR_STREAM_CONTINUE, 1 if offset > 0 else 0)
                 self.mmio.write(_CSR_STREAM_LEN, chunk_size)  # triggers cfg_start
                 if _dma_timings is not None:
@@ -485,10 +506,14 @@ class CIMDriver:
                 self.mmio.write(_CSR_STREAM_STATUS, 0)
                 offset += chunk_size
 
-    def load_weights(self, chunks, _dma_timings=None):
-        """Load weight chunks. Routes to DMA or legacy MMIO based on use_dma."""
+    def load_weights(self, chunks, base_tile=0, _dma_timings=None):
+        """Load weight chunks. Routes to DMA or legacy MMIO based on use_dma.
+
+        base_tile: starting tile index in weight SRAM (for multi-layer coexistence).
+        """
         if self.use_dma:
-            self._stream_load(chunks, _DEST_WEIGHT, self._buf_w, _dma_timings)
+            self._stream_load(chunks, _DEST_WEIGHT, self._buf_w,
+                              base_addr=base_tile, _dma_timings=_dma_timings)
         else:
             self._load_weights_legacy(chunks)
 
@@ -504,15 +529,19 @@ class CIMDriver:
             if pad:
                 arr = np.concatenate([arr, np.zeros(pad, dtype=np.uint8)])
             words = arr.view(np.uint32)
-            self._stream_load(words, _DEST_INPUT, self._buf_x, _dma_timings)
+            self._stream_load(words, _DEST_INPUT, self._buf_x, _dma_timings=_dma_timings)
         else:
             self._load_input_legacy(data_u8)
 
-    def load_bias(self, bias_u32, _dma_timings=None):
-        """Load INT32 bias values. Routes to DMA or legacy MMIO based on use_dma."""
+    def load_bias(self, bias_u32, base_addr=0, _dma_timings=None):
+        """Load INT32 bias values. Routes to DMA or legacy MMIO based on use_dma.
+
+        base_addr: starting word offset in bias SRAM (for multi-layer coexistence).
+        """
         if self.use_dma:
             words = np.asarray(bias_u32, dtype=np.uint32)
-            self._stream_load(words, _DEST_BIAS, self._buf_b, _dma_timings)
+            self._stream_load(words, _DEST_BIAS, self._buf_b,
+                              base_addr=base_addr, _dma_timings=_dma_timings)
         else:
             self._load_bias_legacy(bias_u32)
 
@@ -581,6 +610,30 @@ class CIMDriver:
                 print(f"  [S2MM] falling back to serial MMIO")
                 return self._read_output_mmio(out_dim)
         return self._read_output_mmio(out_dim)
+
+    def copy_output_to_input(self, n_elements):
+        """Phase C: Copy OBUF → IBUF internally (no DMA round-trip).
+
+        Reads n_elements INT8 values from OBUF (DMA-accessible bank,
+        ~reg_ping_ctrl) and packs them into IBUF (DMA-writable bank,
+        ~reg_ping_ctrl) in tile-packed format.
+
+        After copy, data sits in IBUF[~reg_ping_ctrl]. The next
+        start_and_wait() toggles reg_ping_ctrl, making that bank
+        the compute-active bank — no extra toggle needed here.
+
+        This replaces: read_output() → DDR → load_input()
+        for FC→FC transitions where n_elements ≤ MAX_OUT_DIM (256).
+        """
+        assert n_elements <= MAX_OUT_DIM, (
+            f"Fusion copy limited to OBUF depth ({MAX_OUT_DIM}), "
+            f"got {n_elements}"
+        )
+        self.mmio.write(_CSR_FUSION_LEN, n_elements)
+        self.mmio.write(_CSR_FUSION_CTRL, 1)  # trigger copy
+        while not (self.mmio.read(_CSR_FUSION_STATUS) & 0x2):
+            pass
+        # Note: no toggle_bank() here — ping-pong protocol handles it.
 
     def _read_output_mmio(self, out_dim):
         """Legacy serial MMIO read_output — returns int8 ndarray."""
@@ -832,6 +885,124 @@ class CIMDriver:
         outputs[n - 1] = self.read_output(out_dim)
 
         return outputs, total_cycles
+
+    def infer_fc_fused_pair(self, input_u8, fc1_out_dim, fc2_out_dim):
+        """Run FC1→FC2 with internal OBUF→IBUF fusion (no DMA round-trip).
+
+        setup_fc_fused_pair() must be called first.
+
+        Args:
+            input_u8: uint8 input for FC1
+            fc1_out_dim: FC1 output dimension (≤ MAX_OUT_DIM)
+            fc2_out_dim: FC2 output dimension
+
+        Returns:
+            (output, fc1_cycles, fc2_cycles)
+        """
+        fc1_in, fc1_od, fc1_zp, fc1_m, fc1_s = self._fc1_cfg
+        fc2_in, fc2_od, fc2_m, fc2_s = self._fc2_cfg
+
+        # Configure FC1, load input, run
+        self.configure(fc1_in, fc1_od, fc1_zp, fc1_m, fc1_s, 1,
+                       weight_base=0, bias_base=0)
+        self.load_input(input_u8)
+        cycles1, _ = self.start_and_wait()
+
+        # Fusion: OBUF → IBUF
+        self.copy_output_to_input(fc1_out_dim)
+
+        # Configure FC2 (uses multi-layer weight/bias base)
+        self.configure(fc2_in, fc2_od, 0, fc2_m, fc2_s, 0,
+                       weight_base=self._fc2_weight_base,
+                       bias_base=self._fc2_bias_base)
+        cycles2, _ = self.start_and_wait()
+        output = self.read_output(fc2_out_dim)
+        return output, cycles1, cycles2
+
+    def setup_fc_fused_pair(self, fc1_in_dim, fc1_out_dim, fc1_w_chunks,
+                             fc1_bias_u32, fc1_zp, fc1_mult, fc1_shift,
+                             fc2_out_dim, fc2_w_chunks, fc2_bias_u32,
+                             fc2_mult, fc2_shift):
+        """Pre-load FC1+FC2 weights/bias at different SRAM offsets for fusion.
+
+        FC1 gets weight_base=0, bias_base=0.
+        FC2 gets weight_base=N_FC1_TILES, bias_base=ALIGN_UP(fc1_out_dim, 16).
+
+        After this call, repeated infer_fc_fused_pair() calls need NO weight
+        reload between images.
+
+        Caller must ensure:
+          - fc1_out_dim ≤ MAX_OUT_DIM (256)
+          - fc1_in_dim + fc2_in_dim tile usage fits in weight SRAM
+        """
+        fc1_n_ib = (fc1_in_dim + 15) // 16
+        fc1_n_ob = (fc1_out_dim + 15) // 16
+        fc1_n_tiles = fc1_n_ob * fc1_n_ib
+        fc1_bias_align = (fc1_out_dim + 15) & ~15  # round up to 16
+
+        self._fc2_weight_base = fc1_n_tiles
+        self._fc2_bias_base = fc1_bias_align
+
+        # Store FC1/FC2 config for use by infer methods
+        fc2_in_dim = fc1_out_dim
+        self._fc1_cfg = (fc1_in_dim, fc1_out_dim, fc1_zp, fc1_mult, fc1_shift)
+        self._fc2_cfg = (fc2_in_dim, fc2_out_dim, fc2_mult, fc2_shift)
+
+        # Load FC1 weights/bias at offset 0
+        self.configure(fc1_in_dim, fc1_out_dim, fc1_zp, fc1_mult, fc1_shift, 1,
+                       weight_base=0, bias_base=0)
+        self.load_weights(fc1_w_chunks, base_tile=0)
+        self.load_bias(fc1_bias_u32, base_addr=0)
+
+        # Load FC2 weights/bias at offset
+        self.configure(fc2_in_dim, fc2_out_dim, 0, fc2_mult, fc2_shift, 0,
+                       weight_base=self._fc2_weight_base,
+                       bias_base=self._fc2_bias_base)
+        self.load_weights(fc2_w_chunks, base_tile=fc1_n_tiles)
+        self.load_bias(fc2_bias_u32, base_addr=fc1_bias_align)
+
+    def infer_fc_fused_batch(self, inputs_u8, fc1_out_dim, fc2_out_dim):
+        """Run FC1→FC2 with fusion for a batch, no per-image weight reload.
+
+        setup_fc_fused_pair() must be called first.
+
+        Args:
+            inputs_u8: list of uint8 input arrays
+            fc1_out_dim: FC1 output dimension
+            fc2_out_dim: FC2 output dimension
+
+        Returns:
+            (outputs, total_cycles1, total_cycles2)
+        """
+        fc1_in, fc1_od, fc1_zp, fc1_m, fc1_s = self._fc1_cfg
+        fc2_in, fc2_od, fc2_m, fc2_s = self._fc2_cfg
+
+        outputs = []
+        total_c1 = 0
+        total_c2 = 0
+
+        for img in inputs_u8:
+            # FC1
+            self.configure(fc1_in, fc1_od, fc1_zp, fc1_m, fc1_s, 1,
+                           weight_base=0, bias_base=0)
+            self.load_input(img)
+            c1, _ = self.start_and_wait()
+            total_c1 += c1
+
+            # Fusion
+            self.copy_output_to_input(fc1_out_dim)
+
+            # FC2 (multi-layer base)
+            self.configure(fc2_in, fc2_od, 0, fc2_m, fc2_s, 0,
+                           weight_base=self._fc2_weight_base,
+                           bias_base=self._fc2_bias_base)
+            c2, _ = self.start_and_wait()
+            total_c2 += c2
+
+            out = self.read_output(fc2_out_dim)
+            outputs.append(out)
+
+        return outputs, total_c1, total_c2
 
 
 # ============================================================================

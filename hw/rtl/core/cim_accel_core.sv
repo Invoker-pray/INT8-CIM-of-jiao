@@ -46,6 +46,8 @@ module cim_accel_core
     input logic [31:0] cfg_requant_mult,
     input logic [31:0] cfg_requant_shift,
     input act_mode_t cfg_act_mode,
+    input logic [clog2_safe(WSRAM_DEPTH)-1:0] cfg_weight_base,
+    input logic [clog2_safe(BSRAM_DEPTH)-1:0] cfg_bias_base,
 
     output logic        [clog2_safe(WSRAM_DEPTH)-1:0] w_rd_tile_idx,
     input  logic signed [               WEIGHT_W-1:0] w_rd_tile    [TILE_ROWS][TILE_COLS],
@@ -81,17 +83,23 @@ module cim_accel_core
   logic [3:0] row_idx, row_idx_nxt;
 
   // ============================================================
-  // Pre-computed addresses
+  // Pre-computed addresses (kept for reference / neuron_addr pipe)
   // ============================================================
   logic [31:0] w_addr_full;
   logic [31:0] bias_addr_cur;
   logic [31:0] bias_addr_next_tile;
   logic [31:0] bias_addr_next_row;
 
-  assign w_addr_full = ({16'd0, ob_group} + {28'd0, fetch_cnt}) * {16'd0, cfg_n_ib} + {16'd0, ib};
+  assign w_addr_full = ({16'd0, ob_group} + {28'd0, fetch_cnt}) * {16'd0, cfg_n_ib} + {16'd0, ib} + {21'd0, cfg_weight_base};
   assign bias_addr_cur = ({16'd0, ob_group} + {28'd0, tile_idx}) * TILE_ROWS + {28'd0, row_idx};
-  assign bias_addr_next_tile = ({16'd0, ob_group} + {28'd0, tile_idx} + 32'd1) * TILE_ROWS;
+  assign bias_addr_next_tile = {24'd0, cfg_bias_base} + ({16'd0, ob_group} + {28'd0, tile_idx} + 32'd1) * TILE_ROWS;
   assign bias_addr_next_row = bias_addr_cur + 32'd1;
+
+  // Phase C v4: pipelined SRAM addresses — registered 1 cycle before use
+  // to break combinational path from cfg_weight_base / cfg_bias_base adders
+  // through SRAM read → w_tile_reg / bias_val_r (WNS=-1.853ns @100MHz).
+  logic [WSRAM_AW-1:0] w_rd_tile_idx_r;
+  logic [BSRAM_AW-1:0] b_rd_addr_r;
 
   // ============================================================
   // Weight tile register bank
@@ -253,6 +261,8 @@ module cim_accel_core
       neuron_addr_p4b <= '0;
       requant_r      <= '0;
       neuron_addr_p5 <= '0;
+      w_rd_tile_idx_r <= '0;
+      b_rd_addr_r     <= '0;
       for (int c = 0; c < TILE_COLS; c++) x_eff_reg[c] <= '0;
       for (int t = 0; t < PAR_OB; t++) begin
         for (int r = 0; r < TILE_ROWS; r++) begin
@@ -369,6 +379,52 @@ module cim_accel_core
         else                           requant_r <= shifted_comb[OUTPUT_W-1:0];
         neuron_addr_p5 <= neuron_addr_p4b;
       end
+
+      // ------------------------------------------------------------
+      // Phase C v4: Pre-compute SRAM addresses one cycle early.
+      // These replace the combinational w_rd_tile_idx / b_rd_addr
+      // assignments to break the critical path through SRAM→MAC.
+      // ------------------------------------------------------------
+
+      // Weight address for next ST_FETCH
+      if (state == ST_CLEAR_PSUM) begin
+        // First tile of current OB group (ib=0, fetch_cnt=0)
+        w_rd_tile_idx_r <= ({16'd0, ob_group} * {16'd0, cfg_n_ib}
+                            + {21'd0, cfg_weight_base});
+      end else if (state == ST_WAIT_SRAM
+                   && fetch_cnt < PAR_OB[3:0] - 4'd1) begin
+        // Next fetch_cnt within same IB
+        w_rd_tile_idx_r <= (({16'd0, ob_group} + {28'd0, fetch_cnt} + 32'd1)
+                            * {16'd0, cfg_n_ib} + {16'd0, ib}
+                            + {21'd0, cfg_weight_base});
+      end else if (state == ST_NEXT_IB
+                   && ib < cfg_n_ib - 16'd1) begin
+        // Next IB tile (fetch_cnt reset to 0)
+        w_rd_tile_idx_r <= ({16'd0, ob_group} * {16'd0, cfg_n_ib}
+                            + {16'd0, ib} + 32'd1
+                            + {21'd0, cfg_weight_base});
+      end
+
+      // Bias address for next ST_BIAS_ADD
+      if (state == ST_NEXT_IB && ib == cfg_n_ib - 16'd1) begin
+        // First neuron of output pipeline (tile_idx/row_idx reset to 0)
+        b_rd_addr_r <= {24'd0, cfg_bias_base}
+                       + ({16'd0, ob_group} * 32'd16);
+      end else if (state == ST_WRITE_OBUF) begin
+        if (row_idx == TILE_ROWS[3:0] - 4'd1) begin
+          if (tile_idx != PAR_OB[3:0] - 4'd1) begin
+            // First row of next tile
+            b_rd_addr_r <= {24'd0, cfg_bias_base}
+                           + (({16'd0, ob_group} + {28'd0, tile_idx} + 32'd1)
+                              * 32'd16);
+          end
+        end else begin
+          // Next row within same tile
+          b_rd_addr_r <= {24'd0, cfg_bias_base}
+                         + (({16'd0, ob_group} + {28'd0, tile_idx}) * 32'd16
+                            + {28'd0, row_idx} + 32'd1);
+        end
+      end
     end
   end
 
@@ -398,9 +454,9 @@ module cim_accel_core
     obuf_wr_data     = '0;
     perf_counting    = 1'b0;
 
-    w_rd_tile_idx    = w_addr_full[WSRAM_AW-1:0];
+    w_rd_tile_idx    = w_rd_tile_idx_r;
     ibuf_rd_tile_idx = ib[IBUF_AW-1:0];
-    b_rd_addr        = bias_addr_cur[BSRAM_AW-1:0];
+    b_rd_addr        = b_rd_addr_r;
 
     case (state)
       // ====== Idle / Setup ======
@@ -590,12 +646,10 @@ module cim_accel_core
             state_nxt = ST_NEXT_OB;
           end else begin
             tile_idx_nxt = tile_idx + 4'd1;
-            b_rd_addr    = bias_addr_next_tile[BSRAM_AW-1:0];
             state_nxt    = ST_BIAS_ADD;
           end
         end else begin
           row_idx_nxt = row_idx + 4'd1;
-          b_rd_addr   = bias_addr_next_row[BSRAM_AW-1:0];
           state_nxt   = ST_BIAS_ADD;
         end
       end
