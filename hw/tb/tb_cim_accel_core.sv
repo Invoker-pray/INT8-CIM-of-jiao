@@ -22,6 +22,8 @@ module tb_cim_accel_core;
   logic signed [31:0] cfg_input_zp;
   logic [31:0] cfg_requant_mult, cfg_requant_shift;
   act_mode_t                                          cfg_act_mode;
+  logic [clog2_safe(WSRAM_DEPTH)-1:0] cfg_weight_base = '0;
+  logic [clog2_safe(BSRAM_DEPTH)-1:0] cfg_bias_base   = '0;
 
   // Weight SRAM (whole-row write interface)
   logic        [         clog2_safe(WSRAM_DEPTH)-1:0] w_rd_idx;
@@ -150,6 +152,8 @@ module tb_cim_accel_core;
       .cfg_requant_mult (cfg_requant_mult),
       .cfg_requant_shift(cfg_requant_shift),
       .cfg_act_mode     (cfg_act_mode),
+      .cfg_weight_base  (cfg_weight_base),
+      .cfg_bias_base    (cfg_bias_base),
       .w_rd_tile_idx    (w_rd_idx),
       .w_rd_tile        (w_rd_tile),
       .b_rd_addr        (b_rd_addr),
@@ -354,6 +358,55 @@ module tb_cim_accel_core;
     run_and_compare("Test 6 (re-run random, no contamination)");
 
     // ================================================================
+    // Test 7a: Non-zero weight_base only (bias_base=0)
+    // ================================================================
+    $display("\n============ Test 7a: Non-zero weight_base only ============");
+    for (int o = 0; o < TEST_OUT; o++) for (int i = 0; i < TEST_IN; i++) golden_w[o][i] = $random;
+    for (int o = 0; o < TEST_OUT; o++) golden_b[o] = $random & 32'h0000FFFF;
+    for (int i = 0; i < TEST_IN; i++) golden_x[i] = $urandom_range(0, 255);
+
+    cfg_weight_base = 10;
+    cfg_bias_base   = 0;
+    load_all_data_with_offsets(10, 0);
+
+    compute_golden_model();
+    run_and_compare("Test 7a (weight_base=10, bias_base=0)");
+
+    // ================================================================
+    // Test 7b: Non-zero bias_base only (weight_base=0)
+    // ================================================================
+    $display("\n============ Test 7b: Non-zero bias_base only ============");
+    for (int o = 0; o < TEST_OUT; o++) for (int i = 0; i < TEST_IN; i++) golden_w[o][i] = $random;
+    for (int o = 0; o < TEST_OUT; o++) golden_b[o] = $random & 32'h0000FFFF;
+    for (int i = 0; i < TEST_IN; i++) golden_x[i] = $urandom_range(0, 255);
+
+    cfg_weight_base = 0;
+    cfg_bias_base   = 32;
+    load_all_data_with_offsets(0, 32);
+
+    compute_golden_model();
+    run_and_compare("Test 7b (weight_base=0, bias_base=32)");
+
+    // ================================================================
+    // Test 7c: Both non-zero (original Test 7)
+    // ================================================================
+    $display("\n============ Test 7c: Both non-zero (original) ============");
+    for (int o = 0; o < TEST_OUT; o++) for (int i = 0; i < TEST_IN; i++) golden_w[o][i] = $random;
+    for (int o = 0; o < TEST_OUT; o++) golden_b[o] = $random & 32'h0000FFFF;
+    for (int i = 0; i < TEST_IN; i++) golden_x[i] = $urandom_range(0, 255);
+
+    cfg_weight_base = 10;
+    cfg_bias_base   = 32;
+    load_all_data_with_offsets(10, 32);
+
+    compute_golden_model();
+    run_and_compare("Test 7c (weight_base=10, bias_base=32)");
+
+    // Reset to defaults
+    cfg_weight_base = '0;
+    cfg_bias_base   = '0;
+
+    // ================================================================
     // Final summary
     // ================================================================
     $display("\n============================================================");
@@ -397,6 +450,44 @@ module tb_cim_accel_core;
       b_wr_en <= 1'b0;
     end
     // Load inputs — assemble each tile (16 bytes) then write whole-word
+    for (int tile = 0; tile < TEST_NIB; tile++) begin
+      automatic logic [TILE_COLS*INPUT_W-1:0] tdata = '0;
+      for (int c = 0; c < TILE_COLS; c++) begin
+        automatic int idx = tile * TILE_COLS + c;
+        if (idx < TEST_IN) tdata[c*INPUT_W+:INPUT_W] = golden_x[idx];
+      end
+      write_input_tile(tile, tdata);
+    end
+    repeat (5) @(posedge clk);
+  endtask
+
+  task load_all_data_with_offsets(input int weight_tile_base, input int bias_addr_base);
+    // Load weights at weight_tile_base offset
+    for (int ob = 0; ob < TEST_NOB; ob++) begin
+      for (int ib = 0; ib < TEST_NIB; ib++) begin
+        automatic int tile_addr = weight_tile_base + ob * TEST_NIB + ib;
+        for (int r = 0; r < TILE_ROWS; r++) begin
+          automatic logic [TILE_COLS*WEIGHT_W-1:0] row_data = '0;
+          for (int c = 0; c < TILE_COLS; c++) begin
+            automatic int out_idx = ob * TILE_ROWS + r;
+            automatic int in_idx = ib * TILE_COLS + c;
+            if (out_idx < TEST_OUT && in_idx < TEST_IN)
+              row_data[c*WEIGHT_W+:WEIGHT_W] = golden_w[out_idx][in_idx];
+          end
+          write_weight_row(tile_addr, r, row_data);
+        end
+      end
+    end
+    // Load biases at bias_addr_base offset
+    for (int o = 0; o < TEST_OUT; o++) begin
+      @(posedge clk);
+      b_wr_en   <= 1'b1;
+      b_wr_addr <= bias_addr_base + o;
+      b_wr_data <= golden_b[o];
+      @(posedge clk);
+      b_wr_en <= 1'b0;
+    end
+    // Load inputs at tile 0 (unchanged)
     for (int tile = 0; tile < TEST_NIB; tile++) begin
       automatic logic [TILE_COLS*INPUT_W-1:0] tdata = '0;
       for (int c = 0; c < TILE_COLS; c++) begin

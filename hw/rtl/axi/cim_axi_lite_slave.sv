@@ -227,6 +227,28 @@ module cim_axi_lite_slave
   // Phase B: ping-pong bank select
   logic                  reg_ping_ctrl;
 
+  // Phase C: multi-layer base offsets
+  logic [clog2_safe(WSRAM_DEPTH)-1:0] reg_weight_base;
+  logic [clog2_safe(BSRAM_DEPTH)-1:0] reg_bias_base;
+
+  // Phase C: Layer Fusion — OBUF→IBUF direct copy
+  typedef enum logic [2:0] {
+    F_IDLE, F_RD_FIRST, F_PACK, F_WRITE
+  } fusion_state_t;
+  fusion_state_t fusion_state;
+  logic                  fusion_start_pulse;
+  logic                  fusion_busy;
+  logic                  fusion_done_sticky;
+  logic [         15:0]  reg_fusion_len;
+  logic [         15:0]  fusion_cnt;           // bytes packed so far (0..len)
+  logic [          3:0]  fusion_byte_in_tile;  // position within current tile (0..15)
+  logic [        127:0]  fusion_tile_buf;
+  logic                  fusion_tile_wr;       // pulse: write tile to IBUF
+  logic [clog2_safe(MAX_IN_DIM/TILE_COLS)-1:0] fusion_tile_idx;
+  logic [clog2_safe(MAX_OUT_DIM)-1:0]          fusion_obuf_addr;
+  logic                  fusion_last_byte;     // flag: current byte is last
+  logic                  fusion_tile_full;     // flag: tile complete after current byte
+
   assign stream_path_en = reg_stream_path_en;
   assign cfg_dest       = reg_stream_dest;
   assign cfg_len        = reg_stream_len;
@@ -276,6 +298,8 @@ module cim_axi_lite_slave
       .cfg_requant_mult (reg_requant_mult),
       .cfg_requant_shift(reg_requant_shift),
       .cfg_act_mode     (reg_act_mode),
+      .cfg_weight_base  (reg_weight_base),
+      .cfg_bias_base    (reg_bias_base),
       .w_rd_tile_idx    (w_rd_tile_idx),
       .w_rd_tile        (w_rd_tile),
       .b_rd_addr        (b_rd_addr),
@@ -427,14 +451,18 @@ MAX_IN_DIM/TILE_COLS
     end
   end
 
-  // C3 MUX: input buffer write path
+  // C3 / Phase C MUX: input buffer write path
+  // Priority: Fusion > stream sink > legacy MMIO
   logic                                                  ibuf_wr_en_mux;
   logic [clog2_safe(MAX_IN_DIM/TILE_COLS)-1:0]           ibuf_wr_tile_mux;
   logic [                            IBUF_TILE_W-1:0]    ibuf_wr_data_mux;
 
-  assign ibuf_wr_en_mux   = reg_stream_path_en ? stream_ibuf_wr_en       : ibuf_commit;
-  assign ibuf_wr_tile_mux = reg_stream_path_en ? stream_ibuf_wr_tile_idx : ibuf_commit_tile;
-  assign ibuf_wr_data_mux = reg_stream_path_en ? stream_ibuf_wr_tile_data: ibuf_staging;
+  assign ibuf_wr_en_mux   = fusion_tile_wr ? 1'b1 :
+                            (reg_stream_path_en ? stream_ibuf_wr_en       : ibuf_commit);
+  assign ibuf_wr_tile_mux = fusion_tile_wr ? fusion_tile_idx :
+                            (reg_stream_path_en ? stream_ibuf_wr_tile_idx : ibuf_commit_tile);
+  assign ibuf_wr_data_mux = fusion_tile_wr ? fusion_tile_buf :
+                            (reg_stream_path_en ? stream_ibuf_wr_tile_data: ibuf_staging);
 
   input_buffer #(
       .MAX_LEN(MAX_IN_DIM)
@@ -515,17 +543,114 @@ MAX_IN_DIM/TILE_COLS
       .obuf_rd_data   (obuf_rd_data)
   );
 
-  // FIX5: Output buffer read address — set one cycle early (RD_IDLE or RD_WAIT)
-  // P0 MUX: when result source is active, it owns obuf_rd_addr
-  // In RD_IDLE, use the incoming ARADDR directly for minimum latency.
-  // In RD_WAIT, use the latched ar_addr_r.
+  // FIX5 / Phase C: Output buffer read address mux
+  // Priority: Fusion > P0 result source > AXI CSR reads
   always_comb begin
-    if (result_busy)
+    if (fusion_busy)
+      obuf_rd_addr = fusion_obuf_addr;
+    else if (result_busy)
       obuf_rd_addr = src_obuf_rd_addr;
     else if (rd_state == RD_IDLE && S_AXI_ARVALID && S_AXI_ARADDR >= CSR_LOGIT_BASE)
       obuf_rd_addr = (S_AXI_ARADDR - CSR_LOGIT_BASE) >> 2;
     else if (ar_addr_r >= CSR_LOGIT_BASE) obuf_rd_addr = (ar_addr_r - CSR_LOGIT_BASE) >> 2;
     else obuf_rd_addr = '0;
+  end
+
+  // ============================================================
+  // Phase C: Layer Fusion FSM — OBUF → IBUF direct copy
+  // ============================================================
+  // Reads OBUF byte-by-byte from the DMA-accessible bank (~reg_ping_ctrl),
+  // packs 16 bytes into each 128-bit IBUF tile word, writes to the
+  // DMA-writable IBUF bank (~reg_ping_ctrl). After copy, software must
+  // toggle reg_ping_ctrl so compute reads from the newly-written bank.
+  //
+  // Timing: N bytes take N+1 cycles (1 cycle initial addr setup + N cycles
+  // for packing, using pipelined OBUF BRAM reads).
+  // ============================================================
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      fusion_state        <= F_IDLE;
+      fusion_busy         <= 1'b0;
+      fusion_done_sticky  <= 1'b0;
+      fusion_cnt          <= 16'd0;
+      fusion_byte_in_tile <= 4'd0;
+      fusion_tile_buf     <= 128'd0;
+      fusion_tile_wr      <= 1'b0;
+      fusion_tile_idx     <= '0;
+      fusion_obuf_addr    <= '0;
+      fusion_last_byte    <= 1'b0;
+      fusion_tile_full    <= 1'b0;
+    end else begin
+      fusion_tile_wr <= 1'b0;  // self-clearing
+
+      // Sticky done: cleared on fusion start, set on completion
+      if (fusion_start_pulse) fusion_done_sticky <= 1'b0;
+
+      // Combinational flags
+      fusion_last_byte = (fusion_cnt + 16'd1 >= reg_fusion_len);
+      fusion_tile_full = (fusion_byte_in_tile == 4'd15);
+
+      case (fusion_state)
+        F_IDLE: begin
+          fusion_busy <= 1'b0;
+          if (fusion_start_pulse) begin
+            fusion_busy         <= 1'b1;
+            fusion_cnt          <= 16'd0;
+            fusion_byte_in_tile <= 4'd0;
+            fusion_tile_buf     <= 128'd0;
+            fusion_tile_idx     <= '0;
+            fusion_obuf_addr    <= '0;
+            fusion_state        <= F_RD_FIRST;
+          end
+        end
+
+        // First OBUF read: address 0 was set in F_IDLE transition.
+        // Wait one cycle for BRAM data, then advance addr for next byte.
+        // OBUF has registered read (always_ff), so rd_data is available
+        // one cycle after rd_addr is presented.
+        F_RD_FIRST: begin
+          fusion_obuf_addr <= fusion_obuf_addr + 1;
+          fusion_state <= F_PACK;
+        end
+
+        // Pack byte from OBUF into tile buffer.
+        // The byte at fusion_obuf_addr (set last cycle) is now on obuf_rd_data.
+        F_PACK: begin
+          fusion_tile_buf[fusion_byte_in_tile*8 +: 8] <= obuf_rd_data;
+          fusion_byte_in_tile <= fusion_byte_in_tile + 4'd1;
+          fusion_cnt <= fusion_cnt + 16'd1;
+
+          if (fusion_tile_full || fusion_last_byte) begin
+            // Tile needs to be written. NB: the byte just packed won't be
+            // visible in fusion_tile_buf until next cycle, so we commit
+            // in F_WRITE state.
+            fusion_state <= F_WRITE;
+          end else begin
+            // Continue reading next byte
+            fusion_obuf_addr <= fusion_obuf_addr + 1;
+          end
+        end
+
+        // Write complete tile to IBUF. By now fusion_tile_buf has all
+        // 16 bytes (the last one was NB-assigned in F_PACK last cycle).
+        F_WRITE: begin
+          fusion_tile_wr <= 1'b1;
+          fusion_byte_in_tile <= 4'd0;
+          fusion_tile_idx <= fusion_tile_idx + 1;
+
+          if (fusion_last_byte) begin
+            fusion_busy         <= 1'b0;
+            fusion_done_sticky  <= 1'b1;
+            fusion_state        <= F_IDLE;
+          end else begin
+            fusion_obuf_addr <= fusion_obuf_addr + 1;
+            fusion_state     <= F_PACK;
+          end
+        end
+
+        default: fusion_state <= F_IDLE;
+      endcase
+    end
   end
 
   // ============================================================
@@ -562,6 +687,10 @@ MAX_IN_DIM/TILE_COLS
       reg_result_len        <= 16'd0;
       result_start_pulse_r  <= 1'b0;
       reg_ping_ctrl         <= 1'b0;
+      reg_weight_base       <= '0;
+      reg_bias_base         <= '0;
+      fusion_start_pulse    <= 1'b0;
+      reg_fusion_len        <= 16'd0;
     end else begin
       // Self-clearing pulses
       start_pulse    <= 1'b0;
@@ -572,6 +701,7 @@ MAX_IN_DIM/TILE_COLS
       cfg_start_r    <= cfg_start_pending;  // Fire cfg_start 1 cycle after LEN write
       cfg_start_pending <= 1'b0;
       status_clear_r <= 1'b0;
+      fusion_start_pulse <= 1'b0;
 
       // Burst auto-increment: fires one cycle AFTER the write pulse,
       // so weight_sram sees current chunk_idx during wr_en, then we advance.
@@ -642,6 +772,18 @@ MAX_IN_DIM/TILE_COLS
           CSR_PING_CTRL: begin
             if (w_data_r[0]) reg_ping_ctrl <= ~reg_ping_ctrl;
           end
+          CSR_FUSION_LEN: begin
+            reg_fusion_len <= w_data_r[15:0];
+          end
+          CSR_FUSION_CTRL: begin
+            if (w_data_r[0]) fusion_start_pulse <= 1'b1;
+          end
+          CSR_WEIGHT_BASE: begin
+            reg_weight_base <= w_data_r[10:0];
+          end
+          CSR_BIAS_BASE: begin
+            reg_bias_base <= w_data_r[7:0];
+          end
           default:           ;  // input/bias windows handled by memory blocks
         endcase
       end
@@ -693,6 +835,9 @@ MAX_IN_DIM/TILE_COLS
       CSR_RESULT_LEN:    return {16'd0, reg_result_len};
       CSR_RESULT_STATUS: return {30'd0, result_done, result_busy};
       CSR_PING_CTRL:    return {31'd0, reg_ping_ctrl};
+      CSR_FUSION_STATUS: return {30'd0, fusion_done_sticky, fusion_busy};
+      CSR_WEIGHT_BASE:  return {21'd0, reg_weight_base};
+      CSR_BIAS_BASE:    return {24'd0, reg_bias_base};
       default: begin
         if (addr >= CSR_LOGIT_BASE && addr < MEM_INPUT_BASE)
           return {{(32 - OUTPUT_W) {obuf_rd_data[OUTPUT_W-1]}}, obuf_rd_data};

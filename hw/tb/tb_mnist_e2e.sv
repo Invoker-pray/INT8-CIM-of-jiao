@@ -43,6 +43,8 @@ module tb_mnist_e2e;
   logic signed [31:0] cfg_input_zp;
   logic [31:0] cfg_requant_mult, cfg_requant_shift;
   act_mode_t                                          cfg_act_mode;
+  logic [clog2_safe(WSRAM_DEPTH)-1:0] cfg_weight_base = '0;
+  logic [clog2_safe(BSRAM_DEPTH)-1:0] cfg_bias_base   = '0;
 
   // Weight SRAM (whole-row write interface)
   logic        [         clog2_safe(WSRAM_DEPTH)-1:0] w_rd_idx;
@@ -182,6 +184,8 @@ module tb_mnist_e2e;
       .cfg_requant_mult (cfg_requant_mult),
       .cfg_requant_shift(cfg_requant_shift),
       .cfg_act_mode     (cfg_act_mode),
+      .cfg_weight_base  (cfg_weight_base),
+      .cfg_bias_base    (cfg_bias_base),
       .w_rd_tile_idx    (w_rd_idx),
       .w_rd_tile        (w_rd_tile),
       .b_rd_addr        (b_rd_addr),

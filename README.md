@@ -801,6 +801,285 @@ PYNQ上板，PS通过AXI加载firmware，计算之后读取pred/logits，和gold
 
 完整优化路线见 `OPTIMIZATION_ROADMAP.md`
 
+## checkpoint 4
+
+2026.05.06, Phase A (C1) 时钟提升 60→100MHz 上板验证完成。
+
+### 做了什么
+
+把 `cim_tile.sv` 的 16 级串行 DSP 加法链拆成 4 个 4 级子链 (`TILE_SPLIT_FACTOR=4`)，增加 `ST_XEFF_LATCH → ST_MAC_Q0~Q3` 四拍流水。同时增设 `input_buffer` 到 `x_eff` 的 pipeline register、`psum_accum` 四 quarter 并发累加。目标：解锁 100MHz 工作频率。
+
+### 关键成果
+
+- **RTL 修改**: `cim_pkg.sv` (TILE_SPLIT_FACTOR=4, ST_XEFF_LATCH)、`cim_tile.sv` (4×4 split)、`cim_accel_core.sv` (7 拍 inner loop)、`input_buffer.sv` (BRAM→x_eff pipe reg)、`psum_accum.sv` (4-quarter 累加)
+- **仿真**: 3/3 全 PASS (tb_cim_tile, tb_cim_accel_core, tb_mnist_e2e)
+- **Bitstream**: WNS=-0.800 ns (801 failing endpoints)，常温上板功能正常
+- **性能**: LeNet-5 200 张 accuracy 99.5%，延迟 37.1 ms/img (27.0 fps)，较 Phase A 前 (60MHz) 的 56.2 ms/img 加速 1.51×
+
+### 时序说明
+
+100MHz (10ns 周期) 下 WNS=-0.800 ns，801 个 failing endpoint 均位于 fclk0 域。常温上板 LeNet-5 200 张 bit-exact 通过，但高温或电压波动可能导致不稳定。若上板出问题，降回 60MHz 或使用 55MHz build 变体。
+
+## checkpoint 5
+
+2026.05.07, Phase B IBUF/OBUF 双缓冲 ping-pong 上板验证完成。
+
+### 做了什么
+
+将 `input_buffer` 和 `output_buffer` 改为双 bank 结构，DMA 访问 inactive bank 的同时 CIM compute 使用 active bank，实现 load_x 和 read_out 与计算的流水线重叠。Bank 切换通过 `cim_axi_lite_slave.sv` 中的 `reg_ping_ctrl` CSR 位控制，`cim_accel_core.sv` 完全不动。
+
+### 关键成果
+
+- **RTL 修改**: `input_buffer.sv` + `output_buffer.sv` (双 bank 读写端口，`wr_bank_sel`/`rd_bank_sel`)、`cim_axi_lite_slave.sv` (`CSR_PING_CTRL` 0x06C, bank 选择 MUX)、`cim_pkg.sv` (CSR 地址)
+- **软件**: `cim_driver.py` `_ping_toggle()` 方法，`predict_batch()` 改为 ping-pong 流水线
+- **仿真**: 3/3 PASS（包括 mnist_e2e ping-pong 新测试）
+- **Bitstream**: WNS=-0.860 ns, WHS=0.022 ns, BRAM 123.5/140=88.21%
+- **性能**: LeNet-5 200 张 29.2 ms/img (34.3 fps)，较 Phase A (37.1 ms/img) 加速 27%，累计 vs MMIO baseline **57.9×**
+- **Accuracy**: 199/200 (99.5%)，与 Phase A 一致
+
+## checkpoint 6
+
+2026.05.07, Phase C Layer Fusion v3 (WEIGHT_BASE/BIAS_BASE) bitstream 构建完成，待上板验证。
+
+### 做了什么
+
+在 checkpoint 5 (Phase B 双缓冲) 基础上，增加了 OBUF→IBUF 内部硬件拷贝 FSM，消除 FC→FC 层间 DMA 往返。v3 新增 `CSR_WEIGHT_BASE` 和 `CSR_BIAS_BASE`，支持 FC1+FC2 权重/偏置在 SRAM 中共存于不同 offset，batch 融合推理时无需每张图重新加载 FC2 权重。
+
+### 关键成果
+
+- **RTL 修改 (v2)**: `cim_axi_lite_slave.sv` (4-state fusion FSM: F_IDLE→F_RD_FIRST→F_PACK→F_WRITE，OBUF byte→128-bit tile 组装→IBUF 写入)、`cim_pkg.sv` (+CSR_FUSION_CTRL/LEN/STATUS)
+- **RTL 修改 (v3)**: `cim_accel_core.sv` (+cfg_weight_base/cfg_bias_base 输入端口，地址计算加 offset)、`cim_axi_lite_slave.sv` (+CSR_WEIGHT_BASE 0x07C, CSR_BIAS_BASE 0x080)、`cim_pkg.sv` (CSR 地址)
+- **软件**: `cim_driver.py` `setup_fc_fused_pair()` (预加载 FC1+FC2 权重到不同 offset)、`infer_fc_fused_pair()` (单图 FC1→fusion→FC2)、`infer_fc_fused_batch()` (batch 融合，无逐图 weight reload)
+- **仿真**: 3/3 PASS (包括 mnist_e2e fusion 新测试)
+- **Bitstream**: WNS=-1.853 ns, WHS=0.030 ns, BRAM 114/140=81.43%, 100MHz
+
+### 时序说明
+
+v3 WNS=-1.853 ns，较 v2 (-1.151 ns) 退化约 0.7 ns。`cfg_weight_base`/`cfg_bias_base` 加法器进入了地址计算的关键路径 (w_addr_full / bias_addr_cur)。2771 个 failing setup endpoint。常温上板预期仍可工作（与 checkpoint 4-5 相似情况），但不稳定风险增加。如需完全时序收敛，使用 55MHz build 变体 (`hw/scripts/vivado_build_55mhz.sh`)。
+
+### 上板验证方法
+
+见下方《上板测试完整指南》。
+
+---
+
+# 上板测试完整指南
+
+> 适用平台：PYNQ-Z2 (xc7z020clg400-1)，PYNQ v3.0.1 镜像
+> 测试对象：checkpoint 6 bitstream（Phase C v3 Layer Fusion + Phase B 双缓冲 + Phase A 100MHz）
+
+## 一、文件准备
+
+### 1.1 上传 bitstream 到 PYNQ
+
+将以下两个文件拷贝到 PYNQ 的同一目录下（例如 `/home/xilinx/jupyter_notebooks/checkpoint6/`）：
+
+```bash
+# 在 PC 上执行（替换 <PYNQ_IP> 为实际的 PYNQ IP 地址）
+scp bitstream\&hwh/checkpoint6/cim_soc.bit xilinx@<PYNQ_IP>:/home/xilinx/jupyter_notebooks/checkpoint6/
+scp bitstream\&hwh/checkpoint6/cim_soc.hwh xilinx@<PYNQ_IP>:/home/xilinx/jupyter_notebooks/checkpoint6/
+```
+
+### 1.2 上传 Python 驱动和测试脚本
+
+```bash
+scp sw/cim_driver.py xilinx@<PYNQ_IP>:/home/xilinx/jupyter_notebooks/checkpoint6/
+scp sw/scripts/test_fusion.py xilinx@<PYNQ_IP>:/home/xilinx/jupyter_notebooks/checkpoint6/
+```
+
+> **不需要上传** `golden_model.py` 或 `golden_model_torch.py`。`test_fusion.py` 自带纯 numpy golden 模型（`golden_fc()` 函数），无需 torch 环境。
+>
+> PYNQ 镜像自带 `numpy` 和 `pynq`，无需额外 pip install。
+
+## 二、PYNQ 上板测试步骤
+
+### 2.1 基础连接测试
+
+在 PYNQ Jupyter Notebook 中新建 Python3 notebook，或在终端直接执行：
+
+```python
+import os
+os.chdir('/home/xilinx/jupyter_notebooks/checkpoint6')
+
+from cim_driver import CIMDriver
+
+# 加载 bitstream + 初始化 driver（一步完成）
+# CIMDriver 内部调用 pynq.Overlay('cim_soc.bit')，自动解析 .hwh
+drv = CIMDriver(use_dma=True)
+print("CIMDriver initialized.")
+print(f"  use_dma = {drv.use_dma}")
+
+# 验证 DMA 已启用
+print(f"  DMA = {drv.dma is not None}")
+print(f"  overlay IPs: {list(drv.overlay.ip_dict.keys())}")
+```
+
+**期望输出**：
+- `use_dma = True`
+- `DMA = True`
+- 日志中出现 `[CIMDriver] DMA initialized: sendchannel=OK, recvchannel=OK`
+
+> **说明**：`CIMDriver(use_dma=True)` 默认从当前目录加载 `cim_soc.bit` 和 `cim_soc.hwh`，无需手动调用 `Overlay()`。
+
+### 2.2 Layer Fusion 单图测试 (FC1→fusion→FC2)
+
+```python
+from scripts.test_fusion import main
+
+# 运行完整测试（单图 + batch 3 张）
+# 内部流程:
+#   1. 随机生成 FC1(784→128) + FC2(128→10) 权重/bias
+#   2. setup_fc_fused_pair() 预加载到 weight/bias SRAM 不同 offset
+#   3. infer_fc_fused_pair() 单图 FC1→fusion→FC2
+#   4. infer_fc_fused_batch() 3 张图 batch 融合（无逐图 weight reload）
+#   5. 与纯 numpy golden 模型逐元素比对
+main()
+```
+
+**期望输出**：
+```
+Golden reference:
+  FC1 output (first 8): [...]
+  FC2 output:           [...]
+  Predicted class:      X
+Weight SRAM: FC1 tiles 0..391, FC2 tiles 392..399
+Bias SRAM:   FC1 addr 0..127, FC2 addr 128..137
+
+--- Test 1: Single image fusion ---
+  Output: [...]
+  Match: True
+
+--- Test 2: Batch fusion (3 images) ---
+  Image 0: match=True
+  Image 1: match=True
+  Image 2: match=True
+
+>>> LAYER FUSION TESTS PASSED (single + batch) <<<
+```
+
+> **提示**：`main()` 一键跑完单图 + batch 两项测试。如需在 notebook 中分步调试，直接将 `main()` 函数体内的 Test 1/Test 2 代码片段复制到 notebook cell 执行即可。
+
+## 三、常见问题排查
+
+### 3.1 CIMDriver 初始化失败
+
+**现象**：`CIMDriver(use_dma=True)` 报错 "Bitstream file not found" 或 "No .hwh file found"
+
+**解决**：
+- 确认 `cim_soc.bit` 和 `cim_soc.hwh` 两个文件在当前工作目录下，且**主文件名相同**
+- PYNQ v3.0.1 要求 `.hwh` 文件名与 `.bit` 完全一致（都是 `cim_soc`）
+- 或在初始化时指定 bitstream 路径：`CIMDriver('/path/to/cim_soc.bit', use_dma=True)`
+
+### 3.2 DMA 超时 (IDLE 检查失败)
+
+**现象**：`cim._dma_mm2s_idle` 返回 False，或 `_stream_load()` 超时
+
+**解决**：
+- 重启 PYNQ 电源，重新加载 bitstream
+- 检查 bitstream 是否对应正确的 checkpoint（checkpoint 6 = Phase C v3）
+- 尝试重新构建 bitstream：`cd hw && bash scripts/vivado_build.sh`
+
+### 3.3 Fusion 状态机超时
+
+**现象**：`copy_output_to_input()` 报错 "fusion timeout" 或返回 False
+
+**解决**：
+- 确认 `n_elements ≤ MAX_OUT_DIM (256)`
+- 确认 `CSR_FUSION_STATUS` 地址为 0x078
+- 检查 OBUF 中确实有上一步 FC1 的计算结果
+
+### 3.4 计算结果不匹配
+
+**现象**：RTL 输出与 numpy golden 不一致
+
+**可能原因及排查顺序**：
+1. **权重/bias 加载错误** — 检查 `weight_base` / `bias_base` 参数是否正确传入 `configure()`
+2. **Bank 切换不同步** — Phase B 双缓冲要求 `reg_ping_ctrl` 在 load 和 compute 之间正确翻转
+3. **时序不稳定** — checkpoint 6 的 WNS=-1.853 ns，可能有 marginal timing。降频测试：
+   - 重新构建 55MHz 版本 bitstream 并上板对比
+4. **DMA 数据损坏** — 检查 `_stream_load()` 的 `base_addr` 参数（高 16 位）
+
+### 3.5 时序不稳定 / 随机错误
+
+**现象**：同一输入偶尔正确偶尔错误，或温度升高后出问题
+
+**原因**：checkpoint 6 bitstream WNS=-1.853 ns（负 slack），100MHz 时序不完全收敛。
+
+**解决**（二选一）：
+1. **使用 55MHz build 变体**：
+   ```bash
+   cd hw && bash scripts/vivado_build_55mhz.sh
+   # 将生成的 bitstream 拷贝到 PYNQ 替换
+   ```
+2. **降低 Python 侧的 `clk_mhz` 参数**（如果 driver 支持动态降频）
+
+## 四、测试流程总结
+
+```
+PC侧 (scp 上传):
+  1. bitstream&hwh/checkpoint6/cim_soc.{bit,hwh} → PYNQ:~/.../checkpoint6/
+  2. sw/cim_driver.py                              → PYNQ:~/.../checkpoint6/
+  3. sw/scripts/test_fusion.py                     → PYNQ:~/.../checkpoint6/
+
+PYNQ侧 (Jupyter / 终端):
+  4. cd ~/jupyter_notebooks/checkpoint6
+  5. CIMDriver(use_dma=True)   # 加载 bitstream，初始化 driver
+  6. test_fusion.main()        # 单图 + batch 融合测试
+  7. 全部 PASS → checkpoint 6 上板验证完成
+```
+
+## checkpoint 7
+
+2026.05.07, Phase C v4 Timing Pipeline Fix bitstream 构建完成。
+
+### 做了什么
+
+v3 中 `cfg_weight_base`/`cfg_bias_base` 加法器进入地址计算关键路径，使 WNS 从 -1.151ns 恶化至 -1.853ns (2771 failing endpoints)。v4 将 `w_rd_tile_idx` 和 `b_rd_addr` 提前一个周期寄存 (`w_rd_tile_idx_r`/`b_rd_addr_r`)，在 seq block 中预计算，combo block 使用寄存器版本，将加法器链与 SRAM 读取 + MAC 分离到不同时钟周期。
+
+### 关键成果
+
+- **RTL 修改**: `cim_accel_core.sv` (+w_rd_tile_idx_r, +b_rd_addr_r pipeline registers, pre-computation in seq block)
+- **仿真**: 3/3 ALL PASS
+- **Bitstream**: WNS=-0.533 ns (vs v3 -1.853, +1.32ns), WHS=0.008 ns, BRAM 114/140=81.43%
+- v4 时序比 v2 改善 0.62ns
+
+### 已知 Bug (v5 修复)
+
+v4 中 `bias_addr_cur` 未包含 `cfg_bias_base`（OBUF 写地址不应偏移），但 `bias_addr_next_tile` 错误地包含了 `cfg_bias_base`。非零 bias_base 时 OBUF 写地址会在 tile 边界发生偏移。v5 修复。
+
+## checkpoint 8
+
+2026.05.08, Phase C v5 OBUF Write Address Bug Fix 完成。
+
+### 做了什么
+
+修复 v4 中 `bias_addr_next_tile` 包含 `cfg_bias_base` 导致 OBUF 写地址在 tile 边界偏移的 bug。OBUF 写地址流水线 (neuron_addr_p1→p3→p4→p4b→p5→obuf_wr_addr) 仅使用不含 bias_base 的 `bias_addr_cur`。Bias 读地址由 `b_rd_addr_r` pipeline register 正确包含 `cfg_bias_base`。
+
+### 关键成果
+
+- **RTL 修改**: `cim_accel_core.sv` — `bias_addr_cur` 保持不含 bias_base；`bias_addr_next_tile` 保留含 bias_base 的版本仅作参考
+- **测试**: `tb_cim_accel_core.sv` 新增 Tests 7a/7b/7c (weight_base only, bias_base only, both)，`load_all_data_with_offsets()` task
+- **仿真**: 3/3 ALL PASS (9 个 accel_core 测试全部 MATCH)
+- **Bitstream**: 构建中 → `bitstream&hwh/checkpoint8/`
+
+### Files Changed (v5)
+
+1. `cim_accel_core.sv` — bias_addr_cur 移除 cfg_bias_base
+2. `tb_cim_accel_core.sv` — Tests 7a/7b/7c + load_all_data_with_offsets() task
+
+## 五、各 checkpoint 上板命令速查
+
+| Checkpoint | 主要特性 | 关键 bitstream 文件 | 测试方式 |
+|-----------|---------|-------------------|---------|
+| 1 | 基础 MMIO 数据通路，60MHz | `checkpoint1/cim_soc.bit` | `CIMDriver()` → `infer_fc()` |
+| 2 | PicoRV32 软核控制 | `checkpoint2/` | `sw/full_cim_test_pynq.py` (ARM 路径) |
+| 3 | C3 DMA + P0 S2MM, 60MHz | `checkpoint3/cim_soc.bit` | `benchmark_e2e.py --model lenet5` |
+| 4 | Phase A 100MHz (TILE_SPLIT=4) | `checkpoint4/cim_soc.bit` | `benchmark_e2e.py --model lenet5` |
+| 5 | Phase B IBUF/OBUF 双缓冲 | `checkpoint5/cim_soc.bit` | `benchmark_e2e.py --model lenet5` |
+| 6 | Phase C v3 Layer Fusion | `checkpoint6/cim_soc.bit` | `python test_fusion.py` 或 notebook |
+| 7 | Phase C v4 Timing Pipeline Fix | `checkpoint7/cim_soc.bit` | `python test_fusion.py` 或 notebook |
+| 8 | Phase C v5 OBUF Address Fix | `checkpoint8/cim_soc.bit` | `python test_fusion.py` 或 notebook |
+
 # 坑
 
 ## vivado综合器限制
