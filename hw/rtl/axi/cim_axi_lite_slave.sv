@@ -232,10 +232,10 @@ module cim_axi_lite_slave
   logic [clog2_safe(BSRAM_DEPTH)-1:0] reg_bias_base;
 
   // Phase C: Layer Fusion — OBUF→IBUF direct copy
-  // F_WAIT_MUX: 1-cycle delay for always_comb obuf_rd_addr MUX propagation
-  // (same rationale as cim_axi_stream_source S_WAIT — Fixes v2)
+  // v7: F_WAIT_MUX captures byte 0 (rd_data valid at posedge after MUX NBA),
+  //     then transitions directly to F_PACK. Eliminates F_RD_FIRST.
   typedef enum logic [2:0] {
-    F_IDLE, F_WAIT_MUX, F_RD_FIRST, F_PACK, F_WRITE
+    F_IDLE, F_WAIT_MUX, F_PACK, F_WRITE
   } fusion_state_t;
   fusion_state_t fusion_state;
   logic                  fusion_start_pulse;
@@ -566,20 +566,18 @@ MAX_IN_DIM/TILE_COLS
   // DMA-writable IBUF bank (~reg_ping_ctrl). After copy, software must
   // toggle reg_ping_ctrl so compute reads from the newly-written bank.
   //
-  // OBUF read pipeline (2-cycle latency):
-  //   1 cycle: fusion_busy → always_comb MUX → obuf_rd_addr → OBUF rd_addr
-  //   1 cycle: OBUF registered BRAM read (rd_data <= bank[rd_addr])
-  //   总计:   set addr=N at cycle T → rd_data valid at cycle T+2
+  // OBUF read pipeline (1-cycle MUX propagation):
+  //   F_IDLE NBA: fusion_busy=1, fusion_obuf_addr=0
+  //   → always_comb MUX routes obuf_rd_addr=0 (after NBA)
+  //   → next posedge: OBUF captures bank[0], rd_data=OBUF[0]
+  //   → F_WAIT_MUX captures byte 0 from rd_data (valid at cycle start)
   //
   // State sequence for N bytes:
-  //   F_IDLE→F_WAIT_MUX:  present addr=0
-  //   F_WAIT_MUX→F_RD_FIRST: wait MUX, present addr=1
-  //   F_RD_FIRST→F_PACK:  capture byte 0, present addr=2
-  //   F_PACK:              capture bytes 1..N-1 (pipelined addr=byte_idx+2)
-  //   F_WRITE:             commit 128-bit tile to IBUF
+  //   F_IDLE→F_WAIT_MUX: present addr=0, capture byte 0, advance addr
+  //   F_PACK:             capture bytes 1..N-1 (pipelined addr=byte_idx+1)
+  //   F_WRITE:            commit 128-bit tile to IBUF
   //
-  // Total: N+2 cycles + ceil(N/16) tile-write overhead.
-  // (Matches cim_axi_stream_source pipeline: S_IDLE→S_WAIT→S_WARMUP→S_READ)
+  // Total: N cycles + ceil(N/16) tile-write overhead.
   // ============================================================
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -618,33 +616,24 @@ MAX_IN_DIM/TILE_COLS
           end
         end
 
-        // Wait 1 cycle for always_comb MUX (fusion_busy → obuf_rd_addr) to
-        // propagate to the output_buffer BRAM address input.
-        // When fusion_busy changes 0→1, the MUX selects fusion_obuf_addr
-        // AFTER the NBA region. OBUF captures the new rd_addr at the NEXT
-        // posedge, so rd_data for addr 0 is available 2 cycles later.
+        // MUX propagated after F_IDLE NBA: obuf_rd_addr=0, OBUF captured
+        // bank[0] at this posedge → rd_data holds OBUF[0] right now.
+        // Capture byte 0 and advance to next state.
         F_WAIT_MUX: begin
-          fusion_obuf_addr <= fusion_obuf_addr + 1;  // addr 0→1
-          fusion_state <= F_RD_FIRST;
-        end
-
-        // First byte: OBUF[0] is now valid on obuf_rd_data (2 cycles after
-        // addr=0 was set in F_IDLE→F_WAIT_MUX transition: 1 cycle MUX +
-        // 1 cycle BRAM read). Capture it and advance to addr 2.
-        F_RD_FIRST: begin
           fusion_tile_buf[0*8+:8] <= obuf_rd_data;
           fusion_byte_in_tile <= 4'd1;
           fusion_cnt <= fusion_cnt + 16'd1;
           if (fusion_last_byte)
             fusion_state <= F_WRITE;
           else begin
-            fusion_obuf_addr <= fusion_obuf_addr + 1;
+            fusion_obuf_addr <= fusion_obuf_addr + 1;  // 0→1 for next byte
             fusion_state <= F_PACK;
           end
         end
 
         // Pack subsequent bytes (byte 1..N-1) from OBUF into tile buffer.
-        // obuf_rd_data holds the byte addressed 2 cycles ago.
+        // obuf_rd_data holds the byte addressed 1 cycle ago (addr was set
+        // in previous cycle's NBA, OBUF captured at this posedge).
         F_PACK: begin
           fusion_tile_buf[fusion_byte_in_tile*8 +: 8] <= obuf_rd_data;
           fusion_byte_in_tile <= fusion_byte_in_tile + 4'd1;
