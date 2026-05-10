@@ -43,6 +43,8 @@ def parse_args():
                    help="Enable experimental DMA data path (default: legacy MMIO)")
     p.add_argument("--batch",     action="store_true",
                    help="Use layer-wise batching (predict_batch) for optimized throughput")
+    p.add_argument("--no-fusion", action="store_true",
+                   help="Disable Phase C FC-layer fusion for A/B comparison")
     p.add_argument("--verbose",   action="store_true",
                    help="Print per-image prediction")
     return p.parse_args()
@@ -152,6 +154,8 @@ def main():
     else:
         model = load_mlp_model(drv, args.data_dir)
         input_shape = (784,)
+    if args.no_fusion:
+        model.use_fusion = False
 
     print(f"Model loaded. Starting benchmark on {n} images ...\n")
 

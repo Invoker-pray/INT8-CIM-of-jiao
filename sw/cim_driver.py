@@ -1027,6 +1027,7 @@ class CIMModel:
     def __init__(self, driver):
         self.drv = driver
         self.layers = []
+        self.use_fusion = True  # set False for A/B benchmarks
 
     def _find_fc_groups(self):
         """Find groups of consecutive FC layers (2+). Returns {start_idx: end_idx}."""
@@ -1443,7 +1444,7 @@ class CIMModel:
             t_total_start = time.perf_counter()
 
         # Phase C: detect consecutive FC groups for fusion (DMA mode only)
-        fc_groups = self._find_fc_groups() if self.drv.use_dma else {}
+        fc_groups = self._find_fc_groups() if (self.drv.use_dma and self.use_fusion) else {}
         skip_layers = set()
         for start, end in fc_groups.items():
             for j in range(start + 1, end):
