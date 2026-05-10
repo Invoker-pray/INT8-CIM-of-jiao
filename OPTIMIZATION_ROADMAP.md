@@ -357,7 +357,7 @@ Total cycles: N + 1 + ceil(N/16)×2 (wait + tile-write overhead per tile).
 Files changed:
 1. `cim_axi_lite_slave.sv` — F_WAIT_MUX simplified to wait-only; F_WRITE→F_WAIT_MUX transition; updated pipeline documentation
 
-**Regression:** PASS (3/3). **Committed:** `d31a3ce`. **Bitstream:** `bitstream&hwh/checkpoint13/` (building).
+**Regression:** PASS (3/3). **Committed:** `d31a3ce`. **Bitstream:** `bitstream&hwh/checkpoint13/`. WNS=-0.654, WHS=0.014, LUT 32.53%. On-board test pending.
 
 **预期收益：**
 - 单张 image FC→FC 过渡: -9ms (消除一次 S2MM + 一次 MM2S DMA setup)
