@@ -357,7 +357,20 @@ Total cycles: N + 1 + ceil(N/16)×2 (wait + tile-write overhead per tile).
 Files changed:
 1. `cim_axi_lite_slave.sv` — F_WAIT_MUX simplified to wait-only; F_WRITE→F_WAIT_MUX transition; updated pipeline documentation
 
-**Regression:** PASS (3/3). **Committed:** `d31a3ce`. **Bitstream:** `bitstream&hwh/checkpoint13/`. WNS=-0.654, WHS=0.014, LUT 32.53%. On-board test pending.
+**Regression:** PASS (3/3). **Committed:** `d31a3ce`. **Bitstream:** `bitstream&hwh/checkpoint13/`. WNS=-0.654, WHS=0.014, LUT 32.53%. **On-board test: FAILED** — same 1-byte shift pattern as v8. v9 fix didn't change the observed behavior.
+
+**v10 F_WAIT_MUX Addr Advance Fix (2026-05-10):** Deeper analysis of v9 failure: the fix removed byte capture from F_WAIT_MUX, but didn't advance `fusion_obuf_addr`. At F_WAIT_MUX exit, addr=0. F_PACK byte 0 captures bank[0] correctly, but always_comb still sees addr=0 (NBA `fusion_obuf_addr <= 1` hasn't taken effect). OBUF reads bank[0] **again** at this cycle (duplicate read). Next F_PACK gets rd_data = bank[0] (the duplicate) instead of bank[1] — 1-byte shift.
+
+Pipeline invariant: at each capture cycle, `addr = byte_idx + 1`. For byte 0: addr must be 1, not 0.
+
+Fix:
+- F_WAIT_MUX: `fusion_obuf_addr <= fusion_obuf_addr + 1` (advance 0→1, avoids duplicate read)
+- F_WRITE: route back to F_PACK (not F_WAIT_MUX) — addr already = byte_idx+1 after F_WRITE's +1
+- F_PACK unchanged: handles bytes 0..N-1 correctly with addr = byte_idx+1
+
+Pipeline trace for byte 0: F_IDLE(addr=0)→F_WAIT_MUX(OBUF reads bank[0], advance addr→1)→F_PACK(rd_data=bank[0]✓, advance addr→2, OBUF reads bank[1])→F_PACK(rd_data=bank[1]✓).
+
+**Regression:** PASS (3/3). **Committed:** `19d5391`. **Bitstream:** `bitstream&hwh/checkpoint14/` (building).
 
 **预期收益：**
 - 单张 image FC→FC 过渡: -9ms (消除一次 S2MM + 一次 MM2S DMA setup)
