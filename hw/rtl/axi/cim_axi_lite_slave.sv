@@ -572,20 +572,21 @@ MAX_IN_DIM/TILE_COLS
   // DMA-writable IBUF bank (~reg_ping_ctrl). After copy, software must
   // toggle reg_ping_ctrl so compute reads from the newly-written bank.
   //
-  // OBUF read pipeline (2-cycle: MUX + registered BRAM):
+  // OBUF read pipeline (registered BRAM + NBA addr advance):
   //   OBUF BRAM read is registered (always_ff): rd_data <= bank[rd_addr].
-  //   So rd_data lags rd_addr by 1 cycle.
+  //   rd_data lags rd_addr by 1 cycle. To avoid duplicate reads, addr must
+  //   be incremented in the SAME cycle that captures the current byte.
   //
-  //   F_IDLE NBA: fusion_busy=1, fusion_obuf_addr=0
-  //   F_WAIT_MUX: always_comb MUX routes obuf_rd_addr=0 (after NBA update).
-  //               OBUF issues rd_data <= bank[0] (NBA, ready next cycle).
-  //               Just waits — does NOT capture data.
-  //   F_PACK:     rd_data = bank[0] now valid. Capture byte 0.
-  //               Set obuf_rd_addr=1 for next byte. Loop for bytes 1..N-1.
-  //   F_WRITE:    commit 128-bit tile to IBUF. If not done, route back to
-  //               F_WAIT_MUX to wait for OBUF read at the incremented addr.
+  //   Invariant: at the start of each capture cycle (F_PACK), addr = byte_idx + 1.
   //
-  // Total: N + 1 + ceil(N/16)×2 cycles (wait + tile-write overhead).
+  //   F_IDLE:     addr=0. fusion_busy=1 (NBA).
+  //   F_WAIT_MUX: OBUF reads bank[0] at addr=0 (→ rd_data ready next cycle).
+  //               Advance addr: 0→1. → F_PACK.
+  //   F_PACK:     rd_data = bank[byte_idx]. Capture into tile_buf.
+  //               Advance addr: N→N+1 (unless tile full).
+  //               If tile full or last byte → F_WRITE, else loop F_PACK.
+  //   F_WRITE:    Commit 128-bit tile to IBUF. Advance addr by 1.
+  //               If not done → F_PACK (addr is now byte_idx+1 for next tile).
   // ============================================================
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -636,11 +637,13 @@ MAX_IN_DIM/TILE_COLS
           end
         end
 
-        // Wait 1 cycle for OBUF registered read to complete.
-        // obuf_rd_addr was set by always_comb in the previous cycle (F_IDLE
-        // or F_WRITE). OBUF BRAM read is registered, so rd_data will be
-        // valid at the next posedge when we enter F_PACK.
+        // Wait 1 cycle for OBUF registered read to complete AND advance
+        // addr to avoid duplicate bank[0] read. F_IDLE set addr=0; OBUF
+        // reads bank[0] here (data ready in F_PACK). Advancing addr to 1
+        // now means OBUF will read bank[1] in the next F_PACK, keeping
+        // the pipeline aligned: addr = byte_idx + 1 at each capture cycle.
         F_WAIT_MUX: begin
+          fusion_obuf_addr <= fusion_obuf_addr + 1;  // 0→1
           fusion_state <= F_PACK;
         end
 
@@ -680,7 +683,7 @@ MAX_IN_DIM/TILE_COLS
             fusion_state        <= F_IDLE;
           end else begin
             fusion_obuf_addr <= fusion_obuf_addr + 1;
-            fusion_state     <= F_WAIT_MUX;
+            fusion_state     <= F_PACK;
           end
         end
 
