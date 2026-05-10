@@ -1445,12 +1445,9 @@ class CIMModel:
         # Phase C: detect consecutive FC groups for fusion (DMA mode only)
         fc_groups = self._find_fc_groups() if self.drv.use_dma else {}
         skip_layers = set()
-        if fc_groups:
-            for start, end in fc_groups.items():
-                group = self.layers[start:end]
-                self._preload_fc_chain(group)
-                for j in range(start + 1, end):
-                    skip_layers.add(j)
+        for start, end in fc_groups.items():
+            for j in range(start + 1, end):
+                skip_layers.add(j)
 
         for i, layer in enumerate(self.layers):
             if i in skip_layers:
@@ -1461,8 +1458,11 @@ class CIMModel:
                 # Check if this FC is the start of a fusion chain
                 fc_end = fc_groups.get(i)
                 if fc_end is not None:
-                    # Phase C fusion: FC chain with OBUF→IBUF internal copy
+                    # Phase C fusion: FC chain with OBUF→IBUF internal copy.
+                    # Load weights NOW (after any conv layers have finished
+                    # their weight loads at tile 0), not before the main loop.
                     group_layers = self.layers[i:fc_end]
+                    self._preload_fc_chain(group_layers)
                     if profile:
                         t_layer = time.perf_counter()
                         t_setup = t_layer  # setup already done in _preload_fc_chain
