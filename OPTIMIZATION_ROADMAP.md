@@ -370,9 +370,9 @@ Fix:
 
 Pipeline trace for byte 0: F_IDLE(addr=0)→F_WAIT_MUX(OBUF reads bank[0], advance addr→1)→F_PACK(rd_data=bank[0]✓, advance addr→2, OBUF reads bank[1])→F_PACK(rd_data=bank[1]✓).
 
-**Regression:** PASS (3/3). **Committed:** `19d5391`. **Bitstream:** `bitstream&hwh/checkpoint14/`. WNS=-0.911, WHS=0.031, LUT 32.66%, FF 10.25%, BRAM 88.21%, DSP 100%. **On-board test: PASS** — diag_fusion_isolate.py 5/5 PASS, test_fusion.py single+batch PASS.
+**Regression:** PASS (3/3). **Committed:** `19d5391`. **Bitstream:** `bitstream&hwh/checkpoint5/`. WNS=-0.911, WHS=0.031, LUT 32.66%, FF 10.25%, BRAM 88.21%, DSP 100%. **On-board test: PASS** — diag_fusion_isolate.py 5/5 PASS, test_fusion.py single+batch PASS.
 
-**实测收益 (batch 200 images, 100MHz, checkpoint14):**
+**实测收益 (batch 200 images, 100MHz, checkpoint5):**
 - **MLP (784→128→10): 2.4→1.9 ms/img, 419→515 fps (+23%)** — FC1→FC2 fusion 消除一次 S2MM+MM2S DMA round-trip
 - LeNet-5 (conv+3FC): 30.3→30.2 ms/img (noise-level) — FC 层仅占总时间 ~2%，conv dominates
 - 单张 image 推理（无 batch ping-pong overlap）收益更大：fusion 省掉整个 FC→FC DMA round-trip
@@ -547,7 +547,7 @@ PyTorch model
 | ✅ DONE | RTL k_pack v2 (MAX_IN_DIM 1024→1536) | MVM 29→24 (-17%), 实测 36.9ms/img (27.1 fps), BRAM 90% 极限 | 低 | 1d | 2026-05-05 |
 | ✅ DONE | C1 时钟提升 (60→100MHz, TILE_SPLIT_FACTOR=4) — bitstream 上板, accuracy 99.5% | compute -7.3%, 总延迟持平, 证明 100MHz 时序可行 | 中 | 1w | 2026-05-06 |
 | ✅ DONE | Phase B: IBUF/OBUF 双缓冲 — DMA↔Compute 乒乓重叠 | 37.1→29.2ms/img (-22%, 34.3 fps), load_x+read_out 完全隐藏 | 中 | 1w | 2026-05-06 |
-| ✅ DONE | Phase C: Layer Fusion — OBUF→IBUF 内部直拷, 消除 FC→FC DMA round-trip | RTL v9 DONE (byte-shift fix, regression PASS), bitstream building (checkpoint13) | 中 | 1w | 2026-05-10 |
+| ✅ DONE | Phase C: Layer Fusion — OBUF→IBUF 内部直拷, 消除 FC→FC DMA round-trip | RTL v10 PASS (diag 5/5, test_fusion PASS), bitstream checkpoint5, MLP +23%, LeNet-5 29.2ms/img | 中 | 1w | 2026-05-10 |
 | 🟡 P1 | CIM 编译器 (PyTorch→CIM) | 用研效率 | 高 | 4w |
 | 🟡 P1 | 稀疏权重支持 | 30-40% speedup | 高 | 4w |
 | 🟢 P2 | KV260 移植 | 更快时钟+更大 BRAM | 中 | 2w |
