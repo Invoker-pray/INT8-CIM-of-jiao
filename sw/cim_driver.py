@@ -1019,11 +1019,48 @@ class CIMModel:
         model.add_fc(784, 128, w1_chunks, b1_u32, zp=0, mult=14, shift=16, relu=True)
         model.add_fc(128, 10,  w2_chunks, b2_u32, zp=0, mult=140, shift=16, relu=False)
         pred, logits = model.predict(image_u8)
+
+    Phase C fusion: consecutive FC layers are automatically detected and
+    chained via OBUF→IBUF internal copy, eliminating DMA round-trips.
     """
 
     def __init__(self, driver):
         self.drv = driver
         self.layers = []
+
+    def _find_fc_groups(self):
+        """Find groups of consecutive FC layers (2+). Returns {start_idx: end_idx}."""
+        groups = {}
+        i = 0
+        while i < len(self.layers):
+            if self.layers[i]["type"] == "fc":
+                j = i + 1
+                while j < len(self.layers) and self.layers[j]["type"] == "fc":
+                    j += 1
+                if j - i >= 2:
+                    groups[i] = j
+                i = j
+            else:
+                i += 1
+        return groups
+
+    def _preload_fc_chain(self, group_layers):
+        """Pre-load all FC layers in a fusion chain at computed SRAM offsets.
+
+        Only DMA-loads weights/bias — does NOT configure accelerator CSRs.
+        The chain loop does per-layer configure() before each start_and_wait().
+        """
+        w_base = 0
+        b_base = 0
+        for layer in group_layers:
+            layer["_w_base"] = w_base
+            layer["_b_base"] = b_base
+            self.drv.load_weights(layer["w_chunks"], base_tile=w_base)
+            self.drv.load_bias(layer["bias_u32"], base_addr=b_base)
+            n_ib = (layer["in_dim"] + 15) // 16
+            n_ob = (layer["out_dim"] + 15) // 16
+            w_base += n_ob * n_ib
+            b_base += (layer["out_dim"] + 15) & ~15
 
     def add_fc(self, in_dim, out_dim, w_chunks, bias_u32, zp, mult, shift, relu=True,
                weight_int8=None, bias_int32=None):
@@ -1405,10 +1442,102 @@ class CIMModel:
             prof = {"layers": [], "n_images": n_img}
             t_total_start = time.perf_counter()
 
+        # Phase C: detect consecutive FC groups for fusion (DMA mode only)
+        fc_groups = self._find_fc_groups() if self.drv.use_dma else {}
+        skip_layers = set()
+        if fc_groups:
+            for start, end in fc_groups.items():
+                group = self.layers[start:end]
+                self._preload_fc_chain(group)
+                for j in range(start + 1, end):
+                    skip_layers.add(j)
+
         for i, layer in enumerate(self.layers):
+            if i in skip_layers:
+                continue
             layer_cycles = 0
 
             if layer["type"] == "fc":
+                # Check if this FC is the start of a fusion chain
+                fc_end = fc_groups.get(i)
+                if fc_end is not None:
+                    # Phase C fusion: FC chain with OBUF→IBUF internal copy
+                    group_layers = self.layers[i:fc_end]
+                    if profile:
+                        t_layer = time.perf_counter()
+                        t_setup = t_layer  # setup already done in _preload_fc_chain
+                        setup_ms = 0.0  # amortized; weights pre-loaded before loop
+
+                    next_act = []
+                    inputs_list = []
+                    for x in curr:
+                        if isinstance(x, np.ndarray):
+                            if x.ndim > 1:
+                                x = x.flatten()
+                            if x.dtype == np.int8:
+                                x = x.view(np.uint8)
+                        elif isinstance(x, list):
+                            x = np.array([int(v) & 0xFF for v in x], dtype=np.uint8)
+                        inputs_list.append(np.asarray(x, dtype=np.uint8))
+
+                    group_cycles = 0
+                    for x in inputs_list:
+                        img_cycles = 0
+                        for li, gl in enumerate(group_layers):
+                            self.drv.configure(
+                                gl["in_dim"], gl["out_dim"],
+                                gl["zp"], gl["mult"], gl["shift"],
+                                1 if gl["relu"] else 0,
+                                weight_base=gl["_w_base"],
+                                bias_base=gl["_b_base"],
+                            )
+                            if li == 0:
+                                self.drv.load_input(x)
+                            # else: IBUF already holds fusion data from prev layer's copy
+                            cyc, _ = self.drv.start_and_wait()
+                            img_cycles += cyc
+                            if li < len(group_layers) - 1:
+                                self.drv.copy_output_to_input(gl["out_dim"])
+                        out = self.drv.read_output(group_layers[-1]["out_dim"])
+                        next_act.append(out)
+                        group_cycles += img_cycles
+
+                    layer_cycles += group_cycles
+                    total_cycles += layer_cycles
+
+                    if verbose:
+                        names = "→".join(f"{gl['in_dim']}x{gl['out_dim']}" for gl in group_layers)
+                        print(
+                            f"  Layers {i}..{fc_end-1} (FC chain [{names}]): "
+                            f"{len(curr)} images, {layer_cycles} cycles"
+                        )
+
+                    if profile:
+                        layer_total_ms = (time.perf_counter() - t_layer) * 1000
+                        for gi, gl in enumerate(group_layers):
+                            prof["layers"].append({
+                                "name": f"fc_{gl['in_dim']}x{gl['out_dim']}",
+                                "type": "fc",
+                                "n_mvm": n_img,
+                                "k_pack": 1,
+                                "im2col_ms": 0.0,
+                                "pack_ms": 0.0,
+                                "setup_ms": setup_ms / n_img,
+                                "load_x_ms": 0.0,
+                                "compute_ms": 0.0,
+                                "read_out_ms": 0.0,
+                                "dma_x_setup_ms": 0.0,
+                                "dma_x_transfer_ms": 0.0,
+                                "pool_ms": 0.0,
+                                "hw_cycles": group_cycles,
+                                "total_ms": layer_total_ms / n_img / len(group_layers),
+                                "fusion": True if gi < len(group_layers) - 1 else False,
+                            })
+
+                    curr = next_act
+                    continue
+
+                # Regular (non-fusion) FC path
                 if profile:
                     t_layer = time.perf_counter()
 
