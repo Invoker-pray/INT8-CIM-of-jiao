@@ -372,11 +372,12 @@ Pipeline trace for byte 0: F_IDLE(addr=0)→F_WAIT_MUX(OBUF reads bank[0], advan
 
 **Regression:** PASS (3/3). **Committed:** `19d5391`. **Bitstream:** `bitstream&hwh/checkpoint14/`. WNS=-0.911, WHS=0.031, LUT 32.66%, FF 10.25%, BRAM 88.21%, DSP 100%. **On-board test: PASS** — diag_fusion_isolate.py 5/5 PASS, test_fusion.py single+batch PASS.
 
-**预期收益：**
-- 单张 image FC→FC 过渡: -9ms (消除一次 S2MM + 一次 MM2S DMA setup)
-- **Batch 推理 FC→FC 过渡: 每张 image 都省 ~9ms** (v3 消除 per-image weight reload)
-- MNIST (FC1→FC2, 1 transition): batch 每 image 降 ~9ms
-- LeNet-5 (FC1→FC2→FC3, 2 transitions): batch 每 image 降 ~18ms
+**实测收益 (batch 200 images, 100MHz, checkpoint14):**
+- **MLP (784→128→10): 2.4→1.9 ms/img, 419→515 fps (+23%)** — FC1→FC2 fusion 消除一次 S2MM+MM2S DMA round-trip
+- LeNet-5 (conv+3FC): 30.3→30.2 ms/img (noise-level) — FC 层仅占总时间 ~2%，conv dominates
+- 单张 image 推理（无 batch ping-pong overlap）收益更大：fusion 省掉整个 FC→FC DMA round-trip
+- CIMModel.predict_batch() 自动检测连续 FC 层并启用 fusion（`--no-fusion` 可禁用做 A/B 对比）
+- Fusion 延迟: ~150us for 128 bytes (FC1 输出拷贝到 FC2 输入)
 
 **Files Changed:**
 1. `cim_pkg.sv` — CSR_FUSION_CTRL/LEN/STATUS + CSR_WEIGHT_BASE + CSR_BIAS_BASE
