@@ -125,6 +125,8 @@ _CSR_PING_CTRL = 0x06C
 _CSR_FUSION_CTRL = 0x070   # [0]=start; write 1 triggers copy
 _CSR_FUSION_LEN = 0x074    # [15:0]=n_elements (INT8 count)
 _CSR_FUSION_STATUS = 0x078  # [0]=busy, [1]=done
+_CSR_FUSION_DBG0   = 0x084  # [15:0]=fusion cycle counter
+_CSR_FUSION_DBG1   = 0x088  # [7:0]=fusion tile-write counter
 
 # Phase C: Multi-layer base offsets for weight/bias SRAM coexistence
 _CSR_WEIGHT_BASE = 0x07C   # [10:0]=tile offset for weight reads
@@ -749,10 +751,10 @@ class CIMDriver:
         self.configure(in_dim, out_dim, zp, mult, shift, relu)
         if do_t: t1 = time.perf_counter()
         dma_w = {} if self.use_dma and do_t else None
-        self.load_weights(w_chunks, dma_w)
+        self.load_weights(w_chunks, 0, dma_w)
         if do_t: t2 = time.perf_counter()
         dma_b = {} if self.use_dma and do_t else None
-        self.load_bias(bias_u32, dma_b)
+        self.load_bias(bias_u32, 0, dma_b)
         if do_t: t3 = time.perf_counter()
         dma_x = {} if self.use_dma and do_t else None
         self.load_input(input_u8, dma_x)

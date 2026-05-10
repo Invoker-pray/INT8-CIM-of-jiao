@@ -250,6 +250,13 @@ module cim_axi_lite_slave
   logic [clog2_safe(MAX_OUT_DIM)-1:0]          fusion_obuf_addr;
   logic                  fusion_last_byte;     // flag: current byte is last
   logic                  fusion_tile_full;     // flag: tile complete after current byte
+  logic [         15:0]  fusion_cycle_cnt;     // debug: cycles spent in fusion FSM
+  logic [          7:0]  fusion_wr_cnt;        // debug: number of tile writes
+
+  // Pipeline registers for IBUF write timing closure
+  logic                  fusion_wr_en_pipe;
+  logic [clog2_safe(MAX_IN_DIM/TILE_COLS)-1:0] fusion_wr_tile_pipe;
+  logic [            IBUF_TILE_W-1:0]           fusion_wr_data_pipe;
 
   assign stream_path_en = reg_stream_path_en;
   assign cfg_dest       = reg_stream_dest;
@@ -459,11 +466,10 @@ MAX_IN_DIM/TILE_COLS
   logic [clog2_safe(MAX_IN_DIM/TILE_COLS)-1:0]           ibuf_wr_tile_mux;
   logic [                            IBUF_TILE_W-1:0]    ibuf_wr_data_mux;
 
-  assign ibuf_wr_en_mux   = fusion_tile_wr ? 1'b1 :
-                            (reg_stream_path_en ? stream_ibuf_wr_en       : ibuf_commit);
-  assign ibuf_wr_tile_mux = fusion_tile_wr ? fusion_tile_idx :
+  assign ibuf_wr_en_mux   = fusion_wr_en_pipe || (reg_stream_path_en ? stream_ibuf_wr_en       : ibuf_commit);
+  assign ibuf_wr_tile_mux = fusion_wr_en_pipe ? fusion_wr_tile_pipe :
                             (reg_stream_path_en ? stream_ibuf_wr_tile_idx : ibuf_commit_tile);
-  assign ibuf_wr_data_mux = fusion_tile_wr ? fusion_tile_buf :
+  assign ibuf_wr_data_mux = fusion_wr_en_pipe ? fusion_wr_data_pipe :
                             (reg_stream_path_en ? stream_ibuf_wr_tile_data: ibuf_staging);
 
   input_buffer #(
@@ -592,8 +598,20 @@ MAX_IN_DIM/TILE_COLS
       fusion_obuf_addr    <= '0;
       fusion_last_byte    <= 1'b0;
       fusion_tile_full    <= 1'b0;
+      fusion_cycle_cnt   <= 16'd0;
+      fusion_wr_cnt      <= 8'd0;
+      fusion_wr_en_pipe  <= 1'b0;
+      fusion_wr_data_pipe <= 128'd0;
+      fusion_wr_tile_pipe <= '0;
     end else begin
       fusion_tile_wr <= 1'b0;  // self-clearing
+
+      // Debug: count cycles and tile writes
+      if (fusion_busy) fusion_cycle_cnt <= fusion_cycle_cnt + 16'd1;
+      if (fusion_start_pulse) begin
+        fusion_cycle_cnt <= 16'd0;
+        fusion_wr_cnt    <= 8'd0;
+      end
 
       // Sticky done: cleared on fusion start, set on completion
       if (fusion_start_pulse) fusion_done_sticky <= 1'b0;
@@ -654,7 +672,11 @@ MAX_IN_DIM/TILE_COLS
         // 16 bytes (the last one was NB-assigned in F_PACK last cycle).
         F_WRITE: begin
           fusion_tile_wr <= 1'b1;
+          fusion_wr_cnt  <= fusion_wr_cnt + 8'd1;
           fusion_byte_in_tile <= 4'd0;
+          // Pipeline: capture complete tile for write next cycle
+          fusion_wr_data_pipe <= fusion_tile_buf;
+          fusion_wr_tile_pipe <= fusion_tile_idx;
           fusion_tile_idx <= fusion_tile_idx + 1;
 
           if (fusion_last_byte) begin
@@ -669,6 +691,8 @@ MAX_IN_DIM/TILE_COLS
 
         default: fusion_state <= F_IDLE;
       endcase
+      // Pipeline: delay write-enable by 1 cycle for IBUF timing closure
+      fusion_wr_en_pipe <= fusion_tile_wr;
     end
   end
 
@@ -854,7 +878,11 @@ MAX_IN_DIM/TILE_COLS
       CSR_RESULT_LEN:    return {16'd0, reg_result_len};
       CSR_RESULT_STATUS: return {30'd0, result_done, result_busy};
       CSR_PING_CTRL:    return {31'd0, reg_ping_ctrl};
+      CSR_FUSION_CTRL:  return 32'd0;
+      CSR_FUSION_LEN:   return {16'd0, reg_fusion_len};
       CSR_FUSION_STATUS: return {30'd0, fusion_done_sticky, fusion_busy};
+      CSR_FUSION_DBG0:  return {16'd0, fusion_cycle_cnt};
+      CSR_FUSION_DBG1:  return {24'd0, fusion_wr_cnt};
       CSR_WEIGHT_BASE:  return {21'd0, reg_weight_base};
       CSR_BIAS_BASE:    return {24'd0, reg_bias_base};
       default: begin

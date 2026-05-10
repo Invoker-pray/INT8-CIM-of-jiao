@@ -181,6 +181,9 @@ package cim_pkg;
   // --- Phase C: Multi-layer base offsets for weight/bias SRAM ---
   parameter logic [13:0] CSR_WEIGHT_BASE = 14'h07C;  // [10:0]=tile offset for weight reads
   parameter logic [13:0] CSR_BIAS_BASE   = 14'h080;  // [7:0]=word offset for bias reads
+  // Phase C debug registers
+  parameter logic [13:0] CSR_FUSION_DBG0 = 14'h084;  // [15:0]=fusion cycle counter
+  parameter logic [13:0] CSR_FUSION_DBG1 = 14'h088;  // [7:0]=fusion tile-write counter
 
   // ==========================================================================
   // 8. Activation Function Modes
