@@ -4,7 +4,8 @@
 
 module cim_rv32_top_wrapper #(
     parameter CLK_FREQ  = 50000000,
-    parameter BAUD_RATE = 115200
+    parameter BAUD_RATE = 115200,
+    parameter FW_DEPTH  = 8192
 ) (
     input  wire        clk,
     input  wire        rst_n,
@@ -29,7 +30,8 @@ module cim_rv32_top_wrapper #(
 
   cim_rv32_top #(
       .CLK_FREQ  (CLK_FREQ),
-      .BAUD_RATE (BAUD_RATE)
+      .BAUD_RATE (BAUD_RATE),
+      .FW_DEPTH  (FW_DEPTH)
   ) u_inner (
       .clk          (clk),
       .rst_n        (rst_n),

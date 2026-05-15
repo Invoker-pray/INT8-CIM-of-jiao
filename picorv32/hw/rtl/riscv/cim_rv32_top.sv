@@ -23,6 +23,7 @@ module cim_rv32_top
 #(
     parameter int CLK_FREQ  = 50_000_000,
     parameter int BAUD_RATE = 115200,
+    parameter int FW_DEPTH  = 8192,       // FW BRAM depth in 32-bit words (8192 = 32 KB)
     parameter     FW_HEX    = ""          // sim-only: path to firmware hex
 ) (
     input  logic clk,
@@ -71,8 +72,7 @@ module cim_rv32_top
       .trap()
   );
 
-  // ---- FW BRAM: True Dual-Port 32KB ----
-  localparam int FW_DEPTH = 8192;
+  // ---- FW BRAM: True Dual-Port (32KB default, parameterized) ----
   localparam int FW_AW = $clog2(FW_DEPTH);
 
   logic fw_a_en; logic [3:0] fw_a_we;

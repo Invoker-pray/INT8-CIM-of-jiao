@@ -54,7 +54,11 @@ package cim_pkg;
   //   PAR_OB=4  → 2 passes, each 49 iterations = 98 tile-cycles
   //   PAR_OB=8  → 1 pass,  49 iterations = 49 tile-cycles (max parallel for this layer)
 
+`ifdef MZU15B
+  parameter int PAR_OB = 8;  // XCZU15EG has 3528 DSP → 8×256=2048 DSP, safe headroom
+`else
   parameter int PAR_OB = 4;  // tunable: 1, 2, 4, 8 (must divide N_OB of target layer)
+`endif
 
   // ==========================================================================
   // 3. Data Widths
@@ -81,9 +85,18 @@ package cim_pkg;
   // ==========================================================================
   // These set the SRAM sizing. Actual layer dims are configured via CSR at runtime.
   // The accelerator can handle any layer up to these limits.
+  //
+  // MZU15B (XCZU15EG): BRAM 26.2Mb + URAM 31.2Mb = 57.4Mb total
+  //   - WSRAM ~32Mb, BSRAM ~32Kb, IBUF ~524Kb, OBUF ~8Kb — fits comfortably
+  // PYNQ-Z2 (7Z020): BRAM 4.9Mb (630KB) — tight fit at 1536×256
 
+`ifdef MZU15B
+  parameter int MAX_IN_DIM = 4096;  // max input vector length (YOLO im2col: 3×3×256=2304)
+  parameter int MAX_OUT_DIM = 1024; // max output vector length
+`else
   parameter int MAX_IN_DIM = 1536;  // max input vector length
   parameter int MAX_OUT_DIM = 256;  // max output vector length
+`endif
   parameter int MAX_WEIGHT_ELEMS = MAX_IN_DIM * MAX_OUT_DIM;  // worst case
 
   // Derived: max tile blocks
