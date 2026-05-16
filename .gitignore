@@ -65,7 +65,7 @@ vivado_proj/
 vivado_proj/**
 
 vivado_proj*/
-vivado_build*
+vivado_build*.jou
 vivado_proj*/**
 
 .pyre/
@@ -122,3 +122,10 @@ prompt_C3.txt
 
 cim_wzy/
 cim_wzy/**
+
+hardware_MZU15B-48A-202208.zip
+
+# ---- MZU15B build outputs ----
+picorv32/vivado_mzu15b_proj/
+vivado.jou
+

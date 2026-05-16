@@ -55,7 +55,7 @@ package cim_pkg;
   //   PAR_OB=8  → 1 pass,  49 iterations = 49 tile-cycles (max parallel for this layer)
 
 `ifdef MZU15B
-  parameter int PAR_OB = 8;  // XCZU15EG has 3528 DSP → 8×256=2048 DSP, safe headroom
+  parameter int PAR_OB = 13;  // XCZU15EG has 3528 DSP → 13×256=3328 DSP (94%)
 `else
   parameter int PAR_OB = 4;  // tunable: 1, 2, 4, 8 (must divide N_OB of target layer)
 `endif
@@ -91,7 +91,7 @@ package cim_pkg;
   // PYNQ-Z2 (7Z020): BRAM 4.9Mb (630KB) — tight fit at 1536×256
 
 `ifdef MZU15B
-  parameter int MAX_IN_DIM = 4096;  // max input vector length (YOLO im2col: 3×3×256=2304)
+  parameter int MAX_IN_DIM = 3072;  // ceil(3072/16)=192, WSRAM ~18Mb, fits 744 BRAM36
   parameter int MAX_OUT_DIM = 1024; // max output vector length
 `else
   parameter int MAX_IN_DIM = 1536;  // max input vector length
