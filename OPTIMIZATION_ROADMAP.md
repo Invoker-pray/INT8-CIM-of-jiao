@@ -548,7 +548,7 @@ PyTorch model
 | ✅ DONE | C1 时钟提升 (60→100MHz, TILE_SPLIT_FACTOR=4) — bitstream 上板, accuracy 99.5% | compute -7.3%, 总延迟持平, 证明 100MHz 时序可行 | 中 | 1w | 2026-05-06 |
 | ✅ DONE | Phase B: IBUF/OBUF 双缓冲 — DMA↔Compute 乒乓重叠 | 37.1→29.2ms/img (-22%, 34.3 fps), load_x+read_out 完全隐藏 | 中 | 1w | 2026-05-06 |
 | ✅ DONE | Phase C: Layer Fusion — OBUF→IBUF 内部直拷, 消除 FC→FC DMA round-trip | RTL v10 PASS (diag 5/5, test_fusion PASS), bitstream checkpoint5, MLP +23%, LeNet-5 29.2ms/img | 中 | 1w | 2026-05-10 |
-| 🟡 P0 | MZU15B 移植 (XCZU15EG) — PicoRV32 + CIM, MAX_IN_DIM=4096, MAX_OUT_DIM=1024, PAR_OB=8 | 参数扩展已提交, TCL/XDC 已创建, 待上板验证 | 中 | 2w | 2026-05-15 |
+| 🟡 P0 | MZU15B 移植 (XCZU15EG) — PicoRV32 bitstream ✅, ARM-direct build 进行中, MAX_IN_DIM=3072, PAR_OB=13, 100MHz | 参数扩展已提交, TCL/XDC 已完成, picorv32/ 整合完成 | 中 | 2w | 2026-05-16 |
 | 🟡 P1 | CIM 编译器 (PyTorch→CIM) | 用研效率 | 高 | 4w |
 | 🟡 P1 | 稀疏权重支持 | 30-40% speedup | 高 | 4w |
 | 🟢 P2 | KV260 移植 | 更快时钟+更大 BRAM | 中 | 2w |

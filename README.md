@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-~预计是~基于 PYNQ-Z2 (Zynq-7020)/kria kv260 的存算一体 (CIM) SoC 验证平台。
+~预计是~基于 PYNQ-Z2 (Zynq-7020) / Kria KV260 / MZU15B (XCZU15EG) 的存算一体 (CIM) SoC 验证平台。
 支持 INT8 量化推理，可运行 MLP/CNN 神经网络（以后还可能再扩展）。
 
 和之前的项目设计题目[_MNIST-CIM-FPGA_](https://github.com/Invoker-pray/MNIST-CIM-FPGA)有相似之处。有一些进步如下：
@@ -96,12 +96,44 @@ _RTL本身没有Conv专用硬件，这里用了python的im2col + 硬件MVM实现
 - [x] Phase 4: 用 riscv64-unknown-elf-gcc 交叉编译，固件存 BRAM
 - [x] Phase 5: 仿真 + 上板验证功能等价
 
-### [] step 5: Kria KV 260移植
+### [~] step 5: Kria KV 260 移植（→ 已转向 MZU15B）
 
-- [] Phase 1: 更换 board file（xck26-sfvc784），重新搭建 Block Design
-- [] Phase 1:测试更大并行度
-- [] Phase 2: Zynq UltraScale+ 的 PS 是 Cortex-A53（AXI 接口兼容，驱动几乎不改），综合 + 时序收敛 + 上板验证
-- [] Phase 3: 性能对比报告：PYNQ-Z2 vs KV260（资源、频率、吞吐）
+> KV260 的 board file 在 Vivado 2022.2+ 中被移除，转向 MZU15B-488A (XCZU15EG) 开发板。
+> KV260 脚本保留在 master 分支，本分支已清理。
+
+### [~] step 5b: MZU15B (XCZU15EG) 移植 — 当前进行中
+
+- [x] Phase 1: PicoRV32 + CIM 版本 bitstream 生成（`picorv32/vivado_mzu15b_proj/deploy/`），PAR_OB=13, MAX_IN_DIM=3072, MAX_OUT_DIM=1024, 100MHz
+- [~/] Phase 2: ARM-direct 版本 bitstream 构建中（`bash hw/scripts/vivado_build.sh`）
+- [] Phase 3: 上板验证（Plan C `/dev/mem` 方式，无需 PYNQ）
+- [] Phase 4: 性能对比报告：PYNQ-Z2 vs MZU15B（资源、频率、吞吐）
+
+**MZU15B vs PYNQ-Z2 参数对比：**
+
+| 参数 | PYNQ-Z2 | MZU15B |
+|------|---------|--------|
+| FPGA | xc7z020clg400-1 | xczu15eg-ffvb1156-2-i |
+| DSP | 220 | 3528 |
+| BRAM | 4.9 Mb (630 KB) | 26.2 Mb + URAM 31.2 Mb |
+| MAX_IN_DIM | 1536 | 3072 |
+| MAX_OUT_DIM | 256 | 1024 |
+| PAR_OB | 4 | 13 (94% DSP) |
+| FCLK | 100 MHz | 100 MHz |
+
+**目录结构（MZU15B）：**
+```
+├── hw/                                    # ARM-direct 版本（新板子）
+│   ├── constraints/cim_mzu15b.xdc
+│   └── scripts/vivado_build.{sh,tcl}
+├── picorv32/                              # PicoRV32 控制版本（整合后）
+│   ├── hw/
+│   │   ├── constraints/cim_rv32_mzu15b.xdc
+│   │   ├── scripts/vivado_build_mzu15b.{sh,tcl}
+│   │   └── rtl/riscv/                     # PicoRV32 + CIM RTL
+│   ├── fw/                                # RISC-V 固件
+│   └── README_MZU15B.md
+└── bitsream&hwh_xczu15eg-ffvb1156-2-i/    # MZU15B bitstream
+```
 
 ### [x] step 6: 师兄 `cim_wzy` 启发下的改进
 
