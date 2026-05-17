@@ -152,6 +152,7 @@ if {!$board_auto_ok} {
     set_property -dict [list \
         CONFIG.PSU__USE__UART0                       {1} \
         CONFIG.PSU__UART0__BAUD_RATE                 {115200} \
+        CONFIG.PSU__UART0__PERIPHERAL__IO            {MIO 34 .. 35} \
     ] [get_bd_cells ps_e]
 
     puts "INFO: Manual PS DDR4 configuration applied."
