@@ -1,14 +1,37 @@
-2026-05-17 14:01:02,863 - [DEBUG] Using xsct from : /home/jiao/xilinx/petalinux/components/xsct/bin/xsct
-2026-05-17 14:01:02,863 - [INFO] Getting Platform info from HW file
-2026-05-17 14:01:02,863 - [DEBUG] Using the soc_family specified by user:zynqmp
-2026-05-17 14:01:02,932 - [DEBUG] Hardware Configuration:
-2026-05-17 14:01:02,932 - [DEBUG] MACHINE     = "None"
-2026-05-17 14:01:02,932 - [DEBUG] DEVICE_ID   = "xczu15eg"
-2026-05-17 14:01:02,932 - [DEBUG] SOC_FAMILY  = "zynqmp"
-2026-05-17 14:01:02,932 - [DEBUG] SOC_VARIANT = "eg"
-2026-05-17 14:01:02,932 - [INFO] Silentconfig project
-2026-05-17 14:01:02,932 - [DEBUG] Running CMD: yes "" | env KCONFIG_CONFIG=/home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/config conf /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/configs/Kconfig
-2026-05-17 14:01:02,940 - [DEBUG] *
+2026-05-17 19:48:03,985 - [DEBUG] Using xsct from : /home/jiao/xilinx/petalinux/components/xsct/bin/xsct
+2026-05-17 19:48:03,985 - [INFO] Getting Platform info from HW file
+2026-05-17 19:48:03,985 - [DEBUG] Using the soc_family specified by user:zynqmp
+2026-05-17 19:48:03,990 - [INFO] Generating Kconfig for project
+2026-05-17 19:48:03,990 - [DEBUG] Generating System HW file
+2026-05-17 19:48:03,990 - [DEBUG] xsct -sdx -nodisp /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/components/yocto/layers/meta-xilinx/meta-xilinx-core/gen-machine-conf/gen-machine-scripts/hw-description.tcl plnx_gen_hwsysconf /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/hw-description/system.xsa
+2026-05-17 19:48:15,297 - [DEBUG] 
+
+****** Software Commandline Tool (XSCT) v2024.2.0
+  **** SW Build 5233591 on Sat Nov 02 20:05:54 MDT 2024
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+
+
+Warning: XSCT is deprecated and will be removed in future releases.
+We recommend using the new Python command-line tool for project management and debugging:
+- Run "vitis -i" for interactive mode.
+- Run "vitis -s <script>" for script mode.
+WARNING: sdtgen package cannot be loaded. System Device tree commands will not 
+ be available
+INFO: [Hsi 55-2053] elapsed time for repository (/home/jiao/xilinx/petalinux/components/xsct/data/embeddedsw) loading 0 seconds
+hsi::open_hw_design: Time (s): cpu = 00:00:06 ; elapsed = 00:00:06 . Memory (MB): peak = 656.074 ; gain = 155.211 ; free physical = 8288 ; free virtual = 27254
+
+WARNING: Failed in finding /home/jiao/xilinx/petalinux/components/xsct/data/system-device-tree-xlnx/device_tree/data/device_tree.tcl path.
+
+
+2026-05-17 19:48:15,396 - [DEBUG] Hardware Configuration:
+2026-05-17 19:48:15,396 - [DEBUG] MACHINE     = "None"
+2026-05-17 19:48:15,396 - [DEBUG] DEVICE_ID   = "xczu15eg"
+2026-05-17 19:48:15,396 - [DEBUG] SOC_FAMILY  = "zynqmp"
+2026-05-17 19:48:15,396 - [DEBUG] SOC_VARIANT = "eg"
+2026-05-17 19:48:15,396 - [INFO] Silentconfig project
+2026-05-17 19:48:15,396 - [DEBUG] Running CMD: yes "" | env KCONFIG_CONFIG=/home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/config conf /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/configs/Kconfig
+2026-05-17 19:48:15,402 - [DEBUG] *
 * PetaLinux System Configuration
 *
 ZYNQMP Configuration (SYSTEM_ZYNQMP) [Y/?] y
@@ -47,34 +70,45 @@ choice[1]: 1
 * Memory Settings
 *
 Primary Memory
-> 1. psu_ddr_0 (SUBSYSTEM_MEMORY_PSU_DDR_0_SELECT)
+> 1. psu_ddr_0 (SUBSYSTEM_MEMORY_PSU_DDR_0_SELECT) (NEW)
   2. manual (SUBSYSTEM_MEMORY_MANUAL_SELECT)
-choice[1-2?]: System memory base address (SUBSYSTEM_MEMORY_PSU_DDR_0_BASEADDR) [0x0] 
-System memory size (SUBSYSTEM_MEMORY_PSU_DDR_0_SIZE) [0x80000000] 
-u-boot text base address (SUBSYSTEM_MEMORY_PSU_DDR_0_U__BOOT_TEXTBASE_OFFSET) [0x8000000] 
+choice[1-2?]: System memory base address (SUBSYSTEM_MEMORY_PSU_DDR_0_BASEADDR) [0x0] (NEW) 
+System memory size (SUBSYSTEM_MEMORY_PSU_DDR_0_SIZE) [0x80000000] (NEW) 
+u-boot text base address (SUBSYSTEM_MEMORY_PSU_DDR_0_U__BOOT_TEXTBASE_OFFSET) [0x8000000] (NEW) 
 *
 * Serial Settings
 *
 PMUFW Serial stdin/stdout
-> 1. manual (SUBSYSTEM_PMUFW_SERIAL_MANUAL_SELECT)
-choice[1]: 1
-FSBL Serial stdin/stdout
-> 1. psu_coresight_0 (SUBSYSTEM_FSBL_SERIAL_PSU_CORESIGHT_0_SELECT)
-  2. manual (SUBSYSTEM_FSBL_SERIAL_MANUAL_SELECT)
-choice[1-2?]: TF-A Serial stdin/stdout
-> 1. psu_coresight_0 (SUBSYSTEM_TF-A_SERIAL_PSU_CORESIGHT_0_SELECT)
-  2. manual (SUBSYSTEM_TF-A_SERIAL_MANUAL_SELECT)
-choice[1-2?]: U-boot/Linux Serial stdin/stdout
-> 1. psu_coresight_0 (SUBSYSTEM_SERIAL_PSU_CORESIGHT_0_SELECT)
-  2. manual (SUBSYSTEM_SERIAL_MANUAL_SELECT)
-choice[1-2?]: System stdin/stdout baudrate for psu_coresight_0
-  1. 600 (SUBSYSTEM_SERIAL_PSU_CORESIGHT_0_BAUDRATE_600)
-  2. 9600 (SUBSYSTEM_SERIAL_PSU_CORESIGHT_0_BAUDRATE_9600)
-  3. 28800 (SUBSYSTEM_SERIAL_PSU_CORESIGHT_0_BAUDRATE_28800)
-> 4. 115200 (SUBSYSTEM_SERIAL_PSU_CORESIGHT_0_BAUDRATE_115200)
-  5. 230400 (SUBSYSTEM_SERIAL_PSU_CORESIGHT_0_BAUDRATE_230400)
-  6. 460800 (SUBSYSTEM_SERIAL_PSU_CORESIGHT_0_BAUDRATE_460800)
-  7. 921600 (SUBSYSTEM_SERIAL_PSU_CORESIGHT_0_BAUDRATE_921600)
+  1. psu_uart_0 (SUBSYSTEM_PMUFW_SERIAL_PSU_UART_0_SELECT) (NEW)
+> 2. manual (SUBSYSTEM_PMUFW_SERIAL_MANUAL_SELECT)
+choice[1-2?]: FSBL Serial stdin/stdout
+> 1. psu_uart_0 (SUBSYSTEM_FSBL_SERIAL_PSU_UART_0_SELECT)
+  2. psu_coresight_0 (SUBSYSTEM_FSBL_SERIAL_PSU_CORESIGHT_0_SELECT) (NEW)
+  3. manual (SUBSYSTEM_FSBL_SERIAL_MANUAL_SELECT)
+choice[1-3?]: TF-A Serial stdin/stdout
+> 1. psu_uart_0 (SUBSYSTEM_TF-A_SERIAL_PSU_UART_0_SELECT)
+  2. psu_coresight_0 (SUBSYSTEM_TF-A_SERIAL_PSU_CORESIGHT_0_SELECT) (NEW)
+  3. manual (SUBSYSTEM_TF-A_SERIAL_MANUAL_SELECT)
+choice[1-3?]: U-boot/Linux Serial stdin/stdout
+> 1. psu_uart_0 (SUBSYSTEM_SERIAL_PSU_UART_0_SELECT)
+  2. psu_coresight_0 (SUBSYSTEM_SERIAL_PSU_CORESIGHT_0_SELECT) (NEW)
+  3. manual (SUBSYSTEM_SERIAL_MANUAL_SELECT)
+choice[1-3?]: System stdin/stdout baudrate for psu_uart_0
+  1. 600 (SUBSYSTEM_SERIAL_PSU_UART_0_BAUDRATE_600)
+  2. 9600 (SUBSYSTEM_SERIAL_PSU_UART_0_BAUDRATE_9600)
+  3. 28800 (SUBSYSTEM_SERIAL_PSU_UART_0_BAUDRATE_28800)
+> 4. 115200 (SUBSYSTEM_SERIAL_PSU_UART_0_BAUDRATE_115200)
+  5. 230400 (SUBSYSTEM_SERIAL_PSU_UART_0_BAUDRATE_230400)
+  6. 460800 (SUBSYSTEM_SERIAL_PSU_UART_0_BAUDRATE_460800)
+  7. 921600 (SUBSYSTEM_SERIAL_PSU_UART_0_BAUDRATE_921600)
+choice[1-7?]: System stdin/stdout baudrate for psu_coresight_0
+  1. 600 (SUBSYSTEM_SERIAL_PSU_CORESIGHT_0_BAUDRATE_600) (NEW)
+  2. 9600 (SUBSYSTEM_SERIAL_PSU_CORESIGHT_0_BAUDRATE_9600) (NEW)
+  3. 28800 (SUBSYSTEM_SERIAL_PSU_CORESIGHT_0_BAUDRATE_28800) (NEW)
+> 4. 115200 (SUBSYSTEM_SERIAL_PSU_CORESIGHT_0_BAUDRATE_115200) (NEW)
+  5. 230400 (SUBSYSTEM_SERIAL_PSU_CORESIGHT_0_BAUDRATE_230400) (NEW)
+  6. 460800 (SUBSYSTEM_SERIAL_PSU_CORESIGHT_0_BAUDRATE_460800) (NEW)
+  7. 921600 (SUBSYSTEM_SERIAL_PSU_CORESIGHT_0_BAUDRATE_921600) (NEW)
 choice[1-7?]: *
 * Ethernet Settings
 *
@@ -91,9 +125,10 @@ choice[1]: 1
 * SD/SDIO Settings
 *
 Primary SD/SDIO
-> 1. manual (SUBSYSTEM_PRIMARY_SD_MANUAL_SELECT)
-choice[1]: 1
-*
+  1. psu_sd_1 (SUBSYSTEM_PRIMARY_SD_PSU_SD_1_SELECT) (NEW)
+  2. psu_sd_0 (SUBSYSTEM_PRIMARY_SD_PSU_SD_0_SELECT) (NEW)
+> 3. manual (SUBSYSTEM_PRIMARY_SD_MANUAL_SELECT)
+choice[1-3?]: *
 * DTG Settings
 *
 MACHINE_NAME (SUBSYSTEM_MACHINE_NAME) [template] 
@@ -105,7 +140,7 @@ Extra dts/dtsi files (SUBSYSTEM_EXTRA_DT_FILES) []
 *
 generate boot args automatically (SUBSYSTEM_BOOTARGS_AUTO) [Y/n/?] 
 enable kernel earlyprintk (SUBSYSTEM_BOOTARGS_EARLYPRINTK) [Y/n/?] 
-Auto generated bootargs (NO EDIT!) (SUBSYSTEM_BOOTARGS_GENERATED) [earlycon console=hvc0 cpuidle.off=1 maxcpus=1,115200 root=/dev/mmcblk0p2 ro rootwait] 
+Auto generated bootargs (NO EDIT!) (SUBSYSTEM_BOOTARGS_GENERATED) [earlycon console=ttyPS0,115200 clk_ignore_unused root=/dev/mmcblk0p2 rw rootwait] 
 Add extra boot args (SUBSYSTEM_EXTRA_BOOTARGS) [] 
 Devicetree compiler flags (SUBSYSTEM_DEVICETREE_COMPILER_FLAGS) [-@] 
 Devicetree overlay (SUBSYSTEM_DTB_OVERLAY) [N/y/?] 
@@ -246,9 +281,28 @@ user layer 0 (USER_LAYER_0) []
 #
 # configuration written to /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/config
 #
-2026-05-17 14:01:03,001 - [INFO] Silentconfig rootfs
-2026-05-17 14:01:03,001 - [DEBUG] Running CMD: yes "" | env KCONFIG_CONFIG=/home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/rootfs_config conf /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/rootfsconfigs/Kconfig
-2026-05-17 14:01:03,180 - [DEBUG] *
+2026-05-17 19:48:15,459 - [DEBUG] xsct -sdx -nodisp /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/components/yocto/layers/meta-xilinx/meta-xilinx-core/gen-machine-conf/gen-machine-scripts/petalinux_hsm.tcl get_flash_width_parts /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/config /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/components/yocto/layers/meta-xilinx/meta-xilinx-core/gen-machine-conf/gen-machine-scripts/data/ipinfo.yaml /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/hw-description/system.xsa /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/flash_parts.txt
+2026-05-17 19:48:20,037 - [DEBUG] 
+
+****** Software Commandline Tool (XSCT) v2024.2.0
+  **** SW Build 5233591 on Sat Nov 02 20:05:54 MDT 2024
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+
+
+Warning: XSCT is deprecated and will be removed in future releases.
+We recommend using the new Python command-line tool for project management and debugging:
+- Run "vitis -i" for interactive mode.
+- Run "vitis -s <script>" for script mode.
+WARNING: sdtgen package cannot be loaded. System Device tree commands will not 
+ be available
+
+WARNING: Failed in finding /home/jiao/xilinx/petalinux/components/xsct/data/system-device-tree-xlnx/device_tree/data/device_tree.tcl path.
+
+
+2026-05-17 19:48:20,050 - [INFO] Silentconfig rootfs
+2026-05-17 19:48:20,051 - [DEBUG] Running CMD: yes "" | env KCONFIG_CONFIG=/home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/rootfs_config conf /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/rootfsconfigs/Kconfig
+2026-05-17 19:48:20,071 - [DEBUG] *
 * Configuration
 *
 *
@@ -3739,7 +3793,14 @@ Add Users to Sudo users (ADD_USERS_TO_SUDOERS) [petalinux]
 #
 # configuration written to /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/rootfs_config
 #
-2026-05-17 14:01:03,189 - [INFO] Generating configuration files
-2026-05-17 14:01:03,194 - [DEBUG] No multilibs enabled.
-2026-05-17 14:01:03,194 - [DEBUG] No multilibs enabled.
-2026-05-17 14:01:03,216 - [DEBUG] Shutting down bitbake
+2026-05-17 19:48:20,078 - [INFO] Generating configuration files
+2026-05-17 19:48:20,083 - [DEBUG] No multilibs enabled.
+2026-05-17 19:48:20,083 - [DEBUG] No multilibs enabled.
+2026-05-17 19:48:20,099 - [INFO] Generating machine conf file
+2026-05-17 19:48:20,109 - [INFO] Generating plnxtool conf file
+2026-05-17 19:48:20,134 - [DEBUG] python3 /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/components/yocto/layers/meta-xilinx/meta-xilinx-core/gen-machine-conf/gen-machine-scripts/rootfsconfigs/rootfs_config.py --update_cfg /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/rootfs_config /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/build/conf/plnxtool.conf zynqmp
+2026-05-17 19:48:20,187 - [DEBUG] 
+
+
+
+2026-05-17 19:48:20,188 - [DEBUG] Shutting down bitbake

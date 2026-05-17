@@ -129,6 +129,9 @@ choice
 	YAML_SERIAL_CONSOLE_STDOUT:forcevariable:pn-<recipename> = "<serial_ipname>"
 	in petalinuxbsp.conf file to specify the stdin/stdout."
 
+config SUBSYSTEM_PMUFW_SERIAL_PSU_UART_0_SELECT
+	bool "psu_uart_0"
+
 config SUBSYSTEM_PMUFW_SERIAL_MANUAL_SELECT
 	bool "manual"
 
@@ -142,6 +145,9 @@ choice
 	YAML_SERIAL_CONSOLE_STDIN:forcevariable:pn-<recipename> = "<serial_ipname>"
 	YAML_SERIAL_CONSOLE_STDOUT:forcevariable:pn-<recipename> = "<serial_ipname>"
 	in petalinuxbsp.conf file to specify the stdin/stdout."
+
+config SUBSYSTEM_FSBL_SERIAL_PSU_UART_0_SELECT
+	bool "psu_uart_0"
 
 config SUBSYSTEM_FSBL_SERIAL_PSU_CORESIGHT_0_SELECT
 	bool "psu_coresight_0"
@@ -157,6 +163,9 @@ choice
 	Select a serial as the TF-A's stdin,stdout.
 	If you select 'manual', you will need to add this variable
 	ATF_CONSOLE:forcevariable = "<serial_ipname>" in petalinuxbps.conf
+
+config SUBSYSTEM_TF-A_SERIAL_PSU_UART_0_SELECT
+	bool "psu_uart_0"
 
 config SUBSYSTEM_TF-A_SERIAL_PSU_CORESIGHT_0_SELECT
 	bool "psu_coresight_0"
@@ -175,11 +184,44 @@ choice
 	YAML_SERIAL_CONSOLE_STDOUT:forcevariable:pn-<recipename> = "<serial_ipname>"
 	in petalinuxbsp.conf file to specify the stdin/stdout."
 
+config SUBSYSTEM_SERIAL_PSU_UART_0_SELECT
+	bool "psu_uart_0"
+
 config SUBSYSTEM_SERIAL_PSU_CORESIGHT_0_SELECT
 	bool "psu_coresight_0"
 
 config SUBSYSTEM_SERIAL_MANUAL_SELECT
 	bool "manual"
+
+endchoice
+
+choice
+	prompt "System stdin/stdout baudrate for psu_uart_0"
+	default SUBSYSTEM_SERIAL_PSU_UART_0_BAUDRATE_115200
+	help
+	Baudrate settings for serial Ip psu_uart_0
+	The Baudrate setting applies only for U-boot/Linux serial Ip
+
+config SUBSYSTEM_SERIAL_PSU_UART_0_BAUDRATE_600
+	bool "600"
+
+config SUBSYSTEM_SERIAL_PSU_UART_0_BAUDRATE_9600
+	bool "9600"
+
+config SUBSYSTEM_SERIAL_PSU_UART_0_BAUDRATE_28800
+	bool "28800"
+
+config SUBSYSTEM_SERIAL_PSU_UART_0_BAUDRATE_115200
+	bool "115200"
+
+config SUBSYSTEM_SERIAL_PSU_UART_0_BAUDRATE_230400
+	bool "230400"
+
+config SUBSYSTEM_SERIAL_PSU_UART_0_BAUDRATE_460800
+	bool "460800"
+
+config SUBSYSTEM_SERIAL_PSU_UART_0_BAUDRATE_921600
+	bool "921600"
 
 endchoice
 
@@ -215,17 +257,21 @@ endchoice
 
 config SUBSYSTEM_SERIAL_PMUFW_IP_NAME
 	string
+	default psu_uart_0 if SUBSYSTEM_PMUFW_SERIAL_PSU_UART_0_SELECT
 
 config SUBSYSTEM_SERIAL_FSBL_IP_NAME
 	string
+	default psu_uart_0 if SUBSYSTEM_FSBL_SERIAL_PSU_UART_0_SELECT
 	default psu_coresight_0 if SUBSYSTEM_FSBL_SERIAL_PSU_CORESIGHT_0_SELECT
 
 config SUBSYSTEM_SERIAL_TF-A_IP_NAME
 	string
+	default cadence if SUBSYSTEM_TF-A_SERIAL_PSU_UART_0_SELECT
 	default dcc if SUBSYSTEM_TF-A_SERIAL_PSU_CORESIGHT_0_SELECT
 
 config SUBSYSTEM_SERIAL_IP_NAME
 	string
+	default psu_uart_0 if SUBSYSTEM_SERIAL_PSU_UART_0_SELECT
 	default psu_coresight_0 if SUBSYSTEM_SERIAL_PSU_CORESIGHT_0_SELECT
 
 endmenu
@@ -273,6 +319,12 @@ choice
 	help
 	Select a SD instanced used as primary SD/SDIO.
 	It allows you to select which SD controller is in the systems primary SD card interface.
+
+config SUBSYSTEM_PRIMARY_SD_PSU_SD_1_SELECT
+	bool "psu_sd_1"
+
+config SUBSYSTEM_PRIMARY_SD_PSU_SD_0_SELECT
+	bool "psu_sd_0"
 
 config SUBSYSTEM_PRIMARY_SD_MANUAL_SELECT
 	bool "manual"
