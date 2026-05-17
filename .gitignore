@@ -129,3 +129,12 @@ hardware_MZU15B-48A-202208.zip
 picorv32/vivado_mzu15b_proj/
 vivado.jou
 
+
+cim_mzu15b/build/
+cim_mzu15b/build/**
+
+cim_mzu15b/images/
+cim_mzu15b/images/**
+
+cim_mzu15b/components/
+

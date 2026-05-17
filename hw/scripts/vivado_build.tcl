@@ -65,11 +65,26 @@ if {![catch {apply_bd_automation -rule xilinx.com:bd_rule:zynq_ultra_ps_e \
     set board_auto_ok 1
 }
 
-# --- PS configuration ---
+# --- PS configuration (core) ---
 set_property -dict [list \
     CONFIG.PSU__USE__M_AXI_GP0                   {1} \
     CONFIG.PSU__FPGA_PL0_ENABLE                  {1} \
     CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ  ${FCLK_MHZ} \
+] [get_bd_cells ps_e]
+
+# --- PS Peripherals ---
+# UART0 → CP2104 (J2) on MIO 34(TX) 35(RX)
+# SD0   → TF card slot on MIO 13 .. 22 (via MAX13035E level shifter)
+# SD1   → eMMC (MTFC8GAKAJCN-4M IT) on MIO 39 .. 51
+set_property -dict [list \
+    CONFIG.PSU__UART0__PERIPHERAL__ENABLE         {1} \
+    CONFIG.PSU__UART0__PERIPHERAL__IO             {MIO 34 .. 35} \
+    CONFIG.PSU__SD0__PERIPHERAL__ENABLE           {1} \
+    CONFIG.PSU__SD0__PERIPHERAL__IO               {MIO 13 .. 22} \
+    CONFIG.PSU__SD0__SLOT_TYPE                    {SD 2.0} \
+    CONFIG.PSU__SD1__PERIPHERAL__ENABLE           {1} \
+    CONFIG.PSU__SD1__PERIPHERAL__IO               {MIO 39 .. 51} \
+    CONFIG.PSU__SD1__SLOT_TYPE                    {eMMC} \
 ] [get_bd_cells ps_e]
 
 if {!$board_auto_ok} {
