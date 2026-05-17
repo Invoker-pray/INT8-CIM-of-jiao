@@ -21,4 +21,7 @@ export PATH="${PWD}/components/yocto/layers/meta-xilinx/meta-xilinx-core/gen-mac
 echo "=== Starting build ==="
 petalinux-build
 
+echo "=== Packaging BOOT.BIN ==="
+petalinux-package --boot --fsbl images/linux/zynqmp_fsbl.elf --fpga images/linux/system.bit --u-boot images/linux/u-boot.elf --force
+
 echo "=== Build complete ==="
