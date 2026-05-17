@@ -65,6 +65,12 @@ if {![catch {apply_bd_automation -rule xilinx.com:bd_rule:zynq_ultra_ps_e \
     set board_auto_ok 1
 }
 
+# Reopen BD after automation attempt — board automation on 3rd-party boards
+# (MZU15B has no Vivado preset) closes the BD context, causing subsequent
+# set_property calls to fail with [BD 41-237].
+save_bd_design
+open_bd_design [get_files system.bd]
+
 # --- PS configuration (core) ---
 set_property -dict [list \
     CONFIG.PSU__USE__M_AXI_GP0                   {1} \
@@ -80,7 +86,7 @@ set_property -dict [list \
     CONFIG.PSU__UART0__PERIPHERAL__ENABLE         {1} \
     CONFIG.PSU__UART0__PERIPHERAL__IO             {MIO 34 .. 35} \
     CONFIG.PSU__SD0__PERIPHERAL__ENABLE           {1} \
-    CONFIG.PSU__SD0__PERIPHERAL__IO               {MIO 13 .. 22} \
+    CONFIG.PSU__SD0__PERIPHERAL__IO               {MIO 13 .. 16 21 22} \
     CONFIG.PSU__SD0__SLOT_TYPE                    {SD 2.0} \
     CONFIG.PSU__SD1__PERIPHERAL__ENABLE           {1} \
     CONFIG.PSU__SD1__PERIPHERAL__IO               {MIO 39 .. 51} \
@@ -218,13 +224,13 @@ set hwh_file [glob ${OUT_DIR}/${PROJ_NAME}.gen/sources_1/bd/system/hw_handoff/sy
 file copy -force ${bit_file} ${OUT_DIR}/deploy/cim_soc_mzu15b.bit
 file copy -force ${hwh_file} ${OUT_DIR}/deploy/cim_soc_mzu15b.hwh
 
+# Export XSA early — if Vivado crashes during reports, at least XSA is saved
 open_run impl_1
-report_utilization   -file ${OUT_DIR}/utilization_report.txt
-report_timing_summary -file ${OUT_DIR}/timing_report.txt
-
-# Export hardware platform (.xsa) for PetaLinux / Vitis
 write_hw_platform -fixed -include_bit -force ${OUT_DIR}/deploy/cim_soc_mzu15b.xsa
 puts "INFO: XSA exported to ${OUT_DIR}/deploy/cim_soc_mzu15b.xsa"
+
+report_utilization   -file ${OUT_DIR}/utilization_report.txt
+report_timing_summary -file ${OUT_DIR}/timing_report.txt
 
 set wns [get_property STATS.WNS [get_runs impl_1]]
 set whs [get_property STATS.WHS [get_runs impl_1]]
