@@ -180,7 +180,7 @@ puts "INFO: BRAM primitives inferred: ${bram_count}"
 close_design
 
 # --- Implementation + Bitstream ---
-set_property STEPS.PLACE_DESIGN.ARGS.DIRECTIVE ExtraNetDelay_high [get_runs impl_1]
+set_property STEPS.PLACE_DESIGN.ARGS.DIRECTIVE AltSpreadLogic_high [get_runs impl_1]
 set_property STEPS.ROUTE_DESIGN.ARGS.DIRECTIVE AggressiveExplore  [get_runs impl_1]
 
 puts "INFO: Launching implementation + bitstream..."

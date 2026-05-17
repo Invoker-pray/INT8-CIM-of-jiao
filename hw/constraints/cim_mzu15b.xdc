@@ -7,11 +7,11 @@
 ## ============================================================================
 ## 1. CLOCK — pl_clk0 = 100 MHz
 ## ============================================================================
-create_clock -name pl_clk0 -period 10.000 [get_ports -quiet pl_clk0]
+## Clock auto-propagated from PS: CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ=100
 
 ## ============================================================================
 ## 2. BITSTREAM CONFIG
 ## ============================================================================
 set_property BITSTREAM.GENERAL.COMPRESS TRUE [current_design]
 set_property BITSTREAM.CONFIG.UNUSEDPIN PULLDOWN [current_design]
-set_property CONFIG_VOLTAGE 1.8 [current_design]
+## CONFIG_VOLTAGE not supported on XCZU15EG — removed

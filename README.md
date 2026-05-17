@@ -101,10 +101,10 @@ _RTL本身没有Conv专用硬件，这里用了python的im2col + 硬件MVM实现
 > KV260 的 board file 在 Vivado 2022.2+ 中被移除，转向 MZU15B-488A (XCZU15EG) 开发板。
 > KV260 脚本保留在 master 分支，本分支已清理。
 
-### [~] step 5b: MZU15B (XCZU15EG) 移植 — 当前进行中
+### [x] step 5b: MZU15B (XCZU15EG) 移植 — Bitstream 完成
 
 - [x] Phase 1: PicoRV32 + CIM 版本 bitstream 生成（`picorv32/vivado_mzu15b_proj/deploy/`），PAR_OB=13, MAX_IN_DIM=3072, MAX_OUT_DIM=1024, 100MHz
-- [~/] Phase 2: ARM-direct 版本 bitstream 构建中（`bash hw/scripts/vivado_build.sh`）
+- [x] Phase 2: ARM-direct 版本 bitstream 生成（`vivado_proj/deploy/cim_soc_mzu15b.bit`），AltSpreadLogic_high 布局，WNS=+0.602ns
 - [] Phase 3: 上板验证（Plan C `/dev/mem` 方式，无需 PYNQ）
 - [] Phase 4: 性能对比报告：PYNQ-Z2 vs MZU15B（资源、频率、吞吐）
 
