@@ -207,6 +207,10 @@ open_run impl_1
 report_utilization   -file ${OUT_DIR}/utilization_report.txt
 report_timing_summary -file ${OUT_DIR}/timing_report.txt
 
+# Export hardware platform (.xsa) for PetaLinux / Vitis
+write_hw_platform -fixed -include_bit -force ${OUT_DIR}/deploy/cim_soc_mzu15b.xsa
+puts "INFO: XSA exported to ${OUT_DIR}/deploy/cim_soc_mzu15b.xsa"
+
 set wns [get_property STATS.WNS [get_runs impl_1]]
 set whs [get_property STATS.WHS [get_runs impl_1]]
 set lut_pct [get_property STATS.LUT_PERCENT [get_runs impl_1]]
