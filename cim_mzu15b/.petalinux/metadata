@@ -1,0 +1,5 @@
+PETALINUX_VER=2024.2
+VALIDATE_HW_CHKSUM=1
+HARDWARE_PATH=/home/jiao/git/INT8-CIM-of-jiao/vivado_proj/deploy/cim_soc_mzu15b.xsa
+HDF_EXT=xsa
+YOCTO_SDK=acd7a0f018c9dcc73b41b34a82c0553ac0e000c958631fb36f26d497824ff35d
