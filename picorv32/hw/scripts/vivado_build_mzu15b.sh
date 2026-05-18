@@ -11,6 +11,8 @@
 #
 # Output:
 #   picorv32/vivado_mzu15b_proj/deploy/cim_rv32_mzu15b.bit
+#   picorv32/vivado_mzu15b_proj/deploy/cim_rv32_mzu15b.hwh
+#   picorv32/vivado_mzu15b_proj/deploy/cim_rv32_mzu15b.xsa
 #
 # Automated:
 #   - PS DDR4 configuration for MT40A512M16LY-062E (64-bit + ECC, 4 GB)

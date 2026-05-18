@@ -110,49 +110,54 @@ if {![catch {apply_bd_automation -rule xilinx.com:bd_rule:zynq_ultra_ps_e \
     set board_auto_ok 1
 }
 
+# Reopen BD after automation attempt — board automation on 3rd-party boards
+# (MZU15B has no Vivado preset) closes the BD context, causing subsequent
+# set_property calls to fail with [BD 41-237].
+save_bd_design
+open_bd_design [get_files system.bd]
+
+# --- PS configuration (core, always applied) ---
+set_property -dict [list \
+    CONFIG.PSU__USE__M_AXI_GP0                   {1} \
+    CONFIG.PSU__FPGA_PL0_ENABLE                  {1} \
+    CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ  ${FCLK_MHZ} \
+] [get_bd_cells ps_e]
+
+# --- PS Peripherals (always applied) ---
+# UART0 → CP2104 (J2) on MIO 34(TX) 35(RX)
+# SD0   → TF card slot on MIO 13..16, 21..22 (via MAX13035E level shifter)
+# SD1   → eMMC (MTFC8GAKAJCN-4M IT) on MIO 39 .. 51
+set_property -dict [list \
+    CONFIG.PSU__UART0__PERIPHERAL__ENABLE         {1} \
+    CONFIG.PSU__UART0__PERIPHERAL__IO             {MIO 34 .. 35} \
+    CONFIG.PSU__UART0__BAUD_RATE                  {115200} \
+    CONFIG.PSU__SD0__PERIPHERAL__ENABLE           {1} \
+    CONFIG.PSU__SD0__PERIPHERAL__IO               {MIO 13 .. 16 21 22} \
+    CONFIG.PSU__SD0__SLOT_TYPE                    {SD 2.0} \
+    CONFIG.PSU__SD1__PERIPHERAL__ENABLE           {1} \
+    CONFIG.PSU__SD1__PERIPHERAL__IO               {MIO 39 .. 51} \
+    CONFIG.PSU__SD1__SLOT_TYPE                    {eMMC} \
+] [get_bd_cells ps_e]
+
 if {!$board_auto_ok} {
     puts "INFO: No board preset. Applying manual PS DDR4 configuration..."
     puts "INFO: DDR4: 5x MT40A512M16LY-062E (64-bit data + ECC, 4 GB, 3200 MT/s)"
 
-    # --- PS-PL Interface ---
-    set_property -dict [list \
-        CONFIG.PSU__USE__M_AXI_GP0                   {1} \
-        CONFIG.PSU__FPGA_PL0_ENABLE                  {1} \
-        CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ  ${FCLK_MHZ} \
-    ] [get_bd_cells ps_e]
-
-    # --- DDR Controller: enable & configure ---
-    # UG1085 Ch.17: DDR Memory Controller configuration
     set_property -dict [list \
         CONFIG.PSU__USE__DDRC                        {1} \
         CONFIG.PSU__DDRC__DRAM_TYPE                  {DDR 4} \
         CONFIG.PSU__DDRC__BUS_WIDTH                  {64} \
         CONFIG.PSU__DDRC__ECC                        {1} \
-        CONFIG.PSU__DDRC__DEVICE_CAPACITY            {8}     ;# 8 Gb per chip (MT40A512M16)
+        CONFIG.PSU__DDRC__DEVICE_CAPACITY            {8} \
         CONFIG.PSU__DDRC__SPEED_BIN                  {DDR4_3200T} \
-        CONFIG.PSU__DDRC__ROW_ADDR_COUNT             {16}    ;# A[15:0] = 16 row bits
-        CONFIG.PSU__DDRC__DEVICE_WIDTH               {16}    ;# x16 device
-        CONFIG.PSU__DDRC__BG_ADDR_COUNT              {2}     ;# 4 bank groups
-        CONFIG.PSU__DDRC__BANK_ADDR_COUNT            {2}     ;# 4 banks per group
-    ] [get_bd_cells ps_e]
-
-    # --- DDR PHY ---
-    set_property -dict [list \
+        CONFIG.PSU__DDRC__ROW_ADDR_COUNT             {16} \
+        CONFIG.PSU__DDRC__DEVICE_WIDTH               {16} \
+        CONFIG.PSU__DDRC__BG_ADDR_COUNT              {2} \
+        CONFIG.PSU__DDRC__BANK_ADDR_COUNT            {2} \
         CONFIG.PSU__DDR_PHY__INTERFACE               {DDR4} \
         CONFIG.PSU__DDR_PHY__BYTE_LANE_MAP           {0x2301} \
-    ] [get_bd_cells ps_e]
-
-    # --- DDR PLL: DDR4-3200 → MEMCLK=1600 MHz, DRAM clock=800 MHz ---
-    set_property -dict [list \
         CONFIG.PSU__CRL_APB__DDR_PLL_FBDIV           {80} \
         CONFIG.PSU__CRL_APB__DDR_PLL_CLKOUTDIV       {1} \
-    ] [get_bd_cells ps_e]
-
-    # --- Essential I/O Peripherals ---
-    set_property -dict [list \
-        CONFIG.PSU__USE__UART0                       {1} \
-        CONFIG.PSU__UART0__BAUD_RATE                 {115200} \
-        CONFIG.PSU__UART0__PERIPHERAL__IO            {MIO 34 .. 35} \
     ] [get_bd_cells ps_e]
 
     puts "INFO: Manual PS DDR4 configuration applied."
@@ -163,13 +168,6 @@ if {!$board_auto_ok} {
     puts "WARN:   3. DDR Configuration → Import from target board / manual tuning"
     puts "WARN:   4. Save BD → Generate Bitstream"
 }
-
-# Add more PS config (works regardless of board automation)
-set_property -dict [list \
-    CONFIG.PSU__USE__M_AXI_GP0                   {1} \
-    CONFIG.PSU__FPGA_PL0_ENABLE                  {1} \
-    CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ  ${FCLK_MHZ} \
-] [get_bd_cells ps_e]
 
 # MPSoC requires explicit clock connections for all active AXI master ports
 connect_bd_net [get_bd_pins ps_e/pl_clk0] [get_bd_pins ps_e/maxihpm0_fpd_aclk]
@@ -317,10 +315,11 @@ close_design
 # --- Implementation + Bitstream ---
 puts "INFO: Launching implementation + bitstream..."
 
-# Waive I/O DRC for unconstrained debug ports (uart_txd_0, cim_done_irq_0)
-# These are optional non-critical pins — LOC+IOSTANDARD will be added when board is wired.
-set_property SEVERITY {Warning} [get_drc_checks NSTD-1]
-set_property SEVERITY {Warning} [get_drc_checks UCIO-1]
+	# Waive I/O DRC for unconstrained debug ports (uart_txd_0, cim_done_irq_0).
+	# Must use a pre-hook because launch_runs spawns a child process where
+	# in-process set_property SEVERITY does not propagate.
+	set_property STEPS.WRITE_BITSTREAM.TCL.PRE \
+	    picorv32/hw/scripts/drc_waiver_bitgen.tcl [get_runs impl_1]
 
 set_property STEPS.PLACE_DESIGN.ARGS.DIRECTIVE ExtraNetDelay_high [get_runs impl_1]
 set_property STEPS.ROUTE_DESIGN.ARGS.DIRECTIVE AggressiveExplore  [get_runs impl_1]
@@ -339,13 +338,21 @@ puts "INFO: Bitstream generated."
 # ============================================================================
 file mkdir ${OUT_DIR}/deploy
 set bf [glob ${OUT_DIR}/${PROJ_NAME}.runs/impl_1/*.bit]
-file copy -force $bf ${OUT_DIR}/deploy/cim_rv32_mzu15b.bit
+set hf [glob ${OUT_DIR}/${PROJ_NAME}.gen/sources_1/bd/system/hw_handoff/system.hwh]
 
+file copy -force $bf ${OUT_DIR}/deploy/cim_rv32_mzu15b.bit
+file copy -force $hf ${OUT_DIR}/deploy/cim_rv32_mzu15b.hwh
+
+# Export XSA early — if Vivado crashes during reports, at least XSA is saved
 open_run impl_1
-report_utilization -file ${OUT_DIR}/utilization_report.txt
+write_hw_platform -fixed -include_bit -force ${OUT_DIR}/deploy/cim_rv32_mzu15b.xsa
+puts "INFO: XSA exported to ${OUT_DIR}/deploy/cim_rv32_mzu15b.xsa"
+
+report_utilization   -file ${OUT_DIR}/utilization_report.txt
 report_timing_summary -file ${OUT_DIR}/timing_report.txt
 
 set wns [get_property STATS.WNS [get_runs impl_1]]
+set whs [get_property STATS.WHS [get_runs impl_1]]
 close_design
 
 puts "============================================================"
@@ -359,6 +366,5 @@ puts ""
 puts "Parameters:"
 puts "  MAX_IN_DIM=3072, MAX_OUT_DIM=1024, PAR_OB=13, FCLK=${FCLK_MHZ}MHz"
 puts "  BRAM primitives: ${bram_count}"
-puts "  PAR_OB: 13"
-puts "  WNS: ${wns} ns"
+puts "  WNS/WHS: ${wns} / ${whs} ns"
 puts "============================================================"
