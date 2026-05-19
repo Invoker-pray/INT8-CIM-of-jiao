@@ -79,12 +79,13 @@ set_property -dict [list \
 ] [get_bd_cells ps_e]
 
 # --- PS Peripherals ---
-# UART0 → CP2104 (J2) on MIO 34(TX) 35(RX)
-# SD0   → TF card slot on MIO 13 .. 22 (via MAX13035E level shifter)
+# UART0 → CP2104 (J2) on MIO 34(RX) 35(TX), 115200 8N1
+# SD0   → TF card slot on MIO 13 .. 16 21 22 (via MAX13035E level shifter)
 # SD1   → eMMC (MTFC8GAKAJCN-4M IT) on MIO 39 .. 51
 set_property -dict [list \
     CONFIG.PSU__UART0__PERIPHERAL__ENABLE         {1} \
     CONFIG.PSU__UART0__PERIPHERAL__IO             {MIO 34 .. 35} \
+    CONFIG.PSU__UART0__BAUD_RATE                  {115200} \
     CONFIG.PSU__SD0__PERIPHERAL__ENABLE           {1} \
     CONFIG.PSU__SD0__PERIPHERAL__IO               {MIO 13 .. 16 21 22} \
     CONFIG.PSU__SD0__SLOT_TYPE                    {SD 2.0} \
@@ -95,23 +96,26 @@ set_property -dict [list \
 
 if {!$board_auto_ok} {
     puts "INFO: No board preset. Applying manual PS DDR4 configuration..."
+    puts "INFO: DDR4: 4x MT40A512M16LY-062E (64-bit, 4 GB, 2400 MT/s)"
     set_property -dict [list \
         CONFIG.PSU__USE__DDRC                        {1} \
         CONFIG.PSU__DDRC__DRAM_TYPE                  {DDR 4} \
         CONFIG.PSU__DDRC__BUS_WIDTH                  {64} \
-        CONFIG.PSU__DDRC__ECC                        {1} \
+        CONFIG.PSU__DDRC__ECC                        {0} \
         CONFIG.PSU__DDRC__DEVICE_CAPACITY            {8} \
-        CONFIG.PSU__DDRC__SPEED_BIN                  {DDR4_3200T} \
+        CONFIG.PSU__DDRC__SPEED_BIN                  {DDR4_2400T} \
         CONFIG.PSU__DDRC__ROW_ADDR_COUNT             {16} \
         CONFIG.PSU__DDRC__DEVICE_WIDTH               {16} \
         CONFIG.PSU__DDRC__BG_ADDR_COUNT              {2} \
         CONFIG.PSU__DDRC__BANK_ADDR_COUNT            {2} \
         CONFIG.PSU__DDR_PHY__INTERFACE               {DDR4} \
-        CONFIG.PSU__DDR_PHY__BYTE_LANE_MAP           {0x2301} \
-        CONFIG.PSU__CRL_APB__DDR_PLL_FBDIV           {80} \
-        CONFIG.PSU__CRL_APB__DDR_PLL_CLKOUTDIV       {1} \
     ] [get_bd_cells ps_e]
-    puts "WARN: Manual DDR4 config applied."
+    puts "WARN: Manual DDR4 config applied. Let Vivado auto-calculate PLL dividers."
+    puts "WARN: If DDR training fails at boot, fine-tune in Vivado GUI:"
+    puts "WARN:   1. vivado vivado_proj/cim_soc_mzu15b.xpr"
+    puts "WARN:   2. Open Block Design → double-click ps_e"
+    puts "WARN:   3. DDR Configuration → Import from target board / manual tuning"
+    puts "WARN:   4. Save BD → Generate Bitstream"
 }
 
 # MPSoC: connect pl_clk0 to HPM0 aclk (required for AXI master operation)

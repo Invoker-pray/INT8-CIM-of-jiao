@@ -10,8 +10,8 @@
 #
 # Hardware:
 #   Core board: MZU15CORE-EG-IOMAX (XCZU15EG-FFVB1156-2-I)
-#   DDR4:      5x MT40A512M16LY-062E (8Gb x16 each, DDR4-3200)
-#              4 chips = 64-bit data, 1 chip = ECC → total 4 GB
+#   DDR4:      4x MT40A512M16LY-062E (8Gb x16 each, DDR4-2400)
+#              4 chips = 64-bit data → total 4 GB
 #
 # Architecture (same as PYNQ-Z2 / KV260 PicoRV32):
 #   PS (A53, Linux) ── AXI HPM0_FPD ──┬── FW BRAM ctrl  (32 KB)
@@ -124,7 +124,7 @@ set_property -dict [list \
 ] [get_bd_cells ps_e]
 
 # --- PS Peripherals (always applied) ---
-# UART0 → CP2104 (J2) on MIO 34(TX) 35(RX)
+# UART0 → CP2104 (J2) on MIO 34(RX) 35(TX), 115200 8N1
 # SD0   → TF card slot on MIO 13..16, 21..22 (via MAX13035E level shifter)
 # SD1   → eMMC (MTFC8GAKAJCN-4M IT) on MIO 39 .. 51
 set_property -dict [list \
@@ -141,27 +141,24 @@ set_property -dict [list \
 
 if {!$board_auto_ok} {
     puts "INFO: No board preset. Applying manual PS DDR4 configuration..."
-    puts "INFO: DDR4: 5x MT40A512M16LY-062E (64-bit data + ECC, 4 GB, 3200 MT/s)"
+    puts "INFO: DDR4: 4x MT40A512M16LY-062E (64-bit, 4 GB, 2400 MT/s)"
 
     set_property -dict [list \
         CONFIG.PSU__USE__DDRC                        {1} \
         CONFIG.PSU__DDRC__DRAM_TYPE                  {DDR 4} \
         CONFIG.PSU__DDRC__BUS_WIDTH                  {64} \
-        CONFIG.PSU__DDRC__ECC                        {1} \
+        CONFIG.PSU__DDRC__ECC                        {0} \
         CONFIG.PSU__DDRC__DEVICE_CAPACITY            {8} \
-        CONFIG.PSU__DDRC__SPEED_BIN                  {DDR4_3200T} \
+        CONFIG.PSU__DDRC__SPEED_BIN                  {DDR4_2400T} \
         CONFIG.PSU__DDRC__ROW_ADDR_COUNT             {16} \
         CONFIG.PSU__DDRC__DEVICE_WIDTH               {16} \
         CONFIG.PSU__DDRC__BG_ADDR_COUNT              {2} \
         CONFIG.PSU__DDRC__BANK_ADDR_COUNT            {2} \
         CONFIG.PSU__DDR_PHY__INTERFACE               {DDR4} \
-        CONFIG.PSU__DDR_PHY__BYTE_LANE_MAP           {0x2301} \
-        CONFIG.PSU__CRL_APB__DDR_PLL_FBDIV           {80} \
-        CONFIG.PSU__CRL_APB__DDR_PLL_CLKOUTDIV       {1} \
     ] [get_bd_cells ps_e]
 
     puts "INFO: Manual PS DDR4 configuration applied."
-    puts "WARN: DDR timing parameters use Vivado defaults."
+    puts "WARN: DDR PLL dividers and byte lane map auto-calculated by Vivado."
     puts "WARN: If DDR training fails at boot, fine-tune in Vivado GUI:"
     puts "WARN:   1. vivado picorv32/vivado_mzu15b_proj/cim_rv32_mzu15b.xpr"
     puts "WARN:   2. Open Block Design → double-click ps_e"
@@ -319,7 +316,7 @@ puts "INFO: Launching implementation + bitstream..."
 	# Must use a pre-hook because launch_runs spawns a child process where
 	# in-process set_property SEVERITY does not propagate.
 	set_property STEPS.WRITE_BITSTREAM.TCL.PRE \
-	    picorv32/hw/scripts/drc_waiver_bitgen.tcl [get_runs impl_1]
+	    [file normalize picorv32/hw/scripts/drc_waiver_bitgen.tcl] [get_runs impl_1]
 
 set_property STEPS.PLACE_DESIGN.ARGS.DIRECTIVE ExtraNetDelay_high [get_runs impl_1]
 set_property STEPS.ROUTE_DESIGN.ARGS.DIRECTIVE AggressiveExplore  [get_runs impl_1]

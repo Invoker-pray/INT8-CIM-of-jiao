@@ -24,7 +24,7 @@ create_clock -name pl_clk0_fallback -period 10.000 \
 ## ============================================================================
 set_property BITSTREAM.GENERAL.COMPRESS TRUE [current_design]
 set_property BITSTREAM.CONFIG.UNUSEDPIN PULLDOWN [current_design]
-set_property CONFIG_VOLTAGE 1.8 [current_design]
+# CONFIG_VOLTAGE not supported on XCZU15EG (UltraScale+ uses different voltage config)
 
 ## ============================================================================
 ## 3. UART TX — unconnected on MZU15B (debug only, not routed to physical pin)
