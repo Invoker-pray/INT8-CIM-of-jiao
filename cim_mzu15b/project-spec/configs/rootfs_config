@@ -1037,7 +1037,7 @@ CONFIG_pciutils=y
 #
 # python3-numpy 
 #
-# CONFIG_python3-numpy is not set
+CONFIG_python3-numpy=y
 # CONFIG_python3-numpy-dbg is not set
 # CONFIG_python3-numpy-dev is not set
 
@@ -2726,10 +2726,10 @@ CONFIG_packagegroup-core-boot=y
 #
 # python3 
 #
-# CONFIG_python3 is not set
+CONFIG_python3=y
 # CONFIG_python3-crypt is not set
 # CONFIG_python3-unixadmin is not set
-# CONFIG_python3-io is not set
+CONFIG_python3-io=y
 # CONFIG_python3-pydoc is not set
 # CONFIG_python3-codecs is not set
 # CONFIG_python3-pprint is not set
@@ -2748,7 +2748,7 @@ CONFIG_packagegroup-core-boot=y
 # CONFIG_python3-compression is not set
 # CONFIG_python3-gdbm is not set
 # CONFIG_python3-idle is not set
-# CONFIG_python3-core is not set
+CONFIG_python3-core=y
 # CONFIG_python3-smtpd is not set
 # CONFIG_python3-resource is not set
 # CONFIG_python3-terminal is not set
@@ -2758,10 +2758,10 @@ CONFIG_packagegroup-core-boot=y
 # CONFIG_python3-email is not set
 # CONFIG_python3-stringold is not set
 # CONFIG_python3-unittest is not set
-# CONFIG_python3-misc is not set
+CONFIG_python3-misc=y
 # CONFIG_python3-mailbox is not set
 # CONFIG_python3-pkgutil is not set
-# CONFIG_python3-mmap is not set
+CONFIG_python3-mmap=y
 # CONFIG_python3-json is not set
 # CONFIG_python3-audio is not set
 # CONFIG_python3-distutils is not set
@@ -2779,7 +2779,7 @@ CONFIG_packagegroup-core-boot=y
 # CONFIG_python3-xmlrpc is not set
 # CONFIG_python3-ctypes is not set
 # CONFIG_python3-sqlite3 is not set
-# CONFIG_python3-fcntl is not set
+CONFIG_python3-fcntl=y
 # CONFIG_python3-compile is not set
 # CONFIG_python3-pickle is not set
 # CONFIG_python3-dbg is not set
@@ -3990,9 +3990,9 @@ CONFIG_u-boot-tools=y
 CONFIG_imagefeature-ssh-server-openssh=y
 CONFIG_imagefeature-hwcodecs=y
 # CONFIG_imagefeature-package-management is not set
-# CONFIG_imagefeature-debug-tweaks is not set
-# CONFIG_imagefeature-empty-root-password is not set
-# CONFIG_imagefeature-serial-autologin-root is not set
+CONFIG_imagefeature-debug-tweaks=y
+CONFIG_imagefeature-empty-root-password=y
+CONFIG_imagefeature-serial-autologin-root=y
 CONFIG_Init-manager-systemd=y
 # CONFIG_Init-manager-sysvinit is not set
 

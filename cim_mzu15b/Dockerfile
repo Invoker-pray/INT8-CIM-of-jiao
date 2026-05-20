@@ -6,7 +6,7 @@ ENV LANG=en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    iproute2 gawk gcc g++ git make net-tools \
+    iproute2 gawk gcc g++ git make net-tools dnsutils \
     libncurses5-dev libtinfo5 libncurses5 zlib1g-dev libssl-dev \
     flex bison libselinux1 gnupg wget diffstat chrpath socat \
     xterm autoconf libtool tar unzip texinfo gcc-multilib \

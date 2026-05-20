@@ -1,10 +1,10 @@
-2026-05-18 17:28:39,988 - [DEBUG] Using xsct from : /home/jiao/xilinx/petalinux/components/xsct/bin/xsct
-2026-05-18 17:28:39,988 - [INFO] Getting Platform info from HW file
-2026-05-18 17:28:39,988 - [DEBUG] Using the soc_family specified by user:zynqmp
-2026-05-18 17:28:39,992 - [INFO] Generating Kconfig for project
-2026-05-18 17:28:39,992 - [DEBUG] Generating System HW file
-2026-05-18 17:28:39,992 - [DEBUG] xsct -sdx -nodisp /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/components/yocto/layers/meta-xilinx/meta-xilinx-core/gen-machine-conf/gen-machine-scripts/hw-description.tcl plnx_gen_hwsysconf /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/hw-description/system.xsa
-2026-05-18 17:28:51,389 - [DEBUG] 
+2026-05-20 17:50:24,828 - [DEBUG] Using xsct from : /home/jiao/xilinx/petalinux/components/xsct/bin/xsct
+2026-05-20 17:50:24,828 - [INFO] Getting Platform info from HW file
+2026-05-20 17:50:24,828 - [DEBUG] Using the soc_family specified by user:zynqmp
+2026-05-20 17:50:24,832 - [INFO] Generating Kconfig for project
+2026-05-20 17:50:24,833 - [DEBUG] Generating System HW file
+2026-05-20 17:50:24,833 - [DEBUG] xsct -sdx -nodisp /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/components/yocto/layers/meta-xilinx/meta-xilinx-core/gen-machine-conf/gen-machine-scripts/hw-description.tcl plnx_gen_hwsysconf /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/hw-description/system.xsa
+2026-05-20 17:50:37,338 - [DEBUG] 
 
 ****** Software Commandline Tool (XSCT) v2024.2.0
   **** SW Build 5233591 on Sat Nov 02 20:05:54 MDT 2024
@@ -19,19 +19,19 @@ We recommend using the new Python command-line tool for project management and d
 WARNING: sdtgen package cannot be loaded. System Device tree commands will not 
  be available
 INFO: [Hsi 55-2053] elapsed time for repository (/home/jiao/xilinx/petalinux/components/xsct/data/embeddedsw) loading 0 seconds
-hsi::open_hw_design: Time (s): cpu = 00:00:06 ; elapsed = 00:00:06 . Memory (MB): peak = 656.074 ; gain = 155.211 ; free physical = 8114 ; free virtual = 26679
+hsi::open_hw_design: Time (s): cpu = 00:00:06 ; elapsed = 00:00:06 . Memory (MB): peak = 654.059 ; gain = 155.156 ; free physical = 8074 ; free virtual = 24979
 
 WARNING: Failed in finding /home/jiao/xilinx/petalinux/components/xsct/data/system-device-tree-xlnx/device_tree/data/device_tree.tcl path.
 
 
-2026-05-18 17:28:51,539 - [DEBUG] Hardware Configuration:
-2026-05-18 17:28:51,539 - [DEBUG] MACHINE     = "None"
-2026-05-18 17:28:51,539 - [DEBUG] DEVICE_ID   = "xczu15eg"
-2026-05-18 17:28:51,539 - [DEBUG] SOC_FAMILY  = "zynqmp"
-2026-05-18 17:28:51,539 - [DEBUG] SOC_VARIANT = "eg"
-2026-05-18 17:28:51,539 - [INFO] Silentconfig project
-2026-05-18 17:28:51,539 - [DEBUG] Running CMD: yes "" | env KCONFIG_CONFIG=/home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/config conf /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/configs/Kconfig
-2026-05-18 17:28:51,549 - [DEBUG] *
+2026-05-20 17:50:37,425 - [DEBUG] Hardware Configuration:
+2026-05-20 17:50:37,425 - [DEBUG] MACHINE     = "None"
+2026-05-20 17:50:37,425 - [DEBUG] DEVICE_ID   = "xczu15eg"
+2026-05-20 17:50:37,425 - [DEBUG] SOC_FAMILY  = "zynqmp"
+2026-05-20 17:50:37,425 - [DEBUG] SOC_VARIANT = "eg"
+2026-05-20 17:50:37,426 - [INFO] Silentconfig project
+2026-05-20 17:50:37,426 - [DEBUG] Running CMD: yes "" | env KCONFIG_CONFIG=/home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/config conf /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/configs/Kconfig
+2026-05-20 17:50:37,431 - [DEBUG] *
 * PetaLinux System Configuration
 *
 ZYNQMP Configuration (SYSTEM_ZYNQMP) [Y/?] y
@@ -71,8 +71,9 @@ choice[1]: 1
 *
 Primary Memory
 > 1. psu_ddr_0 (SUBSYSTEM_MEMORY_PSU_DDR_0_SELECT) (NEW)
-  2. manual (SUBSYSTEM_MEMORY_MANUAL_SELECT)
-choice[1-2?]: System memory base address (SUBSYSTEM_MEMORY_PSU_DDR_0_BASEADDR) [0x0] (NEW) 
+  2. psu_ddr_1 (SUBSYSTEM_MEMORY_PSU_DDR_1_SELECT)
+  3. manual (SUBSYSTEM_MEMORY_MANUAL_SELECT)
+choice[1-3?]: System memory base address (SUBSYSTEM_MEMORY_PSU_DDR_0_BASEADDR) [0x0] (NEW) 
 System memory size (SUBSYSTEM_MEMORY_PSU_DDR_0_SIZE) [0x80000000] (NEW) 
 u-boot text base address (SUBSYSTEM_MEMORY_PSU_DDR_0_U__BOOT_TEXTBASE_OFFSET) [0x8000000] (NEW) 
 *
@@ -281,9 +282,9 @@ user layer 0 (USER_LAYER_0) []
 #
 # configuration written to /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/config
 #
-2026-05-18 17:28:51,831 - [INFO] Silentconfig rootfs
-2026-05-18 17:28:51,831 - [DEBUG] Running CMD: yes "" | env KCONFIG_CONFIG=/home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/rootfs_config conf /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/rootfsconfigs/Kconfig
-2026-05-18 17:28:51,850 - [DEBUG] *
+2026-05-20 17:50:37,492 - [INFO] Silentconfig rootfs
+2026-05-20 17:50:37,492 - [DEBUG] Running CMD: yes "" | env KCONFIG_CONFIG=/home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/rootfs_config conf /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/rootfsconfigs/Kconfig
+2026-05-20 17:50:37,501 - [DEBUG] *
 * Configuration
 *
 *
@@ -1185,7 +1186,7 @@ perl-dev (perl-dev) [N/y/?]
 *
 * python3-numpy 
 *
-python3-numpy (python3-numpy) [N/y/?] 
+python3-numpy (python3-numpy) [Y/n/?] 
 python3-numpy-dbg (python3-numpy-dbg) [N/y/?] 
 python3-numpy-dev (python3-numpy-dev) [N/y/?] 
 *
@@ -2646,10 +2647,10 @@ ptest-runner-dbg (ptest-runner-dbg) [N/y/?]
 *
 * python3 
 *
-python3 (python3) [N/y/?] 
+python3 (python3) [Y/n/?] 
 python3-crypt (python3-crypt) [N/y/?] 
 python3-unixadmin (python3-unixadmin) [N/y/?] 
-python3-io (python3-io) [N/y/?] 
+python3-io (python3-io) [Y/n/?] 
 python3-pydoc (python3-pydoc) [N/y/?] 
 python3-codecs (python3-codecs) [N/y/?] 
 python3-pprint (python3-pprint) [N/y/?] 
@@ -2668,7 +2669,7 @@ python3-tkinter (python3-tkinter) [N/y/?]
 python3-compression (python3-compression) [N/y/?] 
 python3-gdbm (python3-gdbm) [N/y/?] 
 python3-idle (python3-idle) [N/y/?] 
-python3-core (python3-core) [N/y/?] 
+python3-core (python3-core) [Y/n/?] 
 python3-smtpd (python3-smtpd) [N/y/?] 
 python3-resource (python3-resource) [N/y/?] 
 python3-terminal (python3-terminal) [N/y/?] 
@@ -2678,10 +2679,10 @@ python3-threading (python3-threading) [N/y/?]
 python3-email (python3-email) [N/y/?] 
 python3-stringold (python3-stringold) [N/y/?] 
 python3-unittest (python3-unittest) [N/y/?] 
-python3-misc (python3-misc) [N/y/?] 
+python3-misc (python3-misc) [Y/n/?] 
 python3-mailbox (python3-mailbox) [N/y/?] 
 python3-pkgutil (python3-pkgutil) [N/y/?] 
-python3-mmap (python3-mmap) [N/y/?] 
+python3-mmap (python3-mmap) [Y/n/?] 
 python3-json (python3-json) [N/y/?] 
 python3-audio (python3-audio) [N/y/?] 
 python3-distutils (python3-distutils) [N/y/?] 
@@ -2699,7 +2700,7 @@ python3-profile (python3-profile) [N/y/?]
 python3-xmlrpc (python3-xmlrpc) [N/y/?] 
 python3-ctypes (python3-ctypes) [N/y/?] 
 python3-sqlite3 (python3-sqlite3) [N/y/?] 
-python3-fcntl (python3-fcntl) [N/y/?] 
+python3-fcntl (python3-fcntl) [Y/n/?] 
 python3-compile (python3-compile) [N/y/?] 
 python3-pickle (python3-pickle) [N/y/?] 
 python3-dbg (python3-dbg) [N/y/?] 
@@ -3753,9 +3754,9 @@ ssh-server-dropbear (imagefeature-ssh-server-dropbear) [N/y/?]
 ssh-server-openssh (imagefeature-ssh-server-openssh) [Y/n/?] 
 hwcodecs (imagefeature-hwcodecs) [Y/n/?] 
 package-management (imagefeature-package-management) [N/y/?] 
-debug-tweaks (imagefeature-debug-tweaks) [N/y/?] 
-empty-root-password (imagefeature-empty-root-password) [N/y/?] 
-serial-autologin-root (imagefeature-serial-autologin-root) [N/y/?] 
+debug-tweaks (imagefeature-debug-tweaks) [Y/n/?] 
+empty-root-password (imagefeature-empty-root-password) [Y/?] y
+serial-autologin-root (imagefeature-serial-autologin-root) [Y/n/?] 
 Init-manager
 > 1. systemd (Init-manager-systemd)
   2. sysvinit (Init-manager-sysvinit)
@@ -3774,7 +3775,7 @@ Add Users to Sudo users (ADD_USERS_TO_SUDOERS) [petalinux]
 #
 # configuration written to /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/rootfs_config
 #
-2026-05-18 17:28:51,856 - [INFO] Generating configuration files
-2026-05-18 17:28:51,861 - [DEBUG] No multilibs enabled.
-2026-05-18 17:28:51,861 - [DEBUG] No multilibs enabled.
-2026-05-18 17:28:51,884 - [DEBUG] Shutting down bitbake
+2026-05-20 17:50:37,507 - [INFO] Generating configuration files
+2026-05-20 17:50:37,511 - [DEBUG] No multilibs enabled.
+2026-05-20 17:50:37,512 - [DEBUG] No multilibs enabled.
+2026-05-20 17:50:37,535 - [DEBUG] Shutting down bitbake

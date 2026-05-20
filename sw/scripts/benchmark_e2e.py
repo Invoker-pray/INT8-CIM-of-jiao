@@ -2,10 +2,12 @@
 """
 benchmark_e2e.py  —  End-to-end batch benchmark for thesis Chapter 5.
 
-Usage (on PYNQ, run from sw/):
-    python scripts/benchmark_e2e.py
-    python scripts/benchmark_e2e.py --model lenet5 --n_images 200 --data_dir lenet5_data
-    python scripts/benchmark_e2e.py --model mlp    --n_images 200 --data_dir mnist_real_data
+Usage (on PYNQ-Z2, run from sw/):
+    python scripts/benchmark_e2e.py                                    # LeNet-5, 200 images, legacy MMIO
+    python scripts/benchmark_e2e.py --use-dma                          # DMA data path (default since Phase C)
+    python scripts/benchmark_e2e.py --model mlp --n_images 200 --data_dir mlp_data
+    python scripts/benchmark_e2e.py --model lenet5 --batch             # layer-wise batching
+    python scripts/benchmark_e2e.py --model lenet5 --batch --no-fusion # A/B: disable FC fusion
 
 Output:
     Console: formatted table  (Model / n_img / total_s / ms_per_img / fps / accuracy)
@@ -40,11 +42,11 @@ def parse_args():
     p.add_argument("--out_dir",   default="results",
                    help="Directory for CSV output (default: results/)")
     p.add_argument("--use-dma",   action="store_true",
-                   help="Enable experimental DMA data path (default: legacy MMIO)")
+                   help="Use DMA data path (MM2S + S2MM; default: legacy per-word MMIO). DMA is the production path.")
     p.add_argument("--batch",     action="store_true",
-                   help="Use layer-wise batching (predict_batch) for optimized throughput")
+                   help="Use layer-wise batching (predict_batch) — loads weights once, amortizes setup")
     p.add_argument("--no-fusion", action="store_true",
-                   help="Disable Phase C FC-layer fusion for A/B comparison")
+                   help="Disable Phase C FC→FC OBUF→IBUF internal copy (for A/B comparison)")
     p.add_argument("--verbose",   action="store_true",
                    help="Print per-image prediction")
     return p.parse_args()

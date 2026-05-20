@@ -57,12 +57,14 @@ create_bd_design "system"
 # --- 3a. Zynq UltraScale+ MPSoC ---
 create_bd_cell -type ip -vlnv xilinx.com:ip:zynq_ultra_ps_e:3.5 ps_e
 
-# Try board automation first; fall back to manual PS config
-set board_auto_ok 0
+# Try board automation for clock / IO defaults (non-essential).
+# MZU15B has no Vivado board preset — automation may succeed with part default
+# or fail gracefully.  DDR + peripherals are ALWAYS overridden below.
 if {![catch {apply_bd_automation -rule xilinx.com:bd_rule:zynq_ultra_ps_e \
     -config {apply_board_preset "1"} [get_bd_cells ps_e]}]} {
-    puts "INFO: MPSoC board automation applied."
-    set board_auto_ok 1
+    puts "INFO: MPSoC board automation applied (clock / IO defaults)."
+} else {
+    puts "INFO: No board preset found — manual config will cover all essentials."
 }
 
 # Reopen BD after automation attempt — board automation on 3rd-party boards
@@ -74,6 +76,7 @@ open_bd_design [get_files system.bd]
 # --- PS configuration (core) ---
 set_property -dict [list \
     CONFIG.PSU__USE__M_AXI_GP0                   {1} \
+    CONFIG.PSU__USE__M_AXI_HPM0_FPD             {1} \
     CONFIG.PSU__FPGA_PL0_ENABLE                  {1} \
     CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ  ${FCLK_MHZ} \
 ] [get_bd_cells ps_e]
@@ -94,29 +97,30 @@ set_property -dict [list \
     CONFIG.PSU__SD1__SLOT_TYPE                    {eMMC} \
 ] [get_bd_cells ps_e]
 
-if {!$board_auto_ok} {
-    puts "INFO: No board preset. Applying manual PS DDR4 configuration..."
-    puts "INFO: DDR4: 4x MT40A512M16LY-062E (64-bit, 4 GB, 2400 MT/s)"
-    set_property -dict [list \
-        CONFIG.PSU__USE__DDRC                        {1} \
-        CONFIG.PSU__DDRC__DRAM_TYPE                  {DDR 4} \
-        CONFIG.PSU__DDRC__BUS_WIDTH                  {64} \
-        CONFIG.PSU__DDRC__ECC                        {0} \
-        CONFIG.PSU__DDRC__DEVICE_CAPACITY            {8} \
-        CONFIG.PSU__DDRC__SPEED_BIN                  {DDR4_2400T} \
-        CONFIG.PSU__DDRC__ROW_ADDR_COUNT             {16} \
-        CONFIG.PSU__DDRC__DEVICE_WIDTH               {16} \
-        CONFIG.PSU__DDRC__BG_ADDR_COUNT              {2} \
-        CONFIG.PSU__DDRC__BANK_ADDR_COUNT            {2} \
-        CONFIG.PSU__DDR_PHY__INTERFACE               {DDR4} \
-    ] [get_bd_cells ps_e]
-    puts "WARN: Manual DDR4 config applied. Let Vivado auto-calculate PLL dividers."
-    puts "WARN: If DDR training fails at boot, fine-tune in Vivado GUI:"
-    puts "WARN:   1. vivado vivado_proj/cim_soc_mzu15b.xpr"
-    puts "WARN:   2. Open Block Design → double-click ps_e"
-    puts "WARN:   3. DDR Configuration → Import from target board / manual tuning"
-    puts "WARN:   4. Save BD → Generate Bitstream"
-}
+# --- DDR4 Configuration (MZU15B: ALWAYS override board-automation defaults) ---
+# MZU15B PS DDR4: 4x MT40A512M16LY-062E (8Gb x16 each, 64-bit bus, 4 GB total).
+# MT40A512M16LY addressing (JEDEC 8Gb x16):
+#   4 Bank Groups × 4 Banks = 16 Banks
+#   512M words / 16 banks = 32M/bank = 32768 rows × 1024 cols
+#   → ROW=15, COL=10, BG=2, BA=2
+# Ref: hardware manual sec 5.2.1, schematic P16 "PS DDR".
+puts "INFO: Applying MZU15B PS DDR4 configuration..."
+puts "INFO:   4x 8Gb x16, 64-bit, 4 GB, DDR4-2400T, ROW=15 COL=10 BG=2 BA=2"
+set_property -dict [list \
+    CONFIG.PSU__USE__DDRC                        {1} \
+    CONFIG.PSU__DDRC__DRAM_TYPE                  {DDR 4} \
+    CONFIG.PSU__DDRC__BUS_WIDTH                  {64 Bit} \
+    CONFIG.PSU__DDRC__ECC                        {Disabled} \
+    CONFIG.PSU__DDRC__SPEED_BIN                  {DDR4_2400T} \
+    CONFIG.PSU__DDRC__DEVICE_CAPACITY            {8192 MBits} \
+    CONFIG.PSU__DDRC__DEVICE_WIDTH               {16 Bits} \
+    CONFIG.PSU__DDRC__ROW_ADDR_COUNT             {15} \
+    CONFIG.PSU__DDRC__COL_ADDR_COUNT             {10} \
+    CONFIG.PSU__DDRC__BG_ADDR_COUNT              {2} \
+    CONFIG.PSU__DDRC__BANK_ADDR_COUNT            {2} \
+    CONFIG.PSU__DDRC__RANK_ADDR_COUNT            {0} \
+    CONFIG.PSU__DDR_PHY__INTERFACE               {DDR4} \
+] [get_bd_cells ps_e]
 
 # MPSoC: connect pl_clk0 to HPM0 aclk (required for AXI master operation)
 connect_bd_net [get_bd_pins ps_e/pl_clk0] [get_bd_pins ps_e/maxihpm0_fpd_aclk]

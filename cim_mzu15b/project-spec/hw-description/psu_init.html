@@ -2449,13 +2449,13 @@ IOPLL
 DDR_CTRL freq MHz)
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
-400.000
+600.000
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
 DPLL
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
-399.996002
+599.994019
 </TD>
 </TR>
 <TR valign="top">
@@ -2572,7 +2572,7 @@ Enable the PS DDR Controller
 DDR Interface freq (MHz)
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
-800
+1200
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
 --
@@ -2627,7 +2627,7 @@ Enables error correction code support
 SPEED BIN
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
-DDR4_1600J
+DDR4_2400T
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
 Speed Bin
@@ -2638,7 +2638,7 @@ Speed Bin
 CL
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
-10
+17
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
 Column Access Strobe (CAS) latency in memory clock cycles. It refers to the amount of time it takes for data to appear on the pins of the memory module
@@ -2649,7 +2649,7 @@ Column Access Strobe (CAS) latency in memory clock cycles. It refers to the amou
 CWL
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
-9
+16
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
 CAS write latency setting in memory clock cycles
@@ -2671,7 +2671,7 @@ Additive Latency (ns). Increases the efficiency of the command and data bus for 
 T RCD
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
-10
+17
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
 tRCD. Row address to column address delay time. It is the time required between the memory controller asserting a row address strobe (RAS), and then asserting the column address strobe (CAS)
@@ -2682,7 +2682,7 @@ tRCD. Row address to column address delay time. It is the time required between 
 T RP
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
-10
+17
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
 Precharge Time is the number of clock cycles needed to terminate access to an open row of memory and open access to the next row
@@ -2693,7 +2693,7 @@ Precharge Time is the number of clock cycles needed to terminate access to an op
 T RC
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
-47.5
+46.16
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
 Row cycle time (ns)
@@ -2704,7 +2704,7 @@ Row cycle time (ns)
 T RAS MIN
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
-35
+32.0
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
 Minimum number of memory clock cycles required between an Active and Precharge command
@@ -2715,7 +2715,7 @@ Minimum number of memory clock cycles required between an Active and Precharge c
 T FAW
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
-35
+30.0
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
 Determines the number of activates that can be performed within a certain window of time
@@ -2737,7 +2737,7 @@ Width of individual DRAM components
 DEVICE CAPACITY
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
-2048 MBits
+8192 MBits
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
 Storage capacity of individual DRAM components
@@ -2781,7 +2781,7 @@ Number of bank address pins
 ROW ADDR COUNT
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
-14
+15
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
 Number of row address pins
@@ -2803,7 +2803,7 @@ Number of column address bits
 C_DDR_RAM_HIGHADDR
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
-0x7FFFFFFF
+0x1FFFFFFFF
 </TD>
 <TD width=10% BGCOLOR=#FBF5EF>
 --

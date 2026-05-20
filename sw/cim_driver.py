@@ -5,7 +5,7 @@ Provides:
   CIMDriver     — low-level MMIO wrapper for single-layer operations
   CIMModel      — high-level multi-layer inference (FC + Conv via im2col)
 
-Usage on PYNQ:
+Usage on PYNQ (Overlay + AXI MMIO):
   from cim_driver import CIMDriver, CIMModel
 
   drv = CIMDriver('cim_soc.bit')
@@ -17,6 +17,16 @@ Usage on PYNQ:
   model = CIMModel(drv)
   model.add_fc(784, 128, w1_chunks, b1_u32, zp=0, mult=14, shift=16, relu=True)
   model.add_fc(128, 10,  w2_chunks, b2_u32, zp=0, mult=140, shift=16, relu=False)
+  pred, logits = model.predict(image_u8)
+
+Usage on MZU15B / non-PYNQ boards (/dev/mem fallback):
+  from cim_driver import CIMDriver, CIMModel
+
+  drv = CIMDriver()  # bitstream pre-loaded via BOOT.BIN; base auto-detected
+
+  model = CIMModel(drv)
+  model.add_fc(784, 128, w1_chunks, b1_u32, zp=0, mult=14, shift=16, relu=True)
+  model.add_fc(128, 10,  w2_chunks, b2_u32, zp=0, mult=173, shift=16, relu=False)
   pred, logits = model.predict(image_u8)
 
   # Conv layer (Python-side im2col + hardware MVM)
@@ -31,15 +41,69 @@ Hardware limits (cim_pkg.sv):
 
 import numpy as np
 import os
+import struct
+import sys
 import time
 
-# Try importing pynq; if not available, provide a mock for testing on PC
+# Try importing pynq; if not available, fall back to /dev/mem path
 try:
     from pynq import Overlay, MMIO
 
     _HAS_PYNQ = True
 except ImportError:
     _HAS_PYNQ = False
+
+# Try importing mmap for non-PYNQ fallback
+try:
+    import mmap as _mmap_mod
+    _HAS_MMAP = True
+except ImportError:
+    _HAS_MMAP = False
+
+
+# ============================================================================
+# /dev/mem MMIO fallback — mirrors pynq.MMIO API for non-PYNQ boards
+# ============================================================================
+class _DevMemMMIO:
+    """Drop-in replacement for pynq.MMIO using /dev/mem + mmap.
+
+    Supports the same .read(offset) / .write(offset, value) API.
+    Used automatically on non-PYNQ boards (MZU15B PetaLinux, etc.).
+    """
+
+    def __init__(self, base_addr, size):
+        if not _HAS_MMAP:
+            raise RuntimeError(
+                "mmap not available — need Python3 with mmap module"
+            )
+        fd = os.open("/dev/mem", os.O_RDWR | os.O_SYNC)
+        self._fd = fd
+        self._map = _mmap_mod.mmap(fd, size, offset=base_addr)
+        self._base = base_addr
+        self._size = size
+        self._closed = False
+
+    def read(self, offset):
+        if self._closed:
+            raise RuntimeError("MMIO region is closed")
+        return struct.unpack("<I", self._map[offset:offset + 4])[0]
+
+    def write(self, offset, value):
+        if self._closed:
+            raise RuntimeError("MMIO region is closed")
+        self._map[offset:offset + 4] = struct.pack("<I", int(value) & 0xFFFFFFFF)
+
+    def close(self):
+        if not self._closed:
+            self._map.close()
+            os.close(self._fd)
+            self._closed = True
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
 
 
 # ============================================================================
@@ -50,8 +114,15 @@ TILE_COLS = 16
 ELEMS_PER_CHUNK = 4  # 32 / WEIGHT_W
 CHUNKS_PER_ROW = 4  # TILE_COLS / ELEMS_PER_CHUNK
 CHUNKS_PER_TILE = 64  # TILE_ROWS * CHUNKS_PER_ROW
-MAX_IN_DIM = 1536
-MAX_OUT_DIM = 256
+
+# Platform-dependent limits
+#   PYNQ-Z2: BRAM 630KB  → MAX_IN_DIM=1536, MAX_OUT_DIM=256
+#   MZU15B:  BRAM 26.2Mb → MAX_IN_DIM=3072, MAX_OUT_DIM=1024
+_HW_MAX = {
+    "PYNQ-Z2": (1536, 256),
+    "MZU15B": (3072, 1024),
+    "KV260": (1536, 256),
+}
 
 
 # ============================================================================
@@ -73,8 +144,51 @@ def _make_run_id():
     return f"{git_hash}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
 
-# CSR address map (14-bit, base 0x40000000)
-_BASE = 0x40000000
+# CSR base address — auto-detected by board platform.
+#   PYNQ-Z2  : 0x40000000 (PS M_AXI_GP0)
+#   MZU15B   : 0xA0000000 (PS M_AXI_HPM0_FPD)
+#   KV260    : 0xA0000000
+# Override with env var CIM_BASE_ADDR (hex).
+_DEFAULT_BASE = {
+    "PYNQ-Z2": 0x40000000,
+    "MZU15B": 0xA0000000,
+    "KV260": 0xA0000000,
+}
+
+# Auto-detect board from device-tree compatible string
+def _detect_platform():
+    """Detect platform from /proc/device-tree/compatible.
+
+    Strategy:
+      - Explicit board names (kv260, kria) → specific platform
+      - ZynqMP (zynqmp / zynq_ultra) without explicit board → MZU15B
+        (0xA0000000 is standard HPM0_FPD base for custom ZynqMP boards)
+      - Zynq-7000 → PYNQ-Z2 (0x40000000 M_AXI_GP0 base)
+    """
+    try:
+        with open("/proc/device-tree/compatible", "rb") as f:
+            dtb = f.read(128).decode("utf-8", errors="ignore").lower()
+        if "kv260" in dtb or "kria" in dtb:
+            return "KV260"
+        if "zynqmp" in dtb or "zynq_ultra" in dtb:
+            return "MZU15B"
+        if "zynq-7000" in dtb or "zynq7" in dtb:
+            return "PYNQ-Z2"
+    except Exception:
+        pass
+    # Fallback: try /sys/class/dmi/id or just assume PYNQ-Z2
+    return "PYNQ-Z2"
+
+_PLATFORM = _detect_platform()
+
+# Platform-dependent dimension limits
+MAX_IN_DIM, MAX_OUT_DIM = _HW_MAX.get(_PLATFORM, (1536, 256))
+
+if "CIM_BASE_ADDR" in os.environ:
+    _BASE = int(os.environ["CIM_BASE_ADDR"], 0)
+else:
+    _BASE = _DEFAULT_BASE.get(_PLATFORM, 0x40000000)
+
 _MMIO_SIZE = 0x4000  # 16KB
 
 _CTRL = 0x000
@@ -241,35 +355,61 @@ def maxpool2d(feat, kernel=2, stride=2):
 class CIMDriver:
     """Low-level driver for CIM accelerator via AXI4-Lite MMIO."""
 
-    def __init__(self, bitstream_path="cim_soc.bit", load=True, use_dma=False):
+    def __init__(self, bitstream_path="cim_soc.bit", load=True, use_dma=False,
+                 base_addr=None):
         """
         Args:
-            bitstream_path: path to .bit file (must have matching .hwh)
-            load: if True, load overlay immediately
+            bitstream_path: path to .bit file (must have matching .hwh).
+                On PYNQ this loads an Overlay. On non-PYNQ boards (MZU15B, etc.)
+                the bitstream is pre-loaded via BOOT.BIN — pass any value; the
+                parameter is ignored and no Overlay is created.
+            load: if True, load overlay immediately (PYNQ only).
             use_dma: if True, route weight/input/bias through AXI-Stream +
-                     axi_dma (C3). This path still depends on a board-verified
-                     bitstream/hwh pair, so the safer default remains False.
-                     Pass use_dma=False to stay on the legacy MMIO path.
+                     axi_dma (C3). Only available on PYNQ with DMA bitstream.
+                     On non-PYNQ boards this is silently forced to False.
+            base_addr: CIM AXI base address. If None, auto-detected from
+                       /proc/device-tree/compatible or CIM_BASE_ADDR env var.
+                       PYNQ-Z2 default: 0x40000000. MZU15B default: 0xA0000000.
         """
-        if not _HAS_PYNQ:
-            raise RuntimeError("pynq not available — run this on PYNQ-Z2")
-        if load:
-            self.overlay = Overlay(bitstream_path)
-        self.mmio = MMIO(_BASE, _MMIO_SIZE)
-        self.use_dma = use_dma
-        self.dma = None
-        self._buf_w = None
-        self._buf_x = None
-        self._buf_b = None
-        if use_dma:
-            self._init_dma()
-            # Enable DMA path in hardware by setting CTRL[3]
-            self.mmio.write(_CTRL, _CTRL_STREAM_EN)
-            # Clear any stale stream status from previous runs
-            self.mmio.write(_CSR_STREAM_STATUS, 0)
+        global _BASE
+        if base_addr is not None:
+            _BASE = base_addr
+
+        if _HAS_PYNQ:
+            # --- PYNQ path: Overlay + pynq.MMIO ---
+            if load:
+                self.overlay = Overlay(bitstream_path)
+            else:
+                self.overlay = None
+            self.mmio = MMIO(_BASE, _MMIO_SIZE)
+            self.dma = None
+            self._buf_w = None
+            self._buf_x = None
+            self._buf_b = None
+            if use_dma:
+                self.use_dma = True
+                self._init_dma()
+                self.mmio.write(_CTRL, _CTRL_STREAM_EN)
+                self.mmio.write(_CSR_STREAM_STATUS, 0)
+            else:
+                self.use_dma = False
+        else:
+            # --- /dev/mem fallback (MZU15B PetaLinux, Ubuntu, etc.) ---
+            if use_dma:
+                print("[CIMDriver] DMA not available on non-PYNQ platform; "
+                      "using legacy MMIO path", file=sys.stderr)
+            self.overlay = None
+            self.mmio = _DevMemMMIO(_BASE, _MMIO_SIZE)
+            self.dma = None
+            self._buf_w = None
+            self._buf_x = None
+            self._buf_b = None
+            self.use_dma = False
+            print(f"[CIMDriver] Platform: {_PLATFORM}, "
+                  f"base=0x{_BASE:08X}, "
+                  f"backend=/dev/mem", file=sys.stderr)
+
         # Do not pulse soft-reset during construction.
-        # Overlay download already places the IP in a known state, while some
-        # marginal board builds are sensitive to immediate CTRL[2] writes.
 
     def _init_dma(self):
         """Prepare DMA channel + pinned CMA buffers. Called once from __init__

@@ -38,6 +38,9 @@ choice
 config SUBSYSTEM_MEMORY_PSU_DDR_0_SELECT
 	bool "psu_ddr_0"
 
+config SUBSYSTEM_MEMORY_PSU_DDR_1_SELECT
+	bool "psu_ddr_1"
+
 config SUBSYSTEM_MEMORY_MANUAL_SELECT
 	bool "manual"
 
@@ -79,6 +82,43 @@ config SUBSYSTEM_MEMORY_IP_NAME
 	string
 	default psu_ddr_0
 	depends on SUBSYSTEM_MEMORY_PSU_DDR_0_SELECT
+
+config SUBSYSTEM_MEMORY_PSU_DDR_1_BASEADDR
+	hex "System memory base address"
+	default 0x800000000
+	range 0x800000000 0x97dffffff
+	depends on SUBSYSTEM_MEMORY_PSU_DDR_1_SELECT
+	help
+	Start address of the system memory.
+	It has to be within the selected primary memory physical address range.
+	Make sure the DT memory entry should start with provided address.
+
+config SUBSYSTEM_MEMORY_PSU_DDR_1_SIZE
+	hex "System memory size"
+	default 0x180000000
+	range 0x2000000 0x180000000
+	depends on SUBSYSTEM_MEMORY_PSU_DDR_1_SELECT
+	help
+	Size of the system memory. Minimum is 32MB, maximum is the size of
+	the selected primary memory physical address range.
+
+config SUBSYSTEM_MEMORY_PSU_DDR_1_U__BOOT_TEXTBASE_OFFSET
+	hex "u-boot text base address"
+	default 0x808000000 if SUBSYSTEM_ARCH_AARCH64
+	default 0x804000000 if SUBSYSTEM_ARCH_ARM
+	default 0x800100000 if SUBSYSTEM_ARCH_MICROBLAZE
+	range 0x800100000 0x117e0fffff
+	depends on SUBSYSTEM_MEMORY_PSU_DDR_1_SELECT
+	depends on !SUBSYSTEM_COMPONENT_U__BOOT_NAME_NONE
+	help
+	u-boot text base address by specifying from the memory base address.
+	u-boot load address = bank base address + offset. And same value will
+	pass to TF-A also. Minimum suggested is 1MB.
+
+config SUBSYSTEM_MEMORY_IP_NAME
+	string
+	default psu_ddr_1
+	depends on SUBSYSTEM_MEMORY_PSU_DDR_1_SELECT
 
 config SUBSYSTEM_MEMORY_MANUAL_LOWER_BASEADDR
 	hex "Lower memory base address"

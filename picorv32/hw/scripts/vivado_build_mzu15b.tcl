@@ -119,6 +119,7 @@ open_bd_design [get_files system.bd]
 # --- PS configuration (core, always applied) ---
 set_property -dict [list \
     CONFIG.PSU__USE__M_AXI_GP0                   {1} \
+    CONFIG.PSU__USE__M_AXI_HPM0_FPD             {1} \
     CONFIG.PSU__FPGA_PL0_ENABLE                  {1} \
     CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ  ${FCLK_MHZ} \
 ] [get_bd_cells ps_e]
@@ -139,32 +140,30 @@ set_property -dict [list \
     CONFIG.PSU__SD1__SLOT_TYPE                    {eMMC} \
 ] [get_bd_cells ps_e]
 
-if {!$board_auto_ok} {
-    puts "INFO: No board preset. Applying manual PS DDR4 configuration..."
-    puts "INFO: DDR4: 4x MT40A512M16LY-062E (64-bit, 4 GB, 2400 MT/s)"
-
-    set_property -dict [list \
-        CONFIG.PSU__USE__DDRC                        {1} \
-        CONFIG.PSU__DDRC__DRAM_TYPE                  {DDR 4} \
-        CONFIG.PSU__DDRC__BUS_WIDTH                  {64} \
-        CONFIG.PSU__DDRC__ECC                        {0} \
-        CONFIG.PSU__DDRC__DEVICE_CAPACITY            {8} \
-        CONFIG.PSU__DDRC__SPEED_BIN                  {DDR4_2400T} \
-        CONFIG.PSU__DDRC__ROW_ADDR_COUNT             {16} \
-        CONFIG.PSU__DDRC__DEVICE_WIDTH               {16} \
-        CONFIG.PSU__DDRC__BG_ADDR_COUNT              {2} \
-        CONFIG.PSU__DDRC__BANK_ADDR_COUNT            {2} \
-        CONFIG.PSU__DDR_PHY__INTERFACE               {DDR4} \
-    ] [get_bd_cells ps_e]
-
-    puts "INFO: Manual PS DDR4 configuration applied."
-    puts "WARN: DDR PLL dividers and byte lane map auto-calculated by Vivado."
-    puts "WARN: If DDR training fails at boot, fine-tune in Vivado GUI:"
-    puts "WARN:   1. vivado picorv32/vivado_mzu15b_proj/cim_rv32_mzu15b.xpr"
-    puts "WARN:   2. Open Block Design → double-click ps_e"
-    puts "WARN:   3. DDR Configuration → Import from target board / manual tuning"
-    puts "WARN:   4. Save BD → Generate Bitstream"
-}
+# --- DDR4 Configuration (MZU15B: ALWAYS override board-automation defaults) ---
+# MZU15B PS DDR4: 4x MT40A512M16LY-062E (8Gb x16 each, 64-bit bus, 4 GB total).
+# MT40A512M16LY addressing (JEDEC 8Gb x16):
+#   4 Bank Groups × 4 Banks = 16 Banks
+#   512M words / 16 banks = 32M/bank = 32768 rows × 1024 cols
+#   → ROW=15, COL=10, BG=2, BA=2
+# Ref: hardware manual sec 5.2.1, schematic P16 "PS DDR".
+puts "INFO: Applying MZU15B PS DDR4 configuration..."
+puts "INFO:   4x 8Gb x16, 64-bit, 4 GB, DDR4-2400T, ROW=15 COL=10 BG=2 BA=2"
+set_property -dict [list \
+    CONFIG.PSU__USE__DDRC                        {1} \
+    CONFIG.PSU__DDRC__DRAM_TYPE                  {DDR 4} \
+    CONFIG.PSU__DDRC__BUS_WIDTH                  {64 Bit} \
+    CONFIG.PSU__DDRC__ECC                        {Disabled} \
+    CONFIG.PSU__DDRC__SPEED_BIN                  {DDR4_2400T} \
+    CONFIG.PSU__DDRC__DEVICE_CAPACITY            {8192 MBits} \
+    CONFIG.PSU__DDRC__DEVICE_WIDTH               {16 Bits} \
+    CONFIG.PSU__DDRC__ROW_ADDR_COUNT             {15} \
+    CONFIG.PSU__DDRC__COL_ADDR_COUNT             {10} \
+    CONFIG.PSU__DDRC__BG_ADDR_COUNT              {2} \
+    CONFIG.PSU__DDRC__BANK_ADDR_COUNT            {2} \
+    CONFIG.PSU__DDRC__RANK_ADDR_COUNT            {0} \
+    CONFIG.PSU__DDR_PHY__INTERFACE               {DDR4} \
+] [get_bd_cells ps_e]
 
 # MPSoC requires explicit clock connections for all active AXI master ports
 connect_bd_net [get_bd_pins ps_e/pl_clk0] [get_bd_pins ps_e/maxihpm0_fpd_aclk]
