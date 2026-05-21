@@ -14,6 +14,8 @@ echo "  MZU15B PetaLinux One-Click Build"
 echo "  Project: $PROJ_DIR"
 echo "============================================================"
 
+cd "$PROJ_DIR"
+
 # --- 1. Check PetaLinux installation ---
 if [ ! -f "$PETALINUX/settings.sh" ]; then
     echo "ERROR: PetaLinux not found at $PETALINUX"

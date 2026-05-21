@@ -310,12 +310,9 @@ puts "INFO: Bitstream generated."
 # ============================================================================
 # 5. Export + Reports
 # ============================================================================
-# Query run stats BEFORE open_run — some STATS properties are invalid with design open
-set wns      [get_property STATS.WNS          [get_runs impl_1]]
-set whs      [get_property STATS.WHS          [get_runs impl_1]]
-set lut_pct  [get_property STATS.LUT_PERCENT  [get_runs impl_1]]
-set dsp_pct  [get_property STATS.DSP_PERCENT  [get_runs impl_1]]
-set bram_pct [get_property STATS.BRAM_PERCENT [get_runs impl_1]]
+# Query run stats BEFORE open_run
+set wns [get_property STATS.WNS [get_runs impl_1]]
+set whs [get_property STATS.WHS [get_runs impl_1]]
 
 file mkdir ${OUT_DIR}/deploy
 set bit_file [glob ${OUT_DIR}/${PROJ_NAME}.runs/impl_1/system_wrapper.bit]
@@ -324,10 +321,19 @@ set hwh_file [glob ${OUT_DIR}/${PROJ_NAME}.gen/sources_1/bd/system/hw_handoff/sy
 file copy -force ${bit_file} ${OUT_DIR}/deploy/cim_soc_mzu15b.bit
 file copy -force ${hwh_file} ${OUT_DIR}/deploy/cim_soc_mzu15b.hwh
 
-# Open routed design for XSA export + detailed reports
+# Open routed design for XSA export + utilization queries + detailed reports
 open_run impl_1
 write_hw_platform -fixed -include_bit -force ${OUT_DIR}/deploy/cim_soc_mzu15b.xsa
 puts "INFO: XSA exported to ${OUT_DIR}/deploy/cim_soc_mzu15b.xsa"
+
+# Query utilization from open design (STATS.*_PERCENT unavailable on ZU+)
+set ff_count  [llength [get_cells -hierarchical -filter {PRIMITIVE_TYPE =~ FLOP_LATCH.*}]]
+set lut_count [llength [get_cells -hierarchical -filter {PRIMITIVE_TYPE =~ LUT_OR_MEMORY.*}]]
+set dsp_count [llength [get_cells -hierarchical -filter {PRIMITIVE_TYPE =~ DSP.*}]]
+set bram_count [llength [get_cells -hierarchical -filter {PRIMITIVE_TYPE =~ BMEM.*}]]
+if {${bram_count} == 0} {
+    set bram_count [llength [get_cells -hierarchical -filter {PRIMITIVE_TYPE =~ BLOCKRAM.*}]]
+}
 
 report_utilization   -file ${OUT_DIR}/utilization_report.txt
 report_timing_summary -file ${OUT_DIR}/timing_report.txt
@@ -340,9 +346,10 @@ puts "  HWH       : ${OUT_DIR}/deploy/cim_soc_mzu15b.hwh"
 puts "  Clock     : ${FCLK_MHZ} MHz"
 puts "  PAR_OB    : 13 (MZU15B, 3528 DSP)"
 puts "  Data path : MMIO via ${axi_master} (no DMA)"
-puts "  BRAM      : ${bram_count} primitives (${bram_pct}%)"
-puts "  LUT/FF    : ${lut_pct}%"
-puts "  DSP       : ${dsp_pct}%"
+puts "  FF        : ${ff_count}"
+puts "  LUT       : ${lut_count}"
+puts "  DSP       : ${dsp_count}"
+puts "  BRAM      : ${bram_count}"
 puts "  WNS/WHS   : ${wns} / ${whs} ns"
 puts ""
 puts "PS address map (${axi_master}):"
