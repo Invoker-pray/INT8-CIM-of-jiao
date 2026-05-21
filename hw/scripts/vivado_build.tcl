@@ -57,23 +57,25 @@ create_bd_design "system"
 # --- 3a. Zynq UltraScale+ MPSoC ---
 create_bd_cell -type ip -vlnv xilinx.com:ip:zynq_ultra_ps_e:3.5 ps_e
 
-# Try board automation for clock / IO defaults (non-essential).
-# MZU15B has no Vivado board preset — automation may succeed with part default
-# or fail gracefully.  DDR + peripherals are ALWAYS overridden below.
+# Board automation configures essential PS infrastructure (clocks, resets,
+# AXI interface stubs). Must run even without a board preset — the PS cell
+# has no AXI master interfaces until automation initializes them.
 if {![catch {apply_bd_automation -rule xilinx.com:bd_rule:zynq_ultra_ps_e \
     -config {apply_board_preset "1"} [get_bd_cells ps_e]}]} {
-    puts "INFO: MPSoC board automation applied (clock / IO defaults)."
+    puts "INFO: MPSoC board automation applied."
 } else {
-    puts "INFO: No board preset found — manual config will cover all essentials."
+    puts "INFO: Board automation failed — AXI interfaces may be unavailable."
 }
 
-# Reopen BD after automation attempt — board automation on 3rd-party boards
-# (MZU15B has no Vivado preset) closes the BD context, causing subsequent
-# set_property calls to fail with [BD 41-237].
+# Reopen BD — automation may close the design context
 save_bd_design
 open_bd_design [get_files system.bd]
 
-# --- PS configuration (core) ---
+# --- PS core configuration ---
+# GP0=1 keeps M_AXI_GP0 enabled as primary user of maxigp0_* physical pins.
+# PSU__USE__M_AXI_HPM0_FPD enables the HPM0_FPD port alongside GP0.
+# (The parameter generates a Critical Warning in Vivado 2024.2 but is still
+# processed — removing it causes all AXI PL masters to disappear.)
 set_property -dict [list \
     CONFIG.PSU__USE__M_AXI_GP0                   {1} \
     CONFIG.PSU__USE__M_AXI_HPM0_FPD             {1} \
@@ -82,9 +84,9 @@ set_property -dict [list \
 ] [get_bd_cells ps_e]
 
 # --- PS Peripherals ---
-# UART0 → CP2104 (J2) on MIO 34(RX) 35(TX), 115200 8N1
-# SD0   → TF card slot on MIO 13 .. 16 21 22 (via MAX13035E level shifter)
-# SD1   → eMMC (MTFC8GAKAJCN-4M IT) on MIO 39 .. 51
+# UART0 -> CP2104 (J2) on MIO 34(RX) 35(TX), 115200 8N1
+# SD0   -> TF card slot on MIO 13..16, 21..22 (via MAX13035E level shifter)
+# SD1   -> eMMC (MTFC8GAKAJCN-4M IT) on MIO 39..51
 set_property -dict [list \
     CONFIG.PSU__UART0__PERIPHERAL__ENABLE         {1} \
     CONFIG.PSU__UART0__PERIPHERAL__IO             {MIO 34 .. 35} \
@@ -97,39 +99,43 @@ set_property -dict [list \
     CONFIG.PSU__SD1__SLOT_TYPE                    {eMMC} \
 ] [get_bd_cells ps_e]
 
-# --- DDR4 Configuration (MZU15B: ALWAYS override board-automation defaults) ---
-# MZU15B PS DDR4: 4x MT40A512M16LY-062E (8Gb x16 each, 64-bit bus, 4 GB total).
-# MT40A512M16LY addressing (JEDEC 8Gb x16):
-#   4 Bank Groups × 4 Banks = 16 Banks
-#   512M words / 16 banks = 32M/bank = 32768 rows × 1024 cols
-#   → ROW=15, COL=10, BG=2, BA=2
-# Ref: hardware manual sec 5.2.1, schematic P16 "PS DDR".
+# --- DDR4 Configuration (MZU15B) ---
+# 4x MT40A512M16LY-062E (8Gb x16, 64-bit bus, 4 GB total).
+# Vivado 2024.2 constraint for 8192 MBit x16: ROW=16, COL=10, BG=1, BA=2.
 puts "INFO: Applying MZU15B PS DDR4 configuration..."
-puts "INFO:   4x 8Gb x16, 64-bit, 4 GB, DDR4-2400T, ROW=15 COL=10 BG=2 BA=2"
+puts "INFO:   4x 8Gb x16, 64-bit, 4 GB, DDR4-2400T, ROW=16 COL=10 BG=1 BA=2"
 set_property -dict [list \
-    CONFIG.PSU__USE__DDRC                        {1} \
-    CONFIG.PSU__DDRC__DRAM_TYPE                  {DDR 4} \
+    CONFIG.PSU__DDRC__ENABLE                     {1} \
+    CONFIG.PSU__DDRC__MEMORY_TYPE                {DDR 4} \
     CONFIG.PSU__DDRC__BUS_WIDTH                  {64 Bit} \
     CONFIG.PSU__DDRC__ECC                        {Disabled} \
     CONFIG.PSU__DDRC__SPEED_BIN                  {DDR4_2400T} \
     CONFIG.PSU__DDRC__DEVICE_CAPACITY            {8192 MBits} \
-    CONFIG.PSU__DDRC__DEVICE_WIDTH               {16 Bits} \
-    CONFIG.PSU__DDRC__ROW_ADDR_COUNT             {15} \
+    CONFIG.PSU__DDRC__DRAM_WIDTH                 {16 Bits} \
+    CONFIG.PSU__DDRC__ROW_ADDR_COUNT             {16} \
     CONFIG.PSU__DDRC__COL_ADDR_COUNT             {10} \
-    CONFIG.PSU__DDRC__BG_ADDR_COUNT              {2} \
+    CONFIG.PSU__DDRC__BG_ADDR_COUNT              {1} \
     CONFIG.PSU__DDRC__BANK_ADDR_COUNT            {2} \
     CONFIG.PSU__DDRC__RANK_ADDR_COUNT            {0} \
-    CONFIG.PSU__DDR_PHY__INTERFACE               {DDR4} \
+    CONFIG.PSU__DDRC__COMPONENTS                 {Components} \
+    CONFIG.PSU__CRF_APB__DDR_CTRL__FREQMHZ       {1200} \
 ] [get_bd_cells ps_e]
 
-# MPSoC: connect pl_clk0 to HPM0 aclk (required for AXI master operation)
-connect_bd_net [get_bd_pins ps_e/pl_clk0] [get_bd_pins ps_e/maxihpm0_fpd_aclk]
-connect_bd_net [get_bd_pins ps_e/pl_clk0] [get_bd_pins ps_e/maxihpm0_lpd_aclk]
+# --- 3b. Create reset block (if board automation didn't) ---
+set rst_blocks [get_bd_cells -quiet -filter {VLNV =~ *:proc_sys_reset:*}]
+if {[llength $rst_blocks] == 0} {
+    create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_ps
+    connect_bd_net [get_bd_pins ps_e/pl_clk0]    [get_bd_pins rst_ps/slowest_sync_clk]
+    connect_bd_net [get_bd_pins ps_e/pl_resetn0]  [get_bd_pins rst_ps/ext_reset_in]
+    puts "INFO: proc_sys_reset created manually"
+} else {
+    puts "INFO: proc_sys_reset already exists from board automation"
+}
 
-# --- 3b. CIM Accelerator IP ---
+# --- 3c. CIM Accelerator IP ---
 create_bd_cell -type module -reference cim_top_wrapper cim_0
 
-# --- 3c. AXI Connection: HPM0_FPD → CIM (MMIO for CSR, weights, inputs, results) ---
+# --- 3d. AXI Connection: HPM0_FPD -> CIM ---
 apply_bd_automation -rule xilinx.com:bd_rule:axi4 \
     -config [list \
         Clk_master {/ps_e/pl_clk0} Clk_slave {Auto} Clk_xbar {Auto} \
@@ -137,7 +143,7 @@ apply_bd_automation -rule xilinx.com:bd_rule:axi4 \
         ddr_seg {Auto} intc_ip {New AXI SmartConnect} master_apm {0} \
     ] [get_bd_intf_pins cim_0/S_AXI]
 
-# --- 3d. Interrupt: cim_0/irq_done → ps_e/pl_ps_irq0 (if available) ---
+# --- 3f. Interrupt: cim_0/irq_done -> ps_e/pl_ps_irq0 (if available) ---
 set irq_pin [get_bd_pins -quiet ps_e/pl_ps_irq0]
 if {[llength $irq_pin] == 0} {
     set irq_pin [get_bd_pins -quiet ps_e/pl_ps_irq]
@@ -149,23 +155,81 @@ if {[llength $irq_pin] > 0} {
     puts "WARN: No PL IRQ pin on ps_e — irq_done floating (polling mode OK)."
 }
 
-# --- 3e. Reset wiring ---
-set rst_blocks [get_bd_cells -quiet -filter {VLNV =~ *:proc_sys_reset:*}]
-puts "INFO: Found reset blocks: ${rst_blocks}"
-set rst_main [lindex [lsort $rst_blocks] 0]
-if {$rst_main ne ""} {
-    set old_net [get_bd_nets -quiet -of_objects [get_bd_pins cim_0/S_AXI_ARESETN]]
-    if {$old_net ne ""} { delete_bd_objs $old_net }
-    connect_bd_net [get_bd_pins ${rst_main}/peripheral_aresetn] \
-                   [get_bd_pins cim_0/S_AXI_ARESETN]
-    puts "INFO: CIM reset connected to ${rst_main}/peripheral_aresetn"
+# --- 3g. Explicit clock / reset wiring ---
+# Only connect pins that AXI automation didn't already wire.
+
+# CIM clock
+set cim_clk_net [get_bd_nets -quiet -of_objects [get_bd_pins cim_0/S_AXI_ACLK]]
+if {$cim_clk_net eq ""} {
+    connect_bd_net [get_bd_pins ps_e/pl_clk0] [get_bd_pins cim_0/S_AXI_ACLK]
+    puts "INFO: CIM S_AXI_ACLK connected manually"
+} else {
+    puts "INFO: CIM S_AXI_ACLK already connected by automation"
 }
 
-# --- 3f. Address mapping ---
+# CIM reset (find reset block dynamically)
+set rst_blocks [get_bd_cells -quiet -filter {VLNV =~ *:proc_sys_reset:*}]
+set rst_main [lindex [lsort $rst_blocks] 0]
+if {$rst_main eq ""} {
+    puts "ERROR: No proc_sys_reset found in block design!"
+    exit 1
+}
+set cim_rst_net [get_bd_nets -quiet -of_objects [get_bd_pins cim_0/S_AXI_ARESETN]]
+if {$cim_rst_net eq ""} {
+    connect_bd_net [get_bd_pins ${rst_main}/peripheral_aresetn] \
+                   [get_bd_pins cim_0/S_AXI_ARESETN]
+    puts "INFO: CIM reset connected to ${rst_main}"
+} else {
+    puts "INFO: CIM S_AXI_ARESETN already connected by automation"
+}
+
+# SmartConnect clock + reset (if not already wired)
+set smc_cells [get_bd_cells -quiet -filter {VLNV =~ *:smartconnect:*}]
+if {[llength $smc_cells] > 0} {
+    set smc [lindex [lsort $smc_cells] 0]
+    set smc_clk_net [get_bd_nets -quiet -of_objects [get_bd_pins ${smc}/aclk]]
+    if {$smc_clk_net eq ""} {
+        connect_bd_net [get_bd_pins ps_e/pl_clk0] [get_bd_pins ${smc}/aclk]
+        puts "INFO: SmartConnect ${smc} aclk connected"
+    }
+    set smc_rst_net [get_bd_nets -quiet -of_objects [get_bd_pins ${smc}/aresetn]]
+    if {$smc_rst_net eq ""} {
+        connect_bd_net [get_bd_pins ${rst_main}/peripheral_aresetn] \
+                       [get_bd_pins ${smc}/aresetn]
+        puts "INFO: SmartConnect ${smc} aresetn connected"
+    }
+    puts "INFO: SmartConnect ${smc} clock + reset verified"
+}
+
+# HPM0 FPD clock (if available and not already connected)
+set hpm0_fpd_clk [get_bd_pins -quiet ps_e/maxihpm0_fpd_aclk]
+if {[llength $hpm0_fpd_clk] > 0} {
+    set hpm0_clk_net [get_bd_nets -quiet -of_objects $hpm0_fpd_clk]
+    if {$hpm0_clk_net eq ""} {
+        connect_bd_net [get_bd_pins ps_e/pl_clk0] $hpm0_fpd_clk
+        puts "INFO: pl_clk0 -> maxihpm0_fpd_aclk connected"
+    } else {
+        puts "INFO: maxihpm0_fpd_aclk already connected by automation"
+    }
+}
+
+# HPM0 LPD clock — validation requires it if the pin exists
+set hpm0_lpd_clk [get_bd_pins -quiet ps_e/maxihpm0_lpd_aclk]
+if {[llength $hpm0_lpd_clk] > 0} {
+    set hpm0_lpd_net [get_bd_nets -quiet -of_objects $hpm0_lpd_clk]
+    if {$hpm0_lpd_net eq ""} {
+        connect_bd_net [get_bd_pins ps_e/pl_clk0] $hpm0_lpd_clk
+        puts "INFO: pl_clk0 -> maxihpm0_lpd_aclk connected"
+    } else {
+        puts "INFO: maxihpm0_lpd_aclk already connected by automation"
+    }
+}
+
+# --- 3h. Address mapping ---
 assign_bd_address -offset 0xA0000000 -range 16K \
     [get_bd_addr_segs {cim_0/S_AXI/reg0}]
 
-# --- 3g. Validate ---
+# --- 3i. Validate ---
 validate_bd_design
 save_bd_design
 puts "INFO: Block Design validated and saved."
@@ -225,6 +289,13 @@ puts "INFO: Bitstream generated."
 # ============================================================================
 # 5. Export + Reports
 # ============================================================================
+# Query run stats BEFORE open_run — some STATS properties are invalid with design open
+set wns      [get_property STATS.WNS          [get_runs impl_1]]
+set whs      [get_property STATS.WHS          [get_runs impl_1]]
+set lut_pct  [get_property STATS.LUT_PERCENT  [get_runs impl_1]]
+set dsp_pct  [get_property STATS.DSP_PERCENT  [get_runs impl_1]]
+set bram_pct [get_property STATS.BRAM_PERCENT [get_runs impl_1]]
+
 file mkdir ${OUT_DIR}/deploy
 set bit_file [glob ${OUT_DIR}/${PROJ_NAME}.runs/impl_1/system_wrapper.bit]
 set hwh_file [glob ${OUT_DIR}/${PROJ_NAME}.gen/sources_1/bd/system/hw_handoff/system.hwh]
@@ -232,19 +303,13 @@ set hwh_file [glob ${OUT_DIR}/${PROJ_NAME}.gen/sources_1/bd/system/hw_handoff/sy
 file copy -force ${bit_file} ${OUT_DIR}/deploy/cim_soc_mzu15b.bit
 file copy -force ${hwh_file} ${OUT_DIR}/deploy/cim_soc_mzu15b.hwh
 
-# Export XSA early — if Vivado crashes during reports, at least XSA is saved
+# Open routed design for XSA export + detailed reports
 open_run impl_1
 write_hw_platform -fixed -include_bit -force ${OUT_DIR}/deploy/cim_soc_mzu15b.xsa
 puts "INFO: XSA exported to ${OUT_DIR}/deploy/cim_soc_mzu15b.xsa"
 
 report_utilization   -file ${OUT_DIR}/utilization_report.txt
 report_timing_summary -file ${OUT_DIR}/timing_report.txt
-
-set wns [get_property STATS.WNS [get_runs impl_1]]
-set whs [get_property STATS.WHS [get_runs impl_1]]
-set lut_pct [get_property STATS.LUT_PERCENT [get_runs impl_1]]
-set dsp_pct [get_property STATS.DSP_PERCENT [get_runs impl_1]]
-set bram_pct [get_property STATS.BRAM_PERCENT [get_runs impl_1]]
 close_design
 
 puts "============================================================"

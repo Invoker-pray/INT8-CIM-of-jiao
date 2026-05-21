@@ -40,6 +40,7 @@ echo "  Vivado: $(${VIVADO_BIN} -version 2>/dev/null | head -1 || echo ${VIVADO_
 cd "${PROJECT_ROOT}"
 
 rm -rf vivado_proj .Xil
+mkdir -p vivado_proj
 
 ${VIVADO_BIN} -mode batch \
     -source hw/scripts/vivado_build.tcl \

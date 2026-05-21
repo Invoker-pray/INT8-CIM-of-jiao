@@ -138,3 +138,5 @@ cim_mzu15b/images/**
 
 cim_mzu15b/components/
 
+rootfs.ext4
+*.backup.jou

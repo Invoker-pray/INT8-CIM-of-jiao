@@ -142,32 +142,48 @@ set_property -dict [list \
 
 # --- DDR4 Configuration (MZU15B: ALWAYS override board-automation defaults) ---
 # MZU15B PS DDR4: 4x MT40A512M16LY-062E (8Gb x16 each, 64-bit bus, 4 GB total).
-# MT40A512M16LY addressing (JEDEC 8Gb x16):
-#   4 Bank Groups × 4 Banks = 16 Banks
-#   512M words / 16 banks = 32M/bank = 32768 rows × 1024 cols
-#   → ROW=15, COL=10, BG=2, BA=2
-# Ref: hardware manual sec 5.2.1, schematic P16 "PS DDR".
+# Vivado 2024.2 constraint for 8192 MBit x16: ROW=16, COL=10, BG=1, BA=2.
 puts "INFO: Applying MZU15B PS DDR4 configuration..."
-puts "INFO:   4x 8Gb x16, 64-bit, 4 GB, DDR4-2400T, ROW=15 COL=10 BG=2 BA=2"
+puts "INFO:   4x 8Gb x16, 64-bit, 4 GB, DDR4-2400T, ROW=16 COL=10 BG=1 BA=2"
 set_property -dict [list \
-    CONFIG.PSU__USE__DDRC                        {1} \
-    CONFIG.PSU__DDRC__DRAM_TYPE                  {DDR 4} \
+    CONFIG.PSU__DDRC__ENABLE                     {1} \
+    CONFIG.PSU__DDRC__MEMORY_TYPE                {DDR 4} \
     CONFIG.PSU__DDRC__BUS_WIDTH                  {64 Bit} \
     CONFIG.PSU__DDRC__ECC                        {Disabled} \
     CONFIG.PSU__DDRC__SPEED_BIN                  {DDR4_2400T} \
     CONFIG.PSU__DDRC__DEVICE_CAPACITY            {8192 MBits} \
-    CONFIG.PSU__DDRC__DEVICE_WIDTH               {16 Bits} \
-    CONFIG.PSU__DDRC__ROW_ADDR_COUNT             {15} \
+    CONFIG.PSU__DDRC__DRAM_WIDTH                 {16 Bits} \
+    CONFIG.PSU__DDRC__ROW_ADDR_COUNT             {16} \
     CONFIG.PSU__DDRC__COL_ADDR_COUNT             {10} \
-    CONFIG.PSU__DDRC__BG_ADDR_COUNT              {2} \
+    CONFIG.PSU__DDRC__BG_ADDR_COUNT              {1} \
     CONFIG.PSU__DDRC__BANK_ADDR_COUNT            {2} \
     CONFIG.PSU__DDRC__RANK_ADDR_COUNT            {0} \
-    CONFIG.PSU__DDR_PHY__INTERFACE               {DDR4} \
+    CONFIG.PSU__DDRC__COMPONENTS                 {Components} \
+    CONFIG.PSU__CRF_APB__DDR_CTRL__FREQMHZ       {1200} \
 ] [get_bd_cells ps_e]
 
 # MPSoC requires explicit clock connections for all active AXI master ports
-connect_bd_net [get_bd_pins ps_e/pl_clk0] [get_bd_pins ps_e/maxihpm0_fpd_aclk]
-connect_bd_net [get_bd_pins ps_e/pl_clk0] [get_bd_pins ps_e/maxihpm0_lpd_aclk]
+# Check connection state first — automation may have already wired these.
+set hpm0_fpd_clk [get_bd_pins -quiet ps_e/maxihpm0_fpd_aclk]
+if {[llength $hpm0_fpd_clk] > 0} {
+    set hpm0_fpd_net [get_bd_nets -quiet -of_objects $hpm0_fpd_clk]
+    if {$hpm0_fpd_net eq ""} {
+        connect_bd_net [get_bd_pins ps_e/pl_clk0] $hpm0_fpd_clk
+        puts "INFO: pl_clk0 -> maxihpm0_fpd_aclk connected"
+    } else {
+        puts "INFO: maxihpm0_fpd_aclk already connected"
+    }
+}
+set hpm0_lpd_clk [get_bd_pins -quiet ps_e/maxihpm0_lpd_aclk]
+if {[llength $hpm0_lpd_clk] > 0} {
+    set hpm0_lpd_net [get_bd_nets -quiet -of_objects $hpm0_lpd_clk]
+    if {$hpm0_lpd_net eq ""} {
+        connect_bd_net [get_bd_pins ps_e/pl_clk0] $hpm0_lpd_clk
+        puts "INFO: pl_clk0 -> maxihpm0_lpd_aclk connected"
+    } else {
+        puts "INFO: maxihpm0_lpd_aclk already connected"
+    }
+}
 
 # ---- 3b. rv32_soc (module reference) ----
 create_bd_cell -type module -reference cim_rv32_top_wrapper rv32

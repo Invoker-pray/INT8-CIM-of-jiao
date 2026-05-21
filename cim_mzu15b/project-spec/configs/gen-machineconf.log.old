@@ -1,37 +1,14 @@
-2026-05-20 17:50:24,828 - [DEBUG] Using xsct from : /home/jiao/xilinx/petalinux/components/xsct/bin/xsct
-2026-05-20 17:50:24,828 - [INFO] Getting Platform info from HW file
-2026-05-20 17:50:24,828 - [DEBUG] Using the soc_family specified by user:zynqmp
-2026-05-20 17:50:24,832 - [INFO] Generating Kconfig for project
-2026-05-20 17:50:24,833 - [DEBUG] Generating System HW file
-2026-05-20 17:50:24,833 - [DEBUG] xsct -sdx -nodisp /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/components/yocto/layers/meta-xilinx/meta-xilinx-core/gen-machine-conf/gen-machine-scripts/hw-description.tcl plnx_gen_hwsysconf /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/hw-description/system.xsa
-2026-05-20 17:50:37,338 - [DEBUG] 
-
-****** Software Commandline Tool (XSCT) v2024.2.0
-  **** SW Build 5233591 on Sat Nov 02 20:05:54 MDT 2024
-    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
-    ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
-
-
-Warning: XSCT is deprecated and will be removed in future releases.
-We recommend using the new Python command-line tool for project management and debugging:
-- Run "vitis -i" for interactive mode.
-- Run "vitis -s <script>" for script mode.
-WARNING: sdtgen package cannot be loaded. System Device tree commands will not 
- be available
-INFO: [Hsi 55-2053] elapsed time for repository (/home/jiao/xilinx/petalinux/components/xsct/data/embeddedsw) loading 0 seconds
-hsi::open_hw_design: Time (s): cpu = 00:00:06 ; elapsed = 00:00:06 . Memory (MB): peak = 654.059 ; gain = 155.156 ; free physical = 8074 ; free virtual = 24979
-
-WARNING: Failed in finding /home/jiao/xilinx/petalinux/components/xsct/data/system-device-tree-xlnx/device_tree/data/device_tree.tcl path.
-
-
-2026-05-20 17:50:37,425 - [DEBUG] Hardware Configuration:
-2026-05-20 17:50:37,425 - [DEBUG] MACHINE     = "None"
-2026-05-20 17:50:37,425 - [DEBUG] DEVICE_ID   = "xczu15eg"
-2026-05-20 17:50:37,425 - [DEBUG] SOC_FAMILY  = "zynqmp"
-2026-05-20 17:50:37,425 - [DEBUG] SOC_VARIANT = "eg"
-2026-05-20 17:50:37,426 - [INFO] Silentconfig project
-2026-05-20 17:50:37,426 - [DEBUG] Running CMD: yes "" | env KCONFIG_CONFIG=/home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/config conf /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/configs/Kconfig
-2026-05-20 17:50:37,431 - [DEBUG] *
+2026-05-21 11:06:43,991 - [DEBUG] Using xsct from : /home/jiao/xilinx/petalinux/components/xsct/bin/xsct
+2026-05-21 11:06:43,991 - [INFO] Getting Platform info from HW file
+2026-05-21 11:06:43,991 - [DEBUG] Using the soc_family specified by user:zynqmp
+2026-05-21 11:06:44,018 - [DEBUG] Hardware Configuration:
+2026-05-21 11:06:44,018 - [DEBUG] MACHINE     = "None"
+2026-05-21 11:06:44,018 - [DEBUG] DEVICE_ID   = "xczu15eg"
+2026-05-21 11:06:44,018 - [DEBUG] SOC_FAMILY  = "zynqmp"
+2026-05-21 11:06:44,018 - [DEBUG] SOC_VARIANT = "eg"
+2026-05-21 11:06:44,018 - [INFO] Silentconfig project
+2026-05-21 11:06:44,018 - [DEBUG] Running CMD: yes "" | env KCONFIG_CONFIG=/home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/config conf /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/configs/Kconfig
+2026-05-21 11:06:44,024 - [DEBUG] *
 * PetaLinux System Configuration
 *
 ZYNQMP Configuration (SYSTEM_ZYNQMP) [Y/?] y
@@ -70,12 +47,12 @@ choice[1]: 1
 * Memory Settings
 *
 Primary Memory
-> 1. psu_ddr_0 (SUBSYSTEM_MEMORY_PSU_DDR_0_SELECT) (NEW)
+> 1. psu_ddr_0 (SUBSYSTEM_MEMORY_PSU_DDR_0_SELECT)
   2. psu_ddr_1 (SUBSYSTEM_MEMORY_PSU_DDR_1_SELECT)
   3. manual (SUBSYSTEM_MEMORY_MANUAL_SELECT)
-choice[1-3?]: System memory base address (SUBSYSTEM_MEMORY_PSU_DDR_0_BASEADDR) [0x0] (NEW) 
-System memory size (SUBSYSTEM_MEMORY_PSU_DDR_0_SIZE) [0x80000000] (NEW) 
-u-boot text base address (SUBSYSTEM_MEMORY_PSU_DDR_0_U__BOOT_TEXTBASE_OFFSET) [0x8000000] (NEW) 
+choice[1-3?]: System memory base address (SUBSYSTEM_MEMORY_PSU_DDR_0_BASEADDR) [0x0] 
+System memory size (SUBSYSTEM_MEMORY_PSU_DDR_0_SIZE) [0x80000000] 
+u-boot text base address (SUBSYSTEM_MEMORY_PSU_DDR_0_U__BOOT_TEXTBASE_OFFSET) [0x8000000] 
 *
 * Serial Settings
 *
@@ -282,9 +259,9 @@ user layer 0 (USER_LAYER_0) []
 #
 # configuration written to /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/config
 #
-2026-05-20 17:50:37,492 - [INFO] Silentconfig rootfs
-2026-05-20 17:50:37,492 - [DEBUG] Running CMD: yes "" | env KCONFIG_CONFIG=/home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/rootfs_config conf /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/rootfsconfigs/Kconfig
-2026-05-20 17:50:37,501 - [DEBUG] *
+2026-05-21 11:06:44,093 - [INFO] Silentconfig rootfs
+2026-05-21 11:06:44,093 - [DEBUG] Running CMD: yes "" | env KCONFIG_CONFIG=/home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/rootfs_config conf /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/rootfsconfigs/Kconfig
+2026-05-21 11:06:44,105 - [DEBUG] *
 * Configuration
 *
 *
@@ -3775,7 +3752,7 @@ Add Users to Sudo users (ADD_USERS_TO_SUDOERS) [petalinux]
 #
 # configuration written to /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/rootfs_config
 #
-2026-05-20 17:50:37,507 - [INFO] Generating configuration files
-2026-05-20 17:50:37,511 - [DEBUG] No multilibs enabled.
-2026-05-20 17:50:37,512 - [DEBUG] No multilibs enabled.
-2026-05-20 17:50:37,535 - [DEBUG] Shutting down bitbake
+2026-05-21 11:06:44,111 - [INFO] Generating configuration files
+2026-05-21 11:06:44,115 - [DEBUG] No multilibs enabled.
+2026-05-21 11:06:44,116 - [DEBUG] No multilibs enabled.
+2026-05-21 11:06:44,140 - [DEBUG] Shutting down bitbake

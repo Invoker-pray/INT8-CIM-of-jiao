@@ -79,20 +79,19 @@ echo "--- Starting petalinux-build ---"
 petalinux-build
 
 # --- 6. Package BOOT.BIN ---
-echo "--- Packaging BOOT.BIN ---"
-BIT_FILE=$(ls "$PROJ_DIR/images/linux/"*.bit 2>/dev/null | head -1)
+# Always force-copy the new bitstream and repackage, since bitbake may
+# cache the FPGA bit recipe even when the XSA/bitstream changes.
+echo "--- Copying bitstream and packaging BOOT.BIN ---"
+BIT_SRC="$XSA_SRC"
+BIT_DIR="$(dirname "$XSA_SRC")"
+BIT_FILE=$(ls "$BIT_DIR"/*.bit 2>/dev/null | head -1)
 if [ -z "$BIT_FILE" ]; then
-    BIT_SRC=$(ls "$(dirname "$XSA_SRC")"/*.bit 2>/dev/null | head -1)
-    if [ -z "$BIT_SRC" ]; then
-        echo "ERROR: No .bit file found in images/linux/ or vivado_proj/deploy/"
-        echo "Check that the XSA has a corresponding .bit file."
-        exit 1
-    fi
-    echo "--- Copying bitstream from $(basename "$(dirname "$BIT_SRC")") ---"
-    cp "$BIT_SRC" "$PROJ_DIR/images/linux/"
-    BIT_FILE="$PROJ_DIR/images/linux/$(basename "$BIT_SRC")"
+    echo "ERROR: No .bit file found alongside XSA at $BIT_DIR"
+    echo "Run 'bash hw/scripts/vivado_build.sh' first from repo root."
+    exit 1
 fi
-echo "Using bitstream: $(basename "$BIT_FILE")"
+cp "$BIT_FILE" "$PROJ_DIR/images/linux/system.bit"
+echo "Using bitstream: $(basename "$BIT_FILE") ($(du -h "$BIT_FILE" | cut -f1))"
 petalinux-package --boot \
     --fsbl images/linux/zynqmp_fsbl.elf \
     --fpga "$BIT_FILE" \
