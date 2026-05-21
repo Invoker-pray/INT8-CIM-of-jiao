@@ -91,6 +91,26 @@ sudo tar -xzf cim_mzu15b/images/linux/rootfs.tar.gz -C /mnt/p2/
 sudo dd if=cim_mzu15b/images/linux/rootfs.ext4 of=/dev/sdX2 bs=512M
 ```
 
+完成分区之后可以按照这样来写入sd卡：
+
+```bash
+sudo mkfs.vfat -F 32 /dev/sdb1
+sudo mkfs.ext4 -L rootfs /dev/sdb2
+sudo mount /dev/sdb1 /mnt/sdb1
+sudo mount /dev/sdb2 /mnt/sdb2
+sudo rm -rf /mnt/sdb1/* /mnt/sdb2/*
+sudo cp cim_mzu15b/images/linux/Image /mnt/sdb1
+sudo cp cim_mzu15b/images/linux/BOOT.BIN /mnt/sdb1
+sudo cp cim_mzu15b/images/linux/system.dtb /mnt/sdb1
+sudo cp cim_mzu15b/images/linux/boot.scr /mnt/sdb1
+sudo tar -xzf cim_mzu15b/images/linux/rootfs.tar.gz -C /mnt/sdb2
+sudo cp bitsream\&hwh_xczu15eg-ffvb1156-2-i /mnt/sdb2/home/petalinux/222 -r
+cd sw
+sudo cp cim_driver.py lenet5_data mlp_data golden_model.py scripts/benchmark_e2e.py /mnt/sdb2/home/petalinux -r
+cd ..
+sudo umount /dev/sdb1 /dev/sdb2
+```
+
 **4. 启动**
 
 - 插入 SD 卡，DIP SW1 设为 OFF-OFF-OFF-ON
@@ -311,11 +331,11 @@ run.sh (Docker 入口)
 
 ### 关键配置文件
 
-| 文件 | 用途 | 修改后需执行 |
-|------|------|-------------|
-| `project-spec/configs/rootfs_config` | rootfs 包选择 (python, numpy, nvim 等) | 重建 rootfs |
-| `project-spec/meta-user/recipes-bsp/device-tree/files/system-user.dtsi` | 设备树用户修改 (disable-wp, bootargs 等) | 重建 device-tree |
-| `project-spec/configs/config` | PetaLinux 顶层配置 (启动方式、根文件系统类型等) | `petalinux-config` 后重建 |
+| 文件                                                                    | 用途                                            | 修改后需执行              |
+| ----------------------------------------------------------------------- | ----------------------------------------------- | ------------------------- |
+| `project-spec/configs/rootfs_config`                                    | rootfs 包选择 (python, numpy, nvim 等)          | 重建 rootfs               |
+| `project-spec/meta-user/recipes-bsp/device-tree/files/system-user.dtsi` | 设备树用户修改 (disable-wp, bootargs 等)        | 重建 device-tree          |
+| `project-spec/configs/config`                                           | PetaLinux 顶层配置 (启动方式、根文件系统类型等) | `petalinux-config` 后重建 |
 
 ### 添加 Python 包 (rootfs_config)
 
@@ -384,13 +404,13 @@ petalinux-package --boot --fsbl images/linux/zynqmp_fsbl.elf \
 
 构建完成后所有产物在 `cim_mzu15b/images/linux/`：
 
-| 文件 | 用途 | 应放到 SD 卡哪个分区 |
-|------|------|---------------------|
-| `BOOT.BIN` | FSBL + PMU + bitstream + ATF + U-Boot + DTB | p1 (FAT32) |
-| `Image` | Linux 内核 | p1 (FAT32) |
-| `system.dtb` | 设备树 | p1 (FAT32) |
-| `boot.scr` | U-Boot 启动脚本 | p1 (FAT32) |
-| `rootfs.tar.gz` | 根文件系统 | p2 (ext4), tar -xzf 解压 |
+| 文件            | 用途                                        | 应放到 SD 卡哪个分区     |
+| --------------- | ------------------------------------------- | ------------------------ |
+| `BOOT.BIN`      | FSBL + PMU + bitstream + ATF + U-Boot + DTB | p1 (FAT32)               |
+| `Image`         | Linux 内核                                  | p1 (FAT32)               |
+| `system.dtb`    | 设备树                                      | p1 (FAT32)               |
+| `boot.scr`      | U-Boot 启动脚本                             | p1 (FAT32)               |
+| `rootfs.tar.gz` | 根文件系统                                  | p2 (ext4), tar -xzf 解压 |
 
 ## 常见问题
 

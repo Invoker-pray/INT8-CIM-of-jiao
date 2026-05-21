@@ -140,3 +140,5 @@ cim_mzu15b/components/
 
 rootfs.ext4
 *.backup.jou
+
+tt.sh

@@ -1,10 +1,9 @@
 # ============================================================================
 # vivado_build.tcl — ARM-direct CIM SoC on MZU15B (XCZU15EG), MMIO-only
 # ============================================================================
-# Architecture: PS (A53, Linux) → AXI HPM0_FPD → CIM S_AXI (CSR + MMIO data)
-# No DMA: MZU15B board preset does not expose HP ports (S_AXI_HP0/HP1_FPD).
-# All weight/input/result transfer via MMIO through HPM0_FPD.
-# DMA support pending: requires PS reconfiguration to enable HP slave ports.
+# Architecture: PS (A53, Linux) → AXI (GP0 or HPM0_FPD) → CIM S_AXI (CSR + MMIO data)
+# Auto-detects available PS AXI master — on ZU+ with Vivado 2024.2, M_AXI_GP0
+# may not appear as a BD interface pin; HPM0_FPD is the fallback.
 #
 # Usage: vivado -mode batch -source hw/scripts/vivado_build.tcl
 #    or: bash hw/scripts/vivado_build.sh
@@ -72,10 +71,10 @@ save_bd_design
 open_bd_design [get_files system.bd]
 
 # --- PS core configuration ---
-# GP0=1 keeps M_AXI_GP0 enabled as primary user of maxigp0_* physical pins.
-# PSU__USE__M_AXI_HPM0_FPD enables the HPM0_FPD port alongside GP0.
-# (The parameter generates a Critical Warning in Vivado 2024.2 but is still
-# processed — removing it causes all AXI PL masters to disappear.)
+# GP0=1 + HPM0_FPD=1: both must be set for any AXI PL master to appear on
+# ZU+ in Vivado 2024.2.  HPM0_FPD generates a Critical Warning ("parameter
+# does not exist") but removing it causes all AXI PL masters to disappear.
+# The actual BD interface pin used is auto-detected at step 3d.
 set_property -dict [list \
     CONFIG.PSU__USE__M_AXI_GP0                   {1} \
     CONFIG.PSU__USE__M_AXI_HPM0_FPD             {1} \
@@ -135,11 +134,33 @@ if {[llength $rst_blocks] == 0} {
 # --- 3c. CIM Accelerator IP ---
 create_bd_cell -type module -reference cim_top_wrapper cim_0
 
-# --- 3d. AXI Connection: HPM0_FPD -> CIM ---
+# --- 3d. Debug: list PS AXI master interfaces ---
+puts "INFO: === Available PS AXI master interfaces ==="
+foreach intf [get_bd_intf_pins -quiet -of_objects [get_bd_cells ps_e] -filter {MODE == Master && VLNV =~ *:aximm:*}] {
+    puts "INFO:   $intf"
+}
+puts "INFO: === End of AXI master list ==="
+
+# Determine which AXI master to use. On ZU+, GP0 may not exist as a BD
+# interface pin; HPM0_FPD is often the only master exposed after automation.
+set axi_master ""
+foreach candidate {/ps_e/M_AXI_GP0 /ps_e/M_AXI_HPM0_FPD /ps_e/M_AXI_HPM0_LPD} {
+    if {[llength [get_bd_intf_pins -quiet $candidate]] > 0} {
+        set axi_master $candidate
+        break
+    }
+}
+if {$axi_master eq ""} {
+    puts "ERROR: No AXI master interface found on ps_e!"
+    exit 1
+}
+puts "INFO: Using AXI master: ${axi_master}"
+
+# --- 3e. AXI Connection: PS -> CIM ---
 apply_bd_automation -rule xilinx.com:bd_rule:axi4 \
     -config [list \
         Clk_master {/ps_e/pl_clk0} Clk_slave {Auto} Clk_xbar {Auto} \
-        Master {/ps_e/M_AXI_HPM0_FPD} Slave {/cim_0/S_AXI} \
+        Master ${axi_master} Slave {/cim_0/S_AXI} \
         ddr_seg {Auto} intc_ip {New AXI SmartConnect} master_apm {0} \
     ] [get_bd_intf_pins cim_0/S_AXI]
 
@@ -183,22 +204,22 @@ if {$cim_rst_net eq ""} {
     puts "INFO: CIM S_AXI_ARESETN already connected by automation"
 }
 
-# SmartConnect clock + reset (if not already wired)
-set smc_cells [get_bd_cells -quiet -filter {VLNV =~ *:smartconnect:*}]
-if {[llength $smc_cells] > 0} {
-    set smc [lindex [lsort $smc_cells] 0]
-    set smc_clk_net [get_bd_nets -quiet -of_objects [get_bd_pins ${smc}/aclk]]
-    if {$smc_clk_net eq ""} {
-        connect_bd_net [get_bd_pins ps_e/pl_clk0] [get_bd_pins ${smc}/aclk]
-        puts "INFO: SmartConnect ${smc} aclk connected"
+# Interconnect (SmartConnect or AXI Interconnect) clock + reset
+set intc_cells [get_bd_cells -quiet -filter {VLNV =~ *:smartconnect:* || VLNV =~ *:axi_interconnect:*}]
+if {[llength $intc_cells] > 0} {
+    set intc [lindex [lsort $intc_cells] 0]
+    set intc_clk_net [get_bd_nets -quiet -of_objects [get_bd_pins ${intc}/aclk]]
+    if {$intc_clk_net eq ""} {
+        connect_bd_net [get_bd_pins ps_e/pl_clk0] [get_bd_pins ${intc}/aclk]
+        puts "INFO: Interconnect ${intc} aclk connected"
     }
-    set smc_rst_net [get_bd_nets -quiet -of_objects [get_bd_pins ${smc}/aresetn]]
-    if {$smc_rst_net eq ""} {
+    set intc_rst_net [get_bd_nets -quiet -of_objects [get_bd_pins ${intc}/aresetn]]
+    if {$intc_rst_net eq ""} {
         connect_bd_net [get_bd_pins ${rst_main}/peripheral_aresetn] \
-                       [get_bd_pins ${smc}/aresetn]
-        puts "INFO: SmartConnect ${smc} aresetn connected"
+                       [get_bd_pins ${intc}/aresetn]
+        puts "INFO: Interconnect ${intc} aresetn connected"
     }
-    puts "INFO: SmartConnect ${smc} clock + reset verified"
+    puts "INFO: Interconnect ${intc} clock + reset verified"
 }
 
 # HPM0 FPD clock (if available and not already connected)
@@ -318,12 +339,12 @@ puts "  Bitstream : ${OUT_DIR}/deploy/cim_soc_mzu15b.bit"
 puts "  HWH       : ${OUT_DIR}/deploy/cim_soc_mzu15b.hwh"
 puts "  Clock     : ${FCLK_MHZ} MHz"
 puts "  PAR_OB    : 13 (MZU15B, 3528 DSP)"
-puts "  Data path : MMIO (no DMA — HP ports unavailable on MZU15B preset)"
+puts "  Data path : MMIO via ${axi_master} (no DMA)"
 puts "  BRAM      : ${bram_count} primitives (${bram_pct}%)"
 puts "  LUT/FF    : ${lut_pct}%"
 puts "  DSP       : ${dsp_pct}%"
 puts "  WNS/WHS   : ${wns} / ${whs} ns"
 puts ""
-puts "PS address map (M_AXI_HPM0_FPD):"
+puts "PS address map (${axi_master}):"
 puts "  0xA0000000 (16K)  : CIM CSR + MMIO data"
 puts "============================================================"
