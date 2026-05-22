@@ -405,7 +405,7 @@ Pipeline trace for byte 0: F_IDLE(addr=0)→F_WAIT_MUX(OBUF reads bank[0], advan
 **现状约束：** MAX_IN_DIM=784, MAX_OUT_DIM=128（PYNQ-Z2 BRAM 限制）
 
 **方向：**
-- **KV260 专属配置：** 利用更多 BRAM，支持 MAX_IN_DIM=4096+
+- **更大器件配置：** 利用更多 BRAM，支持 MAX_IN_DIM=4096+
 - **权重分片加载：** 超标层分多次加载权重，消除维度硬上限
 - **MobileNetV2 CIM mapping：** Depthwise conv 的 CIM 映射策略（特殊性：每 channel 独立）
 
@@ -519,7 +519,7 @@ PyTorch model
 
 ## 6.1 Multi-Tile Scaling
 
-**适合 KV260：** 多 2-4 个 tile 并行计算不同 output channel 段
+**适合大器件：** 多 2-4 个 tile 并行计算不同 output channel 段
 - 需要 crossbar 互联或广播 input
 - weight SRAM 独立 → 总带宽线性增长
 
@@ -550,11 +550,11 @@ PyTorch model
 | ✅ DONE | Phase C: Layer Fusion — OBUF→IBUF 内部直拷, 消除 FC→FC DMA round-trip | RTL v10 PASS (diag 5/5, test_fusion PASS), bitstream checkpoint5, MLP +23%, LeNet-5 29.2ms/img | 中 | 1w | 2026-05-10 |
 | 🟡 P1 | CIM 编译器 (PyTorch→CIM) | 用研效率 | 高 | 4w |
 | 🟡 P1 | 稀疏权重支持 | 30-40% speedup | 高 | 4w |
-| 🟢 P2 | KV260 移植 | 更快时钟+更大 BRAM | 中 | 2w |
+| 🟢 P2 | 更大器件移植 | 更快时钟+更大 BRAM | 中 | 2w |
 | 🟢 P2 | PicoRV32 自主推理 | 独立模式 | 中 | 3w |
 | 🟢 P2 | Transformer Attention | 新颖性 | 高 | 6w |
 | 🔵 P3 | Mixed precision (INT4/8) | 精度/速度 tradeoff | 中 | 4w |
-| 🔵 P3 | Multi-tile scaling (KV260) | 线性扩展 | 高 | 8w |
+| 🔵 P3 | Multi-tile scaling | 线性扩展 | 高 | 8w |
 | 🔵 P3 | 误差建模与补偿 | 可靠性 | 高 | 6w |
 
 ---

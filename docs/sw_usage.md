@@ -332,7 +332,7 @@ export_hex(
 
 ## cim_driver.py
 
-**定位**：PYNQ板端Python驱动。提供低级MMIO封装(`CIMDriver`)和高级多层推理接口(`CIMModel`)，仅在PYNQ-Z2/KV260上运行。
+**定位**：PYNQ板端Python驱动。提供低级MMIO封装(`CIMDriver`)和高级多层推理接口(`CIMModel`)，仅在PYNQ-Z2上运行。
 
 ### 硬件常量（与cim_pkg.sv一致）
 

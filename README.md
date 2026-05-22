@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-~预计是~基于 PYNQ-Z2 (Zynq-7020)/kria kv260 的存算一体 (CIM) SoC 验证平台。
+~预计是~基于 PYNQ-Z2 (Zynq-7020) 的存算一体 (CIM) SoC 验证平台。
 支持 INT8 量化推理，可运行 MLP/CNN 神经网络（以后还可能再扩展）。
 
 和之前的项目设计题目[_MNIST-CIM-FPGA_](https://github.com/Invoker-pray/MNIST-CIM-FPGA)有相似之处。有一些进步如下：
@@ -95,13 +95,6 @@ _RTL本身没有Conv专用硬件，这里用了python的im2col + 硬件MVM实现
 - [x] Phase 3: RISC-V 固件（C）完成：weight DMA 加载、层配置、推理触发、结果读取
 - [x] Phase 4: 用 riscv64-unknown-elf-gcc 交叉编译，固件存 BRAM
 - [x] Phase 5: 仿真 + 上板验证功能等价
-
-### [] step 5: Kria KV 260移植
-
-- [] Phase 1: 更换 board file（xck26-sfvc784），重新搭建 Block Design
-- [] Phase 1:测试更大并行度
-- [] Phase 2: Zynq UltraScale+ 的 PS 是 Cortex-A53（AXI 接口兼容，驱动几乎不改），综合 + 时序收敛 + 上板验证
-- [] Phase 3: 性能对比报告：PYNQ-Z2 vs KV260（资源、频率、吞吐）
 
 ### [x] step 6: 师兄 `cim_wzy` 启发下的改进
 
@@ -308,7 +301,7 @@ PS7 ──S_AXI_HP0── 64-bit, 1.2 GB/s ── axi_dma_0/M_AXI_MM2S (DDR 读)
 
 ### [] step 7: 工程化与性能优化（全面改进菜单）
 
-> 超出 step 6 范围的增量改进菜单，覆盖软件栈、RTL 时序优化、KV260 扩展、论文素材、工程健康度。
+> 超出 step 6 范围的增量改进菜单，覆盖软件栈、RTL 时序优化、论文素材、工程健康度。
 > 按 "投入产出比" 分五档 A/B/C/D/E，详细方案与 rationale 见 `docs/cim_wzy_comparison.md` 第 6 节。
 > **Top 3 推荐**（合计 2 天，零 RTL 风险）：**A2 + B3** 延迟分解 + batch benchmark → **B1** 资源/时序 CSV → **A1** 权重常驻。一次性补齐论文第 4、5 章数据。
 
@@ -345,22 +338,12 @@ PS7 ──S_AXI_HP0── 64-bit, 1.2 GB/s ── axi_dma_0/M_AXI_MM2S (DDR 读)
 - [] **C2 Weight / Input SRAM 双缓冲** ⚠️ RTL 中等改动
   双 bank + `active_bank` 寄存器，Python 侧预加载 layer N+1 weight 到另一个 bank。
   _收益_：多层网络层间延迟隐藏，吞吐再提升 20%~40%。
-  _风险_：BRAM 占用翻倍，PYNQ-Z2 可能放不下 —— 放到 KV260 phase 一起做更合理。
+  _风险_：BRAM 占用翻倍，PYNQ-Z2 可能放不下 —— 放到更大器件上做更合理。
 - [] **C3 AXI4-Full burst 代替 AXI4-Lite 逐字** ⚠️ 接口重写
   换 AXI4-Full slave + DMA engine（PYNQ `pynq.lib.dma`），单次 burst 几 KB。
   **背景**：profiler 实测（A2）显示 Conv1 compute=4.1 ms，但 load*weights ≈250 ms，瓶颈完全在 MMIO 逐字写。LeNet-5 每张图 ~700 ms 用于搬权重，计算本身可忽略不计。A1（软件权重缓存）尝试跳过重复加载，但 weight SRAM 各层共享、后层覆盖前层，多层网络无法使用。根本解决方案是本条 C3：AXI4-Full 突发传输可将 weight load 从 ms 级降到 μs 级，彻底消除搬运瓶颈。
   *收益*：weight load 从 ~700 ms/张 降到 <1 ms，LeNet-5 吞吐理论 **100×+**。
   *风险\_：改动最大（需重写 AXI slave、Vivado block design、Python driver 改用 `pynq.lib.dma`）。**不建议毕设阶段动 RTL**，论文"未来工作"章节直接引用 profiler 数据作为动机。
-
-#### Phase D: KV260 专属（与 step 5 合并推进）
-
-- [] **D1 UltraRAM 替代 BRAM 放大权重尺寸**
-  UltraScale+ URAM (288 Kb/block vs BRAM 36 Kb) → `MAX_IN_DIM` 从 784 拉到 1024~2048。
-- [] **D2 PAR_OB = 4 或 8 真并行**
-  KV260 资源充足，吞吐 4-8×。
-- [] **D3 200 MHz 目标时序**（配合 C1）
-  UltraScale+ 时序容易收敛。
-  **三条组合**：凑出论文"跨平台对比表" PYNQ-Z2 (60 MHz, PAR=1) vs KV260 (200 MHz, PAR=4)，吞吐/面积/功耗效率全对比。
 
 #### Phase E: 论文素材与工程健康度
 
@@ -378,7 +361,7 @@ PS7 ──S_AXI_HP0── 64-bit, 1.2 GB/s ── axi_dma_0/M_AXI_MM2S (DDR 读)
 
 ```
 step 6 Phase 1 (verify)  ──┐
-step 6 Phase 2 (SQ pack) ──┼──→ Top 3 (A1+A2+B1+B3) ──→ C1 critical path ──→ D1+D2+D3 KV260
+step 6 Phase 2 (SQ pack) ──┼──→ Top 3 (A1+A2+B1+B3) ──→ C1 critical path
 step 6 Phase 3 (thesis)  ──┘
 ```
 
@@ -507,7 +490,7 @@ ST_MAC_HI: begin ...; state_nxt = ST_COMPUTE; end
 1. 最小拆分即可解锁 125 MHz，恰好是本工作原目标（README 坑章节 patch 2 提及"尝试 125 MHz"）。
 2. 每 IB +1 拍，LeNet-5 总周期从 76034 增至 ~88,700 （+16.7\%），但频率 ×2，净加速 ≈ 1.71×。
 3. SPLIT_FACTOR=4 在 xc7z020 上布线 net delay 会吃掉 `T_period` 减小的一半以上，实际提升有限，同时 FSM +3 拍让 compute 拍数膨胀 50\%，综合得不偿失。
-4. 为 KV260 (UltraScale+ DSP58) 保留 `SPLIT_FACTOR=4` 入口，但不作为 PYNQ-Z2 默认。
+4. 为 UltraScale+ (DSP58) 保留 `SPLIT_FACTOR=4` 入口，但不作为 PYNQ-Z2 默认。
 
 在 `cim_pkg.sv` 新增：
 

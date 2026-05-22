@@ -1,6 +1,6 @@
 # 师兄 `cim_wzy` 项目对比与毕设启示
 
-> 位于 `cim_wzy/` 目录下的项目由师兄提供，是一个面向数字 SRAM-CIM 的 NCNN + Chisel/Verilator 协同验证平台。本文记录对该项目的阅读分析，以及它对本毕设 (`hw/` + `sw/` + `picorv32/` + `kv260/`) 的启示与可借鉴改进方向。
+> 位于 `cim_wzy/` 目录下的项目由师兄提供，是一个面向数字 SRAM-CIM 的 NCNN + Chisel/Verilator 协同验证平台。本文记录对该项目的阅读分析，以及它对本毕设 (`hw/` + `sw/` + `picorv32/`) 的启示与可借鉴改进方向。
 
 ---
 
@@ -94,7 +94,7 @@ gtkwave wave.vcd         # WAVE_LOG 开着时会生成
 | **参数化方式** | `cim_pkg.sv` SystemVerilog package | Chisel trait + FIRRTL 生成 SV |
 | **软件栈** | 手写 `golden_model.py` + `cim_driver.py`，自定义 CSR | NCNN 整个推理栈搬进来 |
 | **支持网络** | MNIST MLP 784→128→10 + LeNet-5 | YOLOv3/v4-tiny、MobileNet-SSD、ResNet18、SqueezeNet … |
-| **FPGA 目标** | PYNQ-Z2 (7020) / KV260 | Vivado 2021.2，面向更大器件 |
+| **FPGA 目标** | PYNQ-Z2 (7020) | Vivado 2021.2，面向更大器件 |
 | **CPU 方案** | ARM PS / PicoRV32 软核 | ARM 裸机 (Vitis) |
 | **仿真器** | VCS + SystemVerilog testbench | Verilator + C++ co-sim |
 | **卷积映射** | 软件 im2col，硬件只做 MVM | 软件 im2col + SQ_MAPPING 权重复制 |
@@ -197,7 +197,7 @@ commit, freq_mhz, wns_ns, lut, ff, bram, dsp, power_w
 **收益**：
 - 论文"硬件资源与性能"表直接用这份 CSV 出图；
 - 能看到 patch1/2/3 三次流水优化的趋势线，讲故事非常直观；
-- 以后每次编译都自动 append，**patch 1/2/3 → C1 → KV260 的完整优化曲线免费得到**。
+- 以后每次编译都自动 append，**patch 1/2/3 → C1 的完整优化曲线免费得到**。
 
 #### B2. Pytest 回归（golden_model + cim_driver 离线模式）
 
@@ -252,7 +252,7 @@ LeNet-5      | 1000  |  35.2   | 35.2   | 28.4  | 99.0%
 
 **收益**：多层网络（MLP 2 层、LeNet 7 层）的层间延迟隐藏，吞吐再提升 20%~40%。
 
-**风险**：RTL 改动中等，BRAM 占用翻倍。**PYNQ-Z2 很可能放不下（已经 140 块 BRAM 吃紧），更适合在 KV260 phase 合并做**。
+**风险**：RTL 改动中等，BRAM 占用翻倍。**PYNQ-Z2 很可能放不下（已经 140 块 BRAM 吃紧），更适合在更大器件上合并做**。
 
 #### C3. AXI4-Full burst 代替 AXI4-Lite 逐字 ⚠️ 接口重写
 
@@ -264,23 +264,7 @@ LeNet-5      | 1000  |  35.2   | 35.2   | 28.4  | 99.0%
 
 **风险**：改动最大，接口重写。**不建议毕设阶段做**，论文"未来工作"提即可。
 
-### 5.4 Phase D: KV260 专属（与 step 5 合并推进）
-
-#### D1. UltraRAM 替代 BRAM 放大权重尺寸
-
-UltraScale+ 有 URAM（288 Kb/block vs BRAM 36 Kb）。用 URAM 做 `weight_sram`，可以把 `MAX_IN_DIM` 从 784 拉到 1024 甚至 2048，支持真正的 CNN tile（ImageNet 级别网络的 conv 层）。
-
-#### D2. 多 tile 并行 (PAR_OB = 4 或 8)
-
-PAR_OB = 1 是 PYNQ-Z2 的面积妥协。KV260 资源足够把 PAR_OB 拉到 4 或 8，吞吐直接 4-8×。
-
-#### D3. 200 MHz 目标频率（配合 C1）
-
-KV260 UltraScale+ 时序容易收敛，配合 C1 的 critical path split 后，200 MHz 可以搏一下。
-
-> **三条组合**：凑出论文"跨平台对比表" —— PYNQ-Z2 (62.5 MHz, PAR=1) vs KV260 (200 MHz, PAR=4)。吞吐/面积/功耗效率全部对比，**对答辩委员是非常加分的工作量证据**。也是 step 5 本来就该做的事情，现在把 C1/C2 一起拉上就能形成一个完整的"跨平台优化故事"。
-
-### 5.5 Phase E: 论文素材与工程健康度
+### 5.4 Phase E: 论文素材与工程健康度
 
 - **E1. 层级 latency timeline 可视化**：从 step 6 Phase 1 的 dump 出发，写 `visualize_timeline.py` 用 matplotlib 画"Gantt 式"层级时间条。论文"Figure X: LeNet-5 逐层延迟分布"现成。
 - **E2. 统一 CLI 入口**：`sw/scripts/cim.py run --model lenet5 --input foo.png --verify`，把散落在 notebook 里的验证代码统一成一个命令。答辩 demo 跑起来干净。
@@ -303,7 +287,7 @@ KV260 UltraScale+ 时序容易收敛，配合 C1 的 critical path split 后，2
 
 ```
 step 6 Phase 1 (per-layer verify)  ──┐
-step 6 Phase 2 (SQ-mapping pack)   ──┼──→ Top 3 (A1+A2+B1+B3) ──→ C1 critical path ──→ D1+D2+D3 KV260
+step 6 Phase 2 (SQ-mapping pack)   ──┼──→ Top 3 (A1+A2+B1+B3) ──→ C1 critical path
 step 6 Phase 3 (thesis writing)    ──┘
                                          ↑
                                          |

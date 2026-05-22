@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-INT8 Compute-in-Memory (CIM) SoC verification platform targeting PYNQ-Z2 (Zynq-7020) and Kria KV260. Supports INT8 quantized inference for MLP/CNN networks. Hardware computes MVM (matrix-vector multiply) + bias + ReLU + requantize; software handles im2col for Conv layers (heterogeneous approach — no Conv-specific hardware).
+INT8 Compute-in-Memory (CIM) SoC verification platform targeting PYNQ-Z2 (Zynq-7020). Supports INT8 quantized inference for MLP/CNN networks. Hardware computes MVM (matrix-vector multiply) + bias + ReLU + requantize; software handles im2col for Conv layers (heterogeneous approach — no Conv-specific hardware).
 
 Two control modes: (1) ARM PS via Python/MMIO, (2) PicoRV32 RISC-V soft-core replacing ARM for pure-PL autonomous inference.
 
@@ -54,8 +54,6 @@ bash hw/scripts/vivado_build.sh          # outputs vivado_proj/pynq_deploy/{cim_
 # PicoRV32 variant
 bash picorv32/hw/scripts/vivado_build.sh
 
-# KV260
-bash kv260/hw/scripts/vivado_build.sh
 ```
 
 Note: `vivado_build.sh` temporarily patches `PAR_OB=1` in `cim_pkg.sv` for synthesis (PYNQ-Z2 area constraint) and restores `PAR_OB=4` after.
