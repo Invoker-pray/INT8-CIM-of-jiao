@@ -164,6 +164,17 @@ apply_bd_automation -rule xilinx.com:bd_rule:axi4 \
         ddr_seg {Auto} intc_ip {New AXI SmartConnect} master_apm {0} \
     ] [get_bd_intf_pins cim_0/S_AXI]
 
+# Find and configure SmartConnect: disable Low-Area mode to properly support
+# the PS AXI4 master (which has HAS_BURST=1). Low-area mode doesn't support
+# WRAP bursts and can cause DECERR on PS-initiated transactions.
+set intc_sc [get_bd_cells -quiet -filter {VLNV =~ *:smartconnect:*}]
+if {[llength $intc_sc] > 0} {
+    set_property -dict [list \
+        CONFIG.ADVANCED_PROPERTIES {__experimental_features__ {disable_low_area_mode 1}} \
+    ] [lindex [lsort $intc_sc] 0]
+    puts "INFO: SmartConnect Low-Area mode disabled for PS AXI4 compatibility"
+}
+
 # --- 3f. Interrupt: cim_0/irq_done -> ps_e/pl_ps_irq0 (if available) ---
 set irq_pin [get_bd_pins -quiet ps_e/pl_ps_irq0]
 if {[llength $irq_pin] == 0} {
@@ -205,6 +216,8 @@ if {$cim_rst_net eq ""} {
 }
 
 # Interconnect (SmartConnect or AXI Interconnect) clock + reset
+# Uses interconnect_aresetn (designed for AXI interconnect reset timing) if
+# available, falling back to peripheral_aresetn.
 set intc_cells [get_bd_cells -quiet -filter {VLNV =~ *:smartconnect:* || VLNV =~ *:axi_interconnect:*}]
 if {[llength $intc_cells] > 0} {
     set intc [lindex [lsort $intc_cells] 0]
@@ -215,9 +228,16 @@ if {[llength $intc_cells] > 0} {
     }
     set intc_rst_net [get_bd_nets -quiet -of_objects [get_bd_pins ${intc}/aresetn]]
     if {$intc_rst_net eq ""} {
-        connect_bd_net [get_bd_pins ${rst_main}/peripheral_aresetn] \
-                       [get_bd_pins ${intc}/aresetn]
-        puts "INFO: Interconnect ${intc} aresetn connected"
+        set ic_rst_pin [get_bd_pins -quiet ${rst_main}/interconnect_aresetn]
+        if {[llength $ic_rst_pin] > 0} {
+            connect_bd_net [get_bd_pins ${rst_main}/interconnect_aresetn] \
+                           [get_bd_pins ${intc}/aresetn]
+            puts "INFO: Interconnect ${intc} aresetn connected via interconnect_aresetn"
+        } else {
+            connect_bd_net [get_bd_pins ${rst_main}/peripheral_aresetn] \
+                           [get_bd_pins ${intc}/aresetn]
+            puts "INFO: Interconnect ${intc} aresetn connected via peripheral_aresetn"
+        }
     }
     puts "INFO: Interconnect ${intc} clock + reset verified"
 }

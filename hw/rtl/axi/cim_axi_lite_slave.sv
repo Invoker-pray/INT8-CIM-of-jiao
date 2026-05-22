@@ -96,8 +96,8 @@ module cim_axi_lite_slave
   logic [AXI_DATA_W-1:0] w_data_r;
   logic b_valid_r;
 
-  assign S_AXI_AWREADY = !aw_received && !b_valid_r;
-  assign S_AXI_WREADY  = !w_received && !b_valid_r;
+  assign S_AXI_AWREADY = rst_n && !aw_received && !b_valid_r;
+  assign S_AXI_WREADY  = rst_n && !w_received && !b_valid_r;
   assign S_AXI_BRESP   = 2'b00;
   assign S_AXI_BVALID  = b_valid_r;
 
@@ -148,7 +148,7 @@ module cim_axi_lite_slave
   logic [AXI_ADDR_W-1:0] ar_addr_r;
   logic [AXI_DATA_W-1:0] r_data_r;
 
-  assign S_AXI_ARREADY = (rd_state == RD_IDLE);
+  assign S_AXI_ARREADY = rst_n && (rd_state == RD_IDLE);
   assign S_AXI_RDATA   = r_data_r;
   assign S_AXI_RRESP   = 2'b00;
   assign S_AXI_RVALID  = (rd_state == RD_RESPOND);
