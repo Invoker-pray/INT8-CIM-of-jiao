@@ -1,10 +1,10 @@
-2026-05-21 17:28:15,686 - [DEBUG] Using xsct from : /home/jiao/xilinx/petalinux/components/xsct/bin/xsct
-2026-05-21 17:28:15,686 - [INFO] Getting Platform info from HW file
-2026-05-21 17:28:15,686 - [DEBUG] Using the soc_family specified by user:zynqmp
-2026-05-21 17:28:15,691 - [INFO] Generating Kconfig for project
-2026-05-21 17:28:15,691 - [DEBUG] Generating System HW file
-2026-05-21 17:28:15,691 - [DEBUG] xsct -sdx -nodisp /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/components/yocto/layers/meta-xilinx/meta-xilinx-core/gen-machine-conf/gen-machine-scripts/hw-description.tcl plnx_gen_hwsysconf /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/hw-description/system.xsa
-2026-05-21 17:28:27,273 - [DEBUG] 
+2026-05-22 06:50:33,509 - [DEBUG] Using xsct from : /home/jiao/xilinx/petalinux/components/xsct/bin/xsct
+2026-05-22 06:50:33,509 - [INFO] Getting Platform info from HW file
+2026-05-22 06:50:33,509 - [DEBUG] Using the soc_family specified by user:zynqmp
+2026-05-22 06:50:33,514 - [INFO] Generating Kconfig for project
+2026-05-22 06:50:33,514 - [DEBUG] Generating System HW file
+2026-05-22 06:50:33,514 - [DEBUG] xsct -sdx -nodisp /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/components/yocto/layers/meta-xilinx/meta-xilinx-core/gen-machine-conf/gen-machine-scripts/hw-description.tcl plnx_gen_hwsysconf /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/hw-description/system.xsa
+2026-05-22 06:50:44,984 - [DEBUG] 
 
 ****** Software Commandline Tool (XSCT) v2024.2.0
   **** SW Build 5233591 on Sat Nov 02 20:05:54 MDT 2024
@@ -19,19 +19,19 @@ We recommend using the new Python command-line tool for project management and d
 WARNING: sdtgen package cannot be loaded. System Device tree commands will not 
  be available
 INFO: [Hsi 55-2053] elapsed time for repository (/home/jiao/xilinx/petalinux/components/xsct/data/embeddedsw) loading 0 seconds
-hsi::open_hw_design: Time (s): cpu = 00:00:06 ; elapsed = 00:00:06 . Memory (MB): peak = 664.473 ; gain = 155.211 ; free physical = 7895 ; free virtual = 24783
+hsi::open_hw_design: Time (s): cpu = 00:00:06 ; elapsed = 00:00:06 . Memory (MB): peak = 664.477 ; gain = 155.215 ; free physical = 6678 ; free virtual = 24568
 
 WARNING: Failed in finding /home/jiao/xilinx/petalinux/components/xsct/data/system-device-tree-xlnx/device_tree/data/device_tree.tcl path.
 
 
-2026-05-21 17:28:27,447 - [DEBUG] Hardware Configuration:
-2026-05-21 17:28:27,447 - [DEBUG] MACHINE     = "None"
-2026-05-21 17:28:27,447 - [DEBUG] DEVICE_ID   = "xczu15eg"
-2026-05-21 17:28:27,447 - [DEBUG] SOC_FAMILY  = "zynqmp"
-2026-05-21 17:28:27,447 - [DEBUG] SOC_VARIANT = "eg"
-2026-05-21 17:28:27,447 - [INFO] Silentconfig project
-2026-05-21 17:28:27,447 - [DEBUG] Running CMD: yes "" | env KCONFIG_CONFIG=/home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/config conf /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/configs/Kconfig
-2026-05-21 17:28:27,465 - [DEBUG] *
+2026-05-22 06:50:45,078 - [DEBUG] Hardware Configuration:
+2026-05-22 06:50:45,078 - [DEBUG] MACHINE     = "None"
+2026-05-22 06:50:45,078 - [DEBUG] DEVICE_ID   = "xczu15eg"
+2026-05-22 06:50:45,078 - [DEBUG] SOC_FAMILY  = "zynqmp"
+2026-05-22 06:50:45,078 - [DEBUG] SOC_VARIANT = "eg"
+2026-05-22 06:50:45,078 - [INFO] Silentconfig project
+2026-05-22 06:50:45,078 - [DEBUG] Running CMD: yes "" | env KCONFIG_CONFIG=/home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/config conf /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/configs/Kconfig
+2026-05-22 06:50:45,084 - [DEBUG] *
 * PetaLinux System Configuration
 *
 ZYNQMP Configuration (SYSTEM_ZYNQMP) [Y/?] y
@@ -282,9 +282,9 @@ user layer 0 (USER_LAYER_0) []
 #
 # configuration written to /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/config
 #
-2026-05-21 17:28:27,637 - [INFO] Silentconfig rootfs
-2026-05-21 17:28:27,638 - [DEBUG] Running CMD: yes "" | env KCONFIG_CONFIG=/home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/rootfs_config conf /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/rootfsconfigs/Kconfig
-2026-05-21 17:28:27,662 - [DEBUG] *
+2026-05-22 06:50:45,146 - [INFO] Silentconfig rootfs
+2026-05-22 06:50:45,146 - [DEBUG] Running CMD: yes "" | env KCONFIG_CONFIG=/home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/rootfs_config conf /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/rootfsconfigs/Kconfig
+2026-05-22 06:50:45,158 - [DEBUG] *
 * Configuration
 *
 *
@@ -3775,7 +3775,7 @@ Add Users to Sudo users (ADD_USERS_TO_SUDOERS) [petalinux]
 #
 # configuration written to /home/jiao/git/INT8-CIM-of-jiao/cim_mzu15b/project-spec/configs/rootfs_config
 #
-2026-05-21 17:28:27,668 - [INFO] Generating configuration files
-2026-05-21 17:28:27,672 - [DEBUG] No multilibs enabled.
-2026-05-21 17:28:27,672 - [DEBUG] No multilibs enabled.
-2026-05-21 17:28:27,696 - [DEBUG] Shutting down bitbake
+2026-05-22 06:50:45,164 - [INFO] Generating configuration files
+2026-05-22 06:50:45,169 - [DEBUG] No multilibs enabled.
+2026-05-22 06:50:45,169 - [DEBUG] No multilibs enabled.
+2026-05-22 06:50:45,193 - [DEBUG] Shutting down bitbake
