@@ -54,7 +54,7 @@ package cim_pkg;
   //   PAR_OB=4  → 2 passes, each 49 iterations = 98 tile-cycles
   //   PAR_OB=8  → 1 pass,  49 iterations = 49 tile-cycles (max parallel for this layer)
 
-  parameter int PAR_OB = 4;  // tunable: 1, 2, 4, 8 (must divide N_OB of target layer)
+  parameter int PAR_OB = 8;  // KV260: 1248 DSP → PAR_OB=8 uses ~440 DSP (35%)
 
   // ==========================================================================
   // 3. Data Widths
@@ -82,8 +82,8 @@ package cim_pkg;
   // These set the SRAM sizing. Actual layer dims are configured via CSR at runtime.
   // The accelerator can handle any layer up to these limits.
 
-  parameter int MAX_IN_DIM = 1536;  // max input vector length
-  parameter int MAX_OUT_DIM = 256;  // max output vector length
+  parameter int MAX_IN_DIM = 2048;  // KV260: URAM+BRAM supports larger input
+  parameter int MAX_OUT_DIM = 512;  // KV260: larger output for multi-layer nets
   parameter int MAX_WEIGHT_ELEMS = MAX_IN_DIM * MAX_OUT_DIM;  // worst case
 
   // Derived: max tile blocks
