@@ -1,0 +1,22 @@
+menu "user packages " 
+config iperf3  
+	 bool "iperf3"
+	 help
+	
+config openssh-sftp-server  
+	 bool "openssh-sftp-server"
+	 help
+	
+config python3  
+	 bool "python3"
+	 help
+	
+config python3-numpy  
+	 bool "python3-numpy"
+	 help
+	
+config vim  
+	 bool "vim"
+	 help
+	
+endmenu

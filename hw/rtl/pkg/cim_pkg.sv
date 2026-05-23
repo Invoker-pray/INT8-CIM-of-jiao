@@ -82,8 +82,8 @@ package cim_pkg;
   // These set the SRAM sizing. Actual layer dims are configured via CSR at runtime.
   // The accelerator can handle any layer up to these limits.
 
-  parameter int MAX_IN_DIM = 2048;  // KV260: URAM+BRAM supports larger input
-  parameter int MAX_OUT_DIM = 512;  // KV260: larger output for multi-layer nets
+  parameter int MAX_IN_DIM = 784;   // KV260: 144 BRAM36, match PYNQ-Z2 sizing
+  parameter int MAX_OUT_DIM = 128;  // KV260: WSRAM_DEPTH=392 fits ~32 BRAM36
   parameter int MAX_WEIGHT_ELEMS = MAX_IN_DIM * MAX_OUT_DIM;  // worst case
 
   // Derived: max tile blocks

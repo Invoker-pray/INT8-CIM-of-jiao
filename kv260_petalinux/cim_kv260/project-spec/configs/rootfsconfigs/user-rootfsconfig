@@ -1,0 +1,5 @@
+CONFIG_vim
+CONFIG_python3
+CONFIG_python3-numpy
+CONFIG_openssh-sftp-server
+CONFIG_iperf3
