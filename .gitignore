@@ -120,3 +120,28 @@ prompt_C3.txt
 
 cim_wzy/
 cim_wzy/**
+
+# Third-party reference repos (not project code)
+kria-vitis-platforms/
+kria-vitis-platforms/**
+
+# PetaLinux build output (only project-spec and .petalinux config are source)
+cim_kv260/build/
+cim_kv260/images/
+cim_kv260/components/
+kv260_petalinux/cim_kv260/build/
+kv260_petalinux/cim_kv260/images/
+kv260_petalinux/cim_kv260/components/
+cim_mzu15b/build/
+cim_mzu15b/images/
+cim_mzu15b/components/
+
+# Vivado project output (keep scripts/constraints only)
+picorv32/vivado_mzu15b_proj/
+
+# Board vendor package (107 MB, available from vendor site)
+hardware_MZU15B-48A-202208.zip
+
+# Temporary Vivado journals at project root
+vivado*.jou
+vivado*.log

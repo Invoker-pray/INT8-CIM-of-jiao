@@ -7,3 +7,6 @@
 # KV260 has no board-level PL LEDs or PMOD constraints needed for CIM.
 # If PMOD debug pins are added later, append pin constraints here.
 # ============================================================================
+
+# Bitstream compression (matches Xilinx KV260 platform convention)
+set_property BITSTREAM.GENERAL.COMPRESS TRUE [current_design]
