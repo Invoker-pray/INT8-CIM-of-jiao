@@ -54,7 +54,7 @@ package cim_pkg;
   //   PAR_OB=4  → 2 passes, each 49 iterations = 98 tile-cycles
   //   PAR_OB=8  → 1 pass,  49 iterations = 49 tile-cycles (max parallel for this layer)
 
-  parameter int PAR_OB = 8;  // KV260: 1248 DSP → PAR_OB=8 uses ~440 DSP (35%)
+  parameter int PAR_OB = 4;  // KV260: PAR_OB=4 uses ~1024 DSP (82% of 1248), PAR_OB>4 overflows
 
   // ==========================================================================
   // 3. Data Widths

@@ -1,14 +1,14 @@
-2026-05-22 20:37:04,870 - [DEBUG] Using xsct from : /home/jiao/xilinx/petalinux/components/xsct/bin/xsct
-2026-05-22 20:37:04,870 - [INFO] Getting Platform info from HW file
-2026-05-22 20:37:04,870 - [DEBUG] Using the soc_family specified by user:zynqmp
-2026-05-22 20:37:04,975 - [DEBUG] Hardware Configuration:
-2026-05-22 20:37:04,975 - [DEBUG] MACHINE     = "None"
-2026-05-22 20:37:04,976 - [DEBUG] DEVICE_ID   = "xck26"
-2026-05-22 20:37:04,976 - [DEBUG] SOC_FAMILY  = "zynqmp"
-2026-05-22 20:37:04,976 - [DEBUG] SOC_VARIANT = "ev"
-2026-05-22 20:37:04,976 - [INFO] Silentconfig project
-2026-05-22 20:37:04,976 - [DEBUG] Running CMD: yes "" | env KCONFIG_CONFIG=/home/jiao/git/INT8-CIM-of-jiao/cim_kv260/project-spec/configs/config conf /home/jiao/git/INT8-CIM-of-jiao/cim_kv260/project-spec/configs/configs/Kconfig
-2026-05-22 20:37:04,983 - [DEBUG] *
+2026-05-24 15:41:15,478 - [DEBUG] Using xsct from : /home/jiao/xilinx/petalinux/components/xsct/bin/xsct
+2026-05-24 15:41:15,478 - [INFO] Getting Platform info from HW file
+2026-05-24 15:41:15,478 - [DEBUG] Using the soc_family specified by user:zynqmp
+2026-05-24 15:41:15,505 - [DEBUG] Hardware Configuration:
+2026-05-24 15:41:15,505 - [DEBUG] MACHINE     = "None"
+2026-05-24 15:41:15,505 - [DEBUG] DEVICE_ID   = "xck26"
+2026-05-24 15:41:15,505 - [DEBUG] SOC_FAMILY  = "zynqmp"
+2026-05-24 15:41:15,505 - [DEBUG] SOC_VARIANT = "ev"
+2026-05-24 15:41:15,505 - [INFO] Silentconfig project
+2026-05-24 15:41:15,505 - [DEBUG] Running CMD: yes "" | env KCONFIG_CONFIG=/home/jiao/git/INT8-CIM-of-jiao/cim_kv260/project-spec/configs/config conf /home/jiao/git/INT8-CIM-of-jiao/cim_kv260/project-spec/configs/configs/Kconfig
+2026-05-24 15:41:15,511 - [DEBUG] *
 * PetaLinux System Configuration
 *
 ZYNQMP Configuration (SYSTEM_ZYNQMP) [Y/?] y
@@ -279,9 +279,9 @@ user layer 0 (USER_LAYER_0) []
 #
 # configuration written to /home/jiao/git/INT8-CIM-of-jiao/cim_kv260/project-spec/configs/config
 #
-2026-05-22 20:37:05,066 - [INFO] Silentconfig rootfs
-2026-05-22 20:37:05,066 - [DEBUG] Running CMD: yes "" | env KCONFIG_CONFIG=/home/jiao/git/INT8-CIM-of-jiao/cim_kv260/project-spec/configs/rootfs_config conf /home/jiao/git/INT8-CIM-of-jiao/cim_kv260/project-spec/configs/rootfsconfigs/Kconfig
-2026-05-22 20:37:05,083 - [DEBUG] *
+2026-05-24 15:41:15,573 - [INFO] Silentconfig rootfs
+2026-05-24 15:41:15,574 - [DEBUG] Running CMD: yes "" | env KCONFIG_CONFIG=/home/jiao/git/INT8-CIM-of-jiao/cim_kv260/project-spec/configs/rootfs_config conf /home/jiao/git/INT8-CIM-of-jiao/cim_kv260/project-spec/configs/rootfsconfigs/Kconfig
+2026-05-24 15:41:15,584 - [DEBUG] *
 * Configuration
 *
 *
@@ -3772,7 +3772,7 @@ Add Users to Sudo users (ADD_USERS_TO_SUDOERS) [petalinux]
 #
 # configuration written to /home/jiao/git/INT8-CIM-of-jiao/cim_kv260/project-spec/configs/rootfs_config
 #
-2026-05-22 20:37:05,091 - [INFO] Generating configuration files
-2026-05-22 20:37:05,093 - [DEBUG] No multilibs enabled.
-2026-05-22 20:37:05,094 - [DEBUG] No multilibs enabled.
-2026-05-22 20:37:05,128 - [DEBUG] Shutting down bitbake
+2026-05-24 15:41:15,590 - [INFO] Generating configuration files
+2026-05-24 15:41:15,592 - [DEBUG] No multilibs enabled.
+2026-05-24 15:41:15,592 - [DEBUG] No multilibs enabled.
+2026-05-24 15:41:15,618 - [DEBUG] Shutting down bitbake
