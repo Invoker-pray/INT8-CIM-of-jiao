@@ -67,7 +67,27 @@ sudo tar xzf rootfs.tar.gz -C /mnt/root/
 
 插入 microSD 卡，连接 12V 电源和 microUSB（UART），上电。
 
+**关键：连接 J4 口（标 UART），不是 J3（USB Hub）。**
+
 串口设置：115200 8N1
+
+**KV260 会同时创建 4 个 ttyUSB 设备。必须选择编号第二小的那个（不是 ttyUSB0 也不是 ttyUSB2/3）。**
+
+```bash
+# 插上 microUSB 线后查看
+ls /dev/ttyUSB*
+# 输出类似：ttyUSB0  ttyUSB1  ttyUSB2  ttyUSB3
+# 第一个 (ttyUSB0) 是 JTAG
+# 第二个 (ttyUSB1) 是 UART  ← 用这个
+# 第三、四个 是 I2C/RP-Sync
+
+# 连接（用你实际的编号，第二小的）
+screen /dev/ttyUSB1 115200
+# 或
+picocom -b 115200 /dev/ttyUSB1
+```
+
+**如果上电后串口无输出，按住 FWUEN 按钮（靠近 microSD 卡槽）再上电，强制从 SD 卡启动。**
 
 默认登录：`root` / `root`
 

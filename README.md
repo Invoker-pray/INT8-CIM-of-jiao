@@ -12,7 +12,7 @@
 |------|------------------|-----------|
 | 芯片 | xc7z020 (Zynq-7020) | xck26 (ZynqMP UltraScale+) |
 | DSP 数量 | 220 | ~1248 |
-| PAR_OB | 4 (仿真) / 1 (综合) | **8** (~440 DSP, 35%) |
+| PAR_OB | 4 (仿真) / 1 (综合) | **4** (~1024 DSP, 82%) |
 | TILE_SPLIT_FACTOR | 4 | 4 |
 | 时钟 | 100 MHz (WNS=-0.8ns) | 100 MHz |
 | 操作系统 | PYNQ Linux (Ubuntu) | **PetaLinux** (Yocto) |
@@ -71,7 +71,7 @@ bash kv260/hw/scripts/vivado_build.sh
 
 输出：`kv260/deploy/cim_soc_kv260.{bit, hwh, xsa}`
 
-注意：KV260 的 PAR_OB=8 固定使用，**不需要**像 PYNQ-Z2 那样在综合前临时改 PAR_OB=1（`vivado_build.sh` 已移除此逻辑）。
+注意：KV260 的 PAR_OB=4 固定使用（K26 有 1248 DSP，PAR_OB>4 会溢出到 LUT），**不需要**像 PYNQ-Z2 那样在综合前临时改 PAR_OB=1（`vivado_build.sh` 已移除此逻辑）。
 
 ### 2. 构建 PetaLinux
 
@@ -93,6 +93,8 @@ petalinux-package --boot --u-boot --fsbl --fpga --force
 ### 3. 上板验证
 
 详见 [`docs/kv260_petalinux_onboard.md`](docs/kv260_petalinux_onboard.md)。
+
+**重要：KV260 上电后产生 4 个 /dev/ttyUSB 设备，串口是编号第二小的那个（如 ttyUSB1），不是 ttyUSB0。** 详细连接说明见上板文档第 4 节。
 
 核心验证方法：通过 Python `/dev/mem` MMIO 直接访问 CIM 寄存器（无需 PYNQ 库）：
 
@@ -143,9 +145,9 @@ axi_dma_0: dma@b0000000 {
 
 | 指标 | PYNQ-Z2 (master) | KV260 预期 | 提升来源 |
 |------|-------------------|-----------|---------|
-| MLP FC1 (784→128) | ~45 μs | ~3-4 μs | PAR_OB 8× + 时钟 |
-| MLP 端到端 | 29.2 ms/img (34.3 fps) | 5-10 ms/img | PAR_OB 8× |
-| LeNet-5 | 29.2 ms/img (34.3 fps) | 5-10 ms/img | 同上 |
+| MLP FC1 (784→128) | ~45 μs | ~10-12 μs | PAR_OB 4× vs PYNQ-Z2 综合 PAR_OB=1 |
+| MLP 端到端 | 29.2 ms/img (34.3 fps) | 7-15 ms/img | PAR_OB 4× + 100MHz |
+| LeNet-5 | 29.2 ms/img (34.3 fps) | 7-15 ms/img | 同上 |
 
 KV260 板上基准测试方法：PetaLinux rootfs 自带 Python 3，使用 `time.perf_counter()` 测量各阶段延迟，运行 `benchmark_e2e.py`（需适配 `/dev/mem` 驱动替代 PYNQ DMA 库）。
 
