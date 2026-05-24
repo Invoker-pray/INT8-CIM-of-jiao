@@ -65,7 +65,7 @@ vivado_proj/
 vivado_proj/**
 
 vivado_proj*/
-vivado_build*
+/vivado_build*
 vivado_proj*/**
 
 .pyre/
