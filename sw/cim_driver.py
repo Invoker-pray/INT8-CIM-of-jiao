@@ -1,14 +1,16 @@
 """
-cim_driver.py — Python driver for CIM SoC on PYNQ-Z2
+cim_driver.py — Python driver for CIM SoC (PYNQ-Z2 / KV260)
 
 Provides:
   CIMDriver     — low-level MMIO wrapper for single-layer operations
   CIMModel      — high-level multi-layer inference (FC + Conv via im2col)
 
-Usage on PYNQ:
-  from cim_driver import CIMDriver, CIMModel
-
+Usage:
+  # PYNQ-Z2 (default base 0x40000000)
   drv = CIMDriver('cim_soc.bit')
+
+  # KV260
+  drv = CIMDriver('cim_soc_kv260.bit', base_addr=0xA0000000)
 
   # Single layer
   fc1_out = drv.infer_fc(input_u8, w_chunks, bias_u32, zp=0, mult=14, shift=16, relu=True)
@@ -73,8 +75,8 @@ def _make_run_id():
     return f"{git_hash}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
 
-# CSR address map (14-bit, base 0x40000000)
-_BASE = 0x40000000
+# CSR address map — default base for PYNQ-Z2; KV260 uses 0xA0000000
+_DEFAULT_BASE = 0x40000000
 _MMIO_SIZE = 0x4000  # 16KB
 
 _CTRL = 0x000
@@ -241,7 +243,8 @@ def maxpool2d(feat, kernel=2, stride=2):
 class CIMDriver:
     """Low-level driver for CIM accelerator via AXI4-Lite MMIO."""
 
-    def __init__(self, bitstream_path="cim_soc.bit", load=True, use_dma=False):
+    def __init__(self, bitstream_path="cim_soc.bit", load=True, use_dma=False,
+                 base_addr=None):
         """
         Args:
             bitstream_path: path to .bit file (must have matching .hwh)
@@ -250,12 +253,15 @@ class CIMDriver:
                      axi_dma (C3). This path still depends on a board-verified
                      bitstream/hwh pair, so the safer default remains False.
                      Pass use_dma=False to stay on the legacy MMIO path.
+            base_addr: base address of CIM IP in PL address space.
+                       PYNQ-Z2 default: 0x40000000; KV260: 0xA0000000.
         """
         if not _HAS_PYNQ:
             raise RuntimeError("pynq not available — run this on PYNQ-Z2")
         if load:
             self.overlay = Overlay(bitstream_path)
-        self.mmio = MMIO(_BASE, _MMIO_SIZE)
+        _base = base_addr if base_addr is not None else _DEFAULT_BASE
+        self.mmio = MMIO(_base, _MMIO_SIZE)
         self.use_dma = use_dma
         self.dma = None
         self._buf_w = None

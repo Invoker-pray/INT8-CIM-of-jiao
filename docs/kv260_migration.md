@@ -211,10 +211,23 @@ pip install numpy
 
 # 其实上面可以用xmutil加载bitstream，下面是强行编译pynq
 sudo apt install -y libdrm-dev libboost-dev
+sudo apt install -y xrt xlnx-firmware 2>/dev/null
+find /usr -name "libxlnk_cma.h" 2>/dev/null
+# 如果没有找到这个，就可以考虑跳过下载这个文件，因为他是HDMI支持相关的，这里可以不用
 pip install pynq
+
+# 我们可以下载文件后修改设置自己安装
+
+pip download pynq --no-binary pynq -d /tmp/pynq_src
+cd /tmp/pynq_src
+tar xzf pynq-*.tar.gz
+cd pynq-*
+
+sed -i '/_xhdmi/d' setup.py
+pip install .
 ```
 
-这里上板就可以直接通过`xmutil`进行：
+如果没有安装pynq也可以直接通过`xmutil`进行：
 
 ```bash
 sudo mkdir -p /lib/firmware/xilinx/cim_soc_kv260
@@ -316,6 +329,72 @@ sudo modprobe uio_pdrv_genirq of_id="generic-uio"
 
 #ls -la /dev/uio*
 #cat /sys/class/uio/uio0/name
+```
+
+此外还需要写一个最小的内核模块来手动 enable PL时钟：
+
+```bash
+cat > ~/pl_enable.c << 'ENDOFFILE'
+#include <linux/module.h>
+#include <linux/of.h>
+#include <linux/clk.h>
+
+static struct clk *cim_clk;
+
+static int __init pl_enable_init(void)
+{
+    struct device_node *np;
+    np = of_find_compatible_node(NULL, NULL, "generic-uio");
+    if (!np) {
+        pr_err("pl_enable: no generic-uio node found — load dtbo first\n");
+        return -ENODEV;
+    }
+    cim_clk = of_clk_get_by_name(np, "S_AXI_ACLK");
+    if (IS_ERR(cim_clk)) {
+        pr_err("pl_enable: no S_AXI_ACLK clock (err=%ld)\n", PTR_ERR(cim_clk));
+        return PTR_ERR(cim_clk);
+    }
+    clk_prepare_enable(cim_clk);
+    pr_info("pl_enable: S_AXI_ACLK enabled\n");
+    return 0;
+}
+
+static void __exit pl_enable_exit(void)
+{
+    if (cim_clk && !IS_ERR(cim_clk))
+        clk_disable_unprepare(cim_clk);
+    pr_info("pl_enable: clock disabled, module removed\n");
+}
+
+module_init(pl_enable_init);
+module_exit(pl_enable_exit);
+MODULE_LICENSE("GPL");
+ENDOFFILE
+
+
+
+cat > ~/Makefile << 'ENDOFFILE'
+obj-m := pl_enable.o
+
+all:
+      make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
+
+clean:
+      make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
+ENDOFFILE
+
+sed -i 's/^      /\t/' Makefile
+
+cd ~ && make
+
+sudo mkdir -p /sys/kernel/config/device-tree/overlays/cim
+
+sudo cp /home/ubuntu/cim_soc_kv260.dtbo /sys/kernel/config/device-tree/overlays/cim/dtbo
+
+sudo insmod pl_enable.ko
+dmesg | tail -5
+
+sudo cat /sys/kernel/debug/clk/clk_summary | grep pl0_ref
 ```
 
 关于时钟问题的一些调试方法：

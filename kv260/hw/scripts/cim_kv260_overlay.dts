@@ -3,15 +3,6 @@
 
 / {
     fragment@0 {
-        target = <&fpga_full>;
-        __overlay__ {
-            #address-cells = <2>;
-            #size-cells = <2>;
-            firmware-name = "cim_soc_kv260.bit";
-        };
-    };
-
-    fragment@1 {
         target = <&amba>;
         __overlay__ {
             #address-cells = <2>;
@@ -20,6 +11,8 @@
             cim_0: cim@a0000000 {
                 compatible = "generic-uio";
                 reg = <0x0 0xa0000000 0x0 0x4000>;
+                clock-names = "S_AXI_ACLK";
+                clocks = <&zynqmp_clk 71>;
             };
         };
     };
