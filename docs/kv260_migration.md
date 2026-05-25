@@ -113,6 +113,7 @@ Ubuntu镜像可以在[这里](https://people.canonical.com/~platform/images/xili
 首先我们把本地网卡设置为`192.168.2.1/24`，然后在串口中把Kria ip设置为`192.168.2.100/24`，pc修改具体方法可见`onboard_guide_PYNW-Z2.md`，kv260修改方式如下：
 
 ```bash
+sudo ip addr flush dev eth0
 sudo ip addr add 192.168.2.100/24 dev eth0
 sudo ip route add default via 192.168.2.1
 echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
@@ -147,6 +148,14 @@ sudo iptables -A FORWARD -j ACCEPT
 ![ping2](../img/ping2.png)
 
 在kv260内部可以ping通，则说明kv260已经通过网线借用了pc的网络。（和virtualbox有"**_同曲同工_**"之妙。）
+
+**_一个补充信息，如果出现了本地stub没有上有DNS的问题(或者DNS被污染)导致`sudo apt-get update`或者下载某些包等命令执行失败，可以通过以下命令直接替换：_**
+
+```bash
+sudo rm /etc/resolv.conf
+sudo sh -c 'echo "nameserver 8.8.8.8" > /etc/resolv.conf'
+ping -c 1 ports.ubuntu.com
+```
 
 然后我们需要进入ubuntu系统，在系统中安装`Kria-PYNQ`：
 
@@ -186,6 +195,145 @@ sudo bash install.sh -b KV260
 
 ```bash
 echo "127.0.0.1 $(hostname)" | sudo tee -a /etc/hosts
+```
+
+# 如果不用官方的PYNQ环境安装脚本的话...
+
+下一部分的内容就是思考不使用PYNQ的原因，简单来说就是22.04版本的镜像发现有启动问题，在某些情况下会神奇的在串口卡住，但是如果使用的是24.04版本，就会发现官方的PYNQ环境安装脚本写的居然是检测系统版本为20.04和22.04才会继续，虽然可以手动改成24.04也继续，但是会有一大堆不兼容问题，同时还有他的核心库不支持24.04，所以要有脱离PYNQ的手段（确信）
+
+```bash
+sudo apt-get update && sudo apt upgrade
+sudo apt install -y python3-pip python3-venv
+
+python3 -m venv ./python-venv
+source python-venv/bin/activate
+pip install numpy
+
+# 其实上面可以用xmutil加载bitstream，下面是强行编译pynq
+sudo apt install -y libdrm-dev libboost-dev
+pip install pynq
+```
+
+这里上板就可以直接通过`xmutil`进行：
+
+```bash
+sudo mkdir -p /lib/firmware/xilinx/cim_soc_kv260
+sudo cp cim_soc_kv260.bit cim_soc_kv260.dtbo /lib/firmware/xilinx/cim_soc_kv260
+sudo touch /lib/firmware/xilinx/cim_soc_kv260/shell.json
+cat << 'EOF' | sudo tee /lib/firmware/xilinx/cim_soc_kv260/shell.json
+{
+  "shell_type": "XRT_FLAT",
+  "num_slots": 0,
+  "shared_mem_addr": "0x0",
+  "shared_mem_size": "0x0"
+}
+EOF
+
+sudo xmutil unloadapp 2>/dev/null # 卸载bitstream
+sudo xmutil loadapp cim_soc_kv260
+```
+
+还可以使用`sysfs`:
+
+```bash
+sudo mkdir -p /lib/firmware
+sudo cp cim_soc_kv260.bit /lib/firmware
+
+sudo sh -c 'echo cim_soc_kv260.bit > /sys/class/fpga_manager/fpga0/firmware'
+```
+
+_如果bitstream是full bitstream，就需要把fpga_manager的格式修改为full，方法是`echo 0 | sudo tee /sys/class/fpga_manager/fpga0/flags`_
+
+_flags=20代表部分重配模式，flags=0代表full._
+
+还有一些状态查询方式需要知道：
+
+```bash
+cat /sys/class/fpga_manager/fpga0/state # 查询加载状态
+cat /sys/class/fpga_manager/fpga0/flags # 查询加载模式
+```
+
+另外测试中可能需要`.dtbo`文件，生成的命令是：
+
+```bash
+# 1. 创建 DTS 源文件
+cat > /tmp/cim_kv260_overlay.dts << 'EOF'
+/dts-v1/;
+/plugin/;
+
+/ {
+    fragment@0 {
+        target = <&fpga_full>;
+        __overlay__ {
+            firmware-name = "cim_soc_kv260.bit";
+        };
+    };
+    fragment@1 {
+        target = <&amba>;
+        __overlay__ {
+            #address-cells = <2>;
+            #size-cells = <2>;
+
+            cim_0: cim_top_wrapper@a0000000 {
+                compatible = "xlnx,cim-top-wrapper-1.0";
+                reg = <0x0 0xa0000000 0x0 0x4000>;
+            };
+
+            axi_dma_0: dma@b0000000 {
+                compatible = "xlnx,axi-dma-7.1", "xlnx,axi-dma-1.00.a";
+                reg = <0x0 0xb0000000 0x0 0x10000>;
+            };
+        };
+    };
+};
+EOF
+
+# 2. 编译为 .dtbo
+source /home/jiao/xilinx/Vivado/2024.2/settings64.sh
+dtc -I dts -O dtb -o
+/home/jiao/git/INT8-CIM-of-jiao/kv260/deploy/cim_soc_kv260.dtbo
+/tmp/cim_kv260_overlay.dts
+```
+
+**_ ZynqMP 的 PS-PL 桥接机制：_**
+
+Linux 内核需要通过 Device Tree Overlay 通知 PMU固件去使能 PL 时钟和 AXI 接口。这在 Zynq-7000（PYNQ-Z2）上不存在，因为 Zynq-7000 的PL 时钟和 AXI 在 PL 配置完成后自动就绪。
+
+具体步骤是：
+
+```bash
+# pc
+scp /home/jiao/git/INT8-CIM-of-jiao/kv260/deploy/cim_soc_kv260.dtbo ubuntu@192.168.2.100:~/
+
+# kria kv260
+sudo rmdir /sys/kernel/config/device-tree/overlays/k26-starter-kits_image_1
+sudo mount -t configfs configfs /sys/kernel/config 2>/dev/null # 做一次就行
+
+sudo mkdir -p /sys/kernel/config/device-tree/overlays/cim
+sudo cp cim_soc_kv260.dtbo /sys/kernel/config/device-tree/overlays/cim/dtbo
+
+sudo modprobe uio_pdrv_genirq of_id="generic-uio"
+
+#ls -la /dev/uio*
+#cat /sys/class/uio/uio0/name
+```
+
+关于时钟问题的一些调试方法：
+
+```bash
+sudo cp ~/cim_soc_kv260.bit /lib/firmware/
+echo 0 | sudo tee /sys/class/fpga_manager/fpga0/flags
+sudo sh -c 'echo cim_soc_kv260.bit > /sys/class/fpga_manager/fpga0/firmware'
+
+
+sudo mount -t debugfs none /sys/kernel/debug 2>/dev/null
+ls /sys/kernel/debug/clk/pl0_ref/
+
+# 尝试 enable（具体接口取决于内核版本）
+echo 1 | sudo tee /sys/kernel/debug/clk/pl0_ref/clk_prepare_enable 2>/dev/null || \
+echo 1 | sudo tee /sys/kernel/debug/clk/pl0_ref/enable 2>/dev/null
+
+sudo cat /sys/kernel/debug/clk/clk_summary | grep pl0_ref
 ```
 
 # 注意，以下内容为乌龙事件。
@@ -274,6 +422,7 @@ sudo bash install.sh -b KV260
 ```
 
 参考链接：
+
 - [AMD官方固件更新指南](https://xilinx.github.io/kria-apps-docs/kv260/2022.1/linux_boot/ubuntu_22_04/build/html/docs/fwupdate.html)
 - [element14社区：KV260 Boot Fix](https://community.element14.com/technologies/fpga-group/b/blog/posts/booting-ubuntu-22-04-in-kria-kv260-or-kr260)
 

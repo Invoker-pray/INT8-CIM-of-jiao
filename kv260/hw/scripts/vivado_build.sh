@@ -12,6 +12,7 @@
 #   kv260/deploy/cim_soc_kv260.bit
 #   kv260/deploy/cim_soc_kv260.hwh
 #   kv260/deploy/cim_soc_kv260.xsa
+#   kv260/deploy/cim_soc_kv260.dtbo
 # ============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -53,6 +54,31 @@ if [ $BUILD_STATUS -ne 0 ]; then
     echo "Build FAILED (exit code ${BUILD_STATUS})"
     echo "============================================================"
     exit $BUILD_STATUS
+fi
+
+# -----------------------------------------------------------------------
+# Generate Device Tree Overlay (.dtbo) for KV260
+# ZynqMP requires a DT overlay to enable PS-PL AXI bridges after PL config.
+# -----------------------------------------------------------------------
+DTC_BIN="$(dirname "$(which vivado 2>/dev/null)")/dtc"
+if [ ! -f "${DTC_BIN}" ]; then
+    # Fallback: try sourcing Vivado settings for dtc
+    if [ -f /home/jiao/xilinx/Vivado/2024.2/settings64.sh ]; then
+        DTC_BIN="/home/jiao/xilinx/Vivado/2024.2/bin/dtc"
+    fi
+fi
+
+if [ -f "${DTC_BIN}" ]; then
+    DTS_SRC="${SCRIPT_DIR}/cim_kv260_overlay.dts"
+    DTBO_OUT="${PROJECT_ROOT}/kv260/deploy/cim_soc_kv260.dtbo"
+    "${DTC_BIN}" -I dts -O dtb -o "${DTBO_OUT}" "${DTS_SRC}" 2>/dev/null
+    if [ $? -eq 0 ]; then
+        echo "  DT overlay: ${DTBO_OUT} ($(wc -c < "${DTBO_OUT}") bytes)"
+    else
+        echo "  WARNING: dtc failed — DT overlay not generated"
+    fi
+else
+    echo "  WARNING: dtc not found — DT overlay not generated"
 fi
 
 echo ""
