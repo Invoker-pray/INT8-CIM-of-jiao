@@ -98,7 +98,7 @@ create_bd_cell -type ip -vlnv xilinx.com:ip:zynq_ultra_ps_e:3.5 ps_e
 
 Ubuntu镜像可以在[这里](https://people.canonical.com/~platform/images/xilinx/kria-ubuntu-22.04/) 或者[这里](https://ubuntu.com/download/amd#kria-k26)下载，文件名类似`iot-limerick-kria-classic-desktop-2204-****.img.xz`，下载完成之后可以用balenaetcher或者其他工具写入SD卡。
 
-我下载的镜像叫：`iot-limerick-kria-classic-desktop-2204-x04-20220517-68.img.xz`.
+我下载的镜像叫：`iot-limerick-kria-classic-desktop-2204-20240304-165.img.xz`.
 
 准备完镜像SD卡之后，将SD卡插入Kria KV260，连接电源和网线开机。
 
@@ -196,6 +196,23 @@ sudo bash install.sh -b KV260
 ```bash
 echo "127.0.0.1 $(hostname)" | sudo tee -a /etc/hosts
 ```
+
+安装pynq完成之后我们就可以进行上板测试了。
+
+首先把需要的文件传入kv260，然后加载bitstream，并且找到实际的uio编号。
+
+```bash
+
+# sudo fpgautil -b cim_soc_kv260.bit -o cim_soc_kv260.dtbo
+  for uio in /sys/class/uio/uio*; do
+    echo -n "$(basename $uio): addr="
+    cat $uio/maps/map0/addr 2>/dev/null || echo "N/A"
+    echo -n "  name="
+    cat $uio/name 2>/dev/null || echo "N/A"
+  done
+```
+
+找到之后在cim_driver.py中做对应修改，对上uio编号和地址。
 
 # 如果不用官方的PYNQ环境安装脚本的话...
 

@@ -1,19 +1,23 @@
 /dts-v1/;
 /plugin/;
 
-/ {
-    fragment@0 {
-        target = <&amba>;
-        __overlay__ {
-            #address-cells = <2>;
-            #size-cells = <2>;
+&fpga_full {
+    #address-cells = <2>;
+    #size-cells = <2>;
+    firmware-name = "cim_soc_kv260.bit.bin";
+    resets = <&zynqmp_reset 116>, <&zynqmp_reset 117>;
+};
 
-            cim_0: cim@a0000000 {
-                compatible = "generic-uio";
-                reg = <0x0 0xa0000000 0x0 0x4000>;
-                clock-names = "S_AXI_ACLK";
-                clocks = <&zynqmp_clk 71>;
-            };
-        };
+&amba {
+    afi0: afi0 {
+        compatible = "xlnx,afi-fpga";
+        config-afi = <0 0>, <1 0>, <2 0>, <3 0>, <4 0>, <5 0>, <6 0>, <7 0>, <8 0>, <9 0>, <10 0>, <11 0>, <12 0>, <13 0>, <14 0x0>, <15 0x000>;
+    };
+
+    cim_0: cim@a0000000 {
+        compatible = "generic-uio";
+        reg = <0x0 0xa0000000 0x0 0x4000>;
+        clocks = <&zynqmp_clk 71>;
+        clock-names = "s_axi_aclk";
     };
 };

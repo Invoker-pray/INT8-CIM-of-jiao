@@ -31,11 +31,14 @@ Hardware limits (cim_pkg.sv):
   TILE_COLS   = 16
 """
 
+import glob
+import mmap
 import numpy as np
 import os
+import struct
 import time
 
-# Try importing pynq; if not available, provide a mock for testing on PC
+# Try importing pynq; if not available, use UIO path (KV260 / non-PYNQ)
 try:
     from pynq import Overlay, MMIO
 
@@ -238,44 +241,119 @@ def maxpool2d(feat, kernel=2, stride=2):
 
 
 # ============================================================================
+# UIO-based MMIO — for KV260 / non-PYNQ platforms
+# ============================================================================
+class _UioMMIO:
+    """UIO-based register access replacing PYNQ MMIO on KV260.
+
+    The bitstream must be pre-loaded via fpgautil:
+        sudo fpgautil -b cim_soc_kv260.bit -o cim_soc_kv260.dtbo
+    This creates /dev/uioX with the CIM IP mapped.
+    """
+
+    _KV260_ADDRS = {0xa0000000, 0xb0000000}
+
+    def __init__(self, base_addr, size=0x4000):
+        self._base = base_addr
+        uio_id = self._find_uio(base_addr)
+        self._fd = os.open(f"/dev/uio{uio_id}", os.O_RDWR | os.O_SYNC)
+        self._mem = mmap.mmap(self._fd, size, offset=0)
+
+    def read(self, offset):
+        self._mem.seek(offset)
+        return struct.unpack("<I", self._mem.read(4))[0]
+
+    def write(self, offset, value):
+        self._mem.seek(offset)
+        self._mem.write(struct.pack("<I", value & 0xFFFFFFFF))
+
+    @staticmethod
+    def _find_uio(base_addr):
+        best = None
+        for uio_dir in sorted(glob.glob("/sys/class/uio/uio*")):
+            try:
+                with open(f"{uio_dir}/maps/map0/addr") as f:
+                    raw = f.read().strip()
+                # compare as integer — sysfs uses 64-bit format (e.g. 0x00000000a0000000)
+                if int(raw, 16) != base_addr:
+                    continue
+                uid = int(os.path.basename(uio_dir)[3:])
+                if best is None:
+                    best = uid
+                with open(f"{uio_dir}/name") as f:
+                    name = f.read().strip()
+                if "cim" in name.lower():
+                    best = uid
+                    break
+            except (OSError, ValueError):
+                continue
+        if best is None:
+            raise RuntimeError(
+                f"No UIO device at 0x{base_addr:08X}. Load bitstream first:\n"
+                f"  sudo fpgautil -b cim_soc_kv260.bit -o cim_soc_kv260.dtbo"
+            )
+        return best
+
+
+def _detect_kv260():
+    """Return True if running on KV260 (UIO device at 0xA0000000 exists)."""
+    try:
+        return _UioMMIO._find_uio(0xA0000000) is not None
+    except RuntimeError:
+        return False
+
+
+# ============================================================================
 # CIMDriver — low-level hardware interface
 # ============================================================================
 class CIMDriver:
-    """Low-level driver for CIM accelerator via AXI4-Lite MMIO."""
+    """Low-level driver for CIM accelerator via AXI4-Lite MMIO.
+
+    Platform auto-detection:
+      - KV260:  bitstream pre-loaded via fpgautil; accesses registers via UIO.
+      - PYNQ-Z2: loads bitstream via PYNQ Overlay; accesses registers via /dev/mem.
+    """
 
     def __init__(self, bitstream_path="cim_soc.bit", load=True, use_dma=False,
                  base_addr=None):
         """
         Args:
-            bitstream_path: path to .bit file (must have matching .hwh)
-            load: if True, load overlay immediately
-            use_dma: if True, route weight/input/bias through AXI-Stream +
-                     axi_dma (C3). This path still depends on a board-verified
-                     bitstream/hwh pair, so the safer default remains False.
-                     Pass use_dma=False to stay on the legacy MMIO path.
-            base_addr: base address of CIM IP in PL address space.
+            bitstream_path: path to .bit file (PYNQ-Z2 only; ignored on KV260)
+            load: if True and on PYNQ-Z2, load overlay via PYNQ
+            use_dma: DMA path (PYNQ-Z2 only; forced False on KV260)
+            base_addr: override CIM base address. Auto-detected if None.
                        PYNQ-Z2 default: 0x40000000; KV260: 0xA0000000.
         """
-        if not _HAS_PYNQ:
-            raise RuntimeError("pynq not available — run this on PYNQ-Z2")
-        if load:
-            self.overlay = Overlay(bitstream_path)
-        _base = base_addr if base_addr is not None else _DEFAULT_BASE
-        self.mmio = MMIO(_base, _MMIO_SIZE)
+        # --- platform detection ---
+        self._is_kv260 = _detect_kv260()
         self.use_dma = use_dma
         self.dma = None
         self._buf_w = None
         self._buf_x = None
         self._buf_b = None
-        if use_dma:
-            self._init_dma()
-            # Enable DMA path in hardware by setting CTRL[3]
-            self.mmio.write(_CTRL, _CTRL_STREAM_EN)
-            # Clear any stale stream status from previous runs
-            self.mmio.write(_CSR_STREAM_STATUS, 0)
-        # Do not pulse soft-reset during construction.
-        # Overlay download already places the IP in a known state, while some
-        # marginal board builds are sensitive to immediate CTRL[2] writes.
+
+        if self._is_kv260:
+            _base = 0xA0000000
+            self.mmio = _UioMMIO(_base, _MMIO_SIZE)
+            if use_dma:
+                print("[CIMDriver] DMA not yet supported on KV260 UIO path; "
+                      "forcing use_dma=False")
+                self.use_dma = False
+        elif _HAS_PYNQ:
+            _base = base_addr if base_addr is not None else _DEFAULT_BASE
+            if load:
+                self.overlay = Overlay(bitstream_path)
+            self.mmio = MMIO(_base, _MMIO_SIZE)
+            if use_dma:
+                self._init_dma()
+                self.mmio.write(_CTRL, _CTRL_STREAM_EN)
+                self.mmio.write(_CSR_STREAM_STATUS, 0)
+        else:
+            raise RuntimeError(
+                "pynq not available — run on PYNQ-Z2, or pre-load bitstream "
+                "on KV260 with: sudo fpgautil -b cim_soc_kv260.bit "
+                "-o cim_soc_kv260.dtbo"
+            )
 
     def _init_dma(self):
         """Prepare DMA channel + pinned CMA buffers. Called once from __init__
@@ -346,11 +424,16 @@ class CIMDriver:
         Useful for A/B bit-exact comparison. If enable=True and DMA was not
         initialized in __init__, lazily initializes. Writes CTRL[3] so the
         slave's MUX selects the correct path for subsequent load_* calls.
+
+        On KV260 (UIO path), DMA is not supported — no-op if enable=True.
         """
+        if self._is_kv260:
+            if enable:
+                print("[CIMDriver] DMA not supported on KV260; ignoring set_dma_mode(True)")
+            return
         if enable and self.dma is None:
             self._init_dma()
         self.use_dma = bool(enable)
-        # Update CTRL[3] without disturbing other bits; CTRL[0:2] are pulses.
         self.mmio.write(_CTRL, _CTRL_STREAM_EN if enable else 0)
 
     def soft_reset(self):

@@ -274,14 +274,12 @@ proc reconnect_reset_pins {src_pin dst_pins} {
     }
 }
 
-# CIM control path reset (via rst_ps)
-set rst_ps_periph [get_bd_pins -quiet rst_ps/peripheral_aresetn]
-if {$rst_ps_periph eq ""} {
-    set rst_ps_periph [get_bd_pins [lindex [get_bd_cells -quiet -filter {VLNV =~ *:proc_sys_reset:*}] 0]/peripheral_aresetn]
-}
-reconnect_reset_pins $rst_ps_periph [list \
-    [get_bd_pins cim_0/S_AXI_ARESETN] \
-]
+# CIM control path reset — DO NOT reconnect S_AXI_ARESETN.
+# apply_bd_automation creates an AXI SmartConnect whose reset shares a net
+# with cim_0/S_AXI_ARESETN.  Reconnecting only the CIM pin would orphan the
+# SmartConnect reset, leaving the interconnect stuck in reset and all AXI
+# transactions to the CIM hanging (RCU stall on ZynqMP HPM ports).
+# Let the block automation's reset connection stay intact.
 
 # DMA data/control path reset (via rst_dma)
 reconnect_reset_pins [get_bd_pins rst_dma/peripheral_aresetn] [list \

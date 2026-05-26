@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Sun May 24 21:01:57 2026" VIVADOVERSION="2024.2">
+<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Tue May 26 17:24:11 2026" VIVADOVERSION="2024.2">
 
   <SYSTEMINFO ARCH="zynquplus" BOARD="xilinx.com:kv260_som:part0:1.4" DEVICE="xck26" NAME="system" PACKAGE="sfvc784" SPEEDGRADE="-2LV"/>
 
@@ -2514,11 +2514,7 @@
             <CONNECTION INSTANCE="ps_e_axi_periph" PORT="M00_AXI_araddr"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="S_AXI_ARESETN" POLARITY="ACTIVE_LOW" SIGIS="rst" SIGNAME="rst_ps_peripheral_aresetn">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="rst_ps" PORT="peripheral_aresetn"/>
-          </CONNECTIONS>
-        </PORT>
+        <PORT DIR="I" NAME="S_AXI_ARESETN" POLARITY="ACTIVE_LOW" SIGIS="rst"/>
         <PORT DIR="I" LEFT="2" NAME="S_AXI_ARPROT" RIGHT="0" SIGIS="undef" SIGNAME="cim_0_S_AXI_ARPROT">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps_e_axi_periph" PORT="M00_AXI_arprot"/>
@@ -6764,11 +6760,7 @@
         <PORT DIR="O" LEFT="0" NAME="interconnect_aresetn" POLARITY="ACTIVE_LOW" RIGHT="0" SIGIS="rst"/>
         <PORT DIR="I" NAME="mb_debug_sys_rst" POLARITY="ACTIVE_HIGH" SIGIS="rst"/>
         <PORT DIR="O" NAME="mb_reset" POLARITY="ACTIVE_HIGH" SIGIS="rst"/>
-        <PORT DIR="O" LEFT="0" NAME="peripheral_aresetn" POLARITY="ACTIVE_LOW" RIGHT="0" SIGIS="rst" SIGNAME="rst_ps_peripheral_aresetn">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="cim_0" PORT="S_AXI_ARESETN"/>
-          </CONNECTIONS>
-        </PORT>
+        <PORT DIR="O" LEFT="0" NAME="peripheral_aresetn" POLARITY="ACTIVE_LOW" RIGHT="0" SIGIS="rst"/>
         <PORT DIR="O" LEFT="0" NAME="peripheral_reset" POLARITY="ACTIVE_HIGH" RIGHT="0" SIGIS="rst"/>
         <PORT CLKFREQUENCY="99999001" DIR="I" NAME="slowest_sync_clk" SIGIS="clk" SIGNAME="ps_e_pl_clk0">
           <CONNECTIONS>

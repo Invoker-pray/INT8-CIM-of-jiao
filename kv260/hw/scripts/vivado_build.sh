@@ -60,22 +60,26 @@ fi
 # Generate Device Tree Overlay (.dtbo) for KV260
 # ZynqMP requires a DT overlay to enable PS-PL AXI bridges after PL config.
 # -----------------------------------------------------------------------
-DTC_BIN="$(dirname "$(which vivado 2>/dev/null)")/dtc"
-if [ ! -f "${DTC_BIN}" ]; then
-    # Fallback: try sourcing Vivado settings for dtc
-    if [ -f /home/jiao/xilinx/Vivado/2024.2/settings64.sh ]; then
-        DTC_BIN="/home/jiao/xilinx/Vivado/2024.2/bin/dtc"
+# Find dtc: prefer system version (supports -@ for DT overlays)
+DTC_BIN=""
+for candidate in /usr/bin/dtc /bin/dtc "$(dirname "$(which vivado 2>/dev/null)")/dtc"; do
+    if [ -x "${candidate}" ]; then
+        DTC_BIN="${candidate}"
+        break
     fi
-fi
+done
 
-if [ -f "${DTC_BIN}" ]; then
+if [ -n "${DTC_BIN}" ] && [ -x "${DTC_BIN}" ]; then
     DTS_SRC="${SCRIPT_DIR}/cim_kv260_overlay.dts"
     DTBO_OUT="${PROJECT_ROOT}/kv260/deploy/cim_soc_kv260.dtbo"
-    "${DTC_BIN}" -I dts -O dtb -o "${DTBO_OUT}" "${DTS_SRC}" 2>/dev/null
-    if [ $? -eq 0 ]; then
+    # -@ enables __symbols__ / __fixups__ for DT plugin overlay resolution
+    if "${DTC_BIN}" -@ -I dts -O dtb -o "${DTBO_OUT}" "${DTS_SRC}" 2>/dev/null; then
         echo "  DT overlay: ${DTBO_OUT} ($(wc -c < "${DTBO_OUT}") bytes)"
     else
-        echo "  WARNING: dtc failed — DT overlay not generated"
+        # Fallback: try without -@ (older dtc)
+        "${DTC_BIN}" -I dts -O dtb -o "${DTBO_OUT}" "${DTS_SRC}" 2>/dev/null && \
+            echo "  DT overlay (no syms): ${DTBO_OUT} ($(wc -c < "${DTBO_OUT}") bytes)" || \
+            echo "  WARNING: dtc failed — DT overlay not generated"
     fi
 else
     echo "  WARNING: dtc not found — DT overlay not generated"

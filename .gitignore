@@ -145,3 +145,4 @@ hardware_MZU15B-48A-202208.zip
 # Temporary Vivado journals at project root
 vivado*.jou
 vivado*.log
+Kria-PYNQ/
