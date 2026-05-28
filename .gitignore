@@ -122,3 +122,14 @@ prompt_C3.txt
 
 cim_wzy/
 cim_wzy/**
+Kria-PYNQ/
+kria-vitis-platforms/
+vivado_proj_100mhz_pynq/
+
+picorv32/vivado_mzu15b_proj/
+cim_kv260/
+kv260/
+picorv32/hw/proj/
+
+# Misc
+.codex
