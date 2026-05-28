@@ -30,6 +30,7 @@ LDFLAGS = $(ARCH) -nostdlib -T firmware.lds -Wl,--no-relax
 # Data source
 DATA_DIR  ?= small_mlp_data
 IMAGE_IDX ?= 0
+BENCHMARK ?= 0     # 1 = multi-image PS-handshake mode (no image embedding)
 
 # Source files
 SRCS    = start.S firmware.c model_data.c

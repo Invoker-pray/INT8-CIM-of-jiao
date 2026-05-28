@@ -357,20 +357,55 @@ if {[get_property STATUS [get_runs impl_1]] ne "write_bitstream Complete!"} {
 puts "INFO: Bitstream generated."
 
 # ============================================================================
-# 7. Export for PYNQ
+# 7. Export for PYNQ (.bit, .hwh, .xsa)
 # ============================================================================
 set bit_file [glob ${OUT_DIR}/${PROJ_NAME}.runs/impl_1/system_wrapper.bit]
 set hwh_file [glob ${OUT_DIR}/${PROJ_NAME}.gen/sources_1/bd/system/hw_handoff/system.hwh]
+set hwdef_file [glob ${OUT_DIR}/${PROJ_NAME}.gen/sources_1/bd/system/hw_handoff/system.hwdef]
 
 file mkdir ${OUT_DIR}/pynq_deploy
 file copy -force ${bit_file} ${OUT_DIR}/pynq_deploy/cim_soc.bit
 file copy -force ${hwh_file} ${OUT_DIR}/pynq_deploy/cim_soc.hwh
 
+# Generate XSA (compatible with PYNQ v3.0+ / v3.1.x)
+set xsa_path ${OUT_DIR}/pynq_deploy/cim_soc.xsa
+write_hw_platform -fixed -include_bit -force ${xsa_path}
+
+# Post-process XSA: ensure sysdef.xml has <File Type="BIT"> for PYNQ v3.x
+# Vivado 2024.2 may not include it; inject from hwdef.xml if missing.
+set tmp_xsa ${OUT_DIR}/pynq_deploy/xsa_tmp
+file mkdir ${tmp_xsa}
+exec unzip -o ${xsa_path} -d ${tmp_xsa}
+
+set has_sysdef [file exists ${tmp_xsa}/sysdef.xml]
+if {${has_sysdef}} {
+    set has_bit [catch {exec grep -c {Type="BIT"} ${tmp_xsa}/sysdef.xml}]
+} else {
+    set has_bit 1
+}
+if {!${has_sysdef} || ${has_bit} != 0} {
+    puts "INFO: Fixing sysdef.xml in XSA (Vivado 2024.2 compat)..."
+    # Build proper sysdef.xml from hwdef.xml + BIT reference
+    set sysdef_src ${hwdef_file}
+    if {[file exists ${sysdef_src}]} {
+        file copy -force ${sysdef_src} ${tmp_xsa}/sysdef.xml
+        # Inject <File Type="BIT"> before </Project> closing tag
+        exec sed -i {s|</Project>|<File Type="BIT" Name="cim_soc.bit"/>\n</Project>|} ${tmp_xsa}/sysdef.xml
+        exec bash -c "cd ${tmp_xsa} && zip -qr ${xsa_path} ."
+        puts "INFO: sysdef.xml injected into XSA."
+    } else {
+        puts "WARN: hwdef.xml not found, XSA may not load in PYNQ v3.x."
+    }
+}
+file delete -force {*}[glob -nocomplain ${tmp_xsa}/*]
+file delete -force ${tmp_xsa}
+
 puts "============================================================"
 puts "BUILD COMPLETE"
 puts "  Bitstream : ${OUT_DIR}/pynq_deploy/cim_soc.bit"
 puts "  HWH       : ${OUT_DIR}/pynq_deploy/cim_soc.hwh"
-puts "  Upload both to PYNQ Jupyter, same directory, same name."
+puts "  XSA       : ${OUT_DIR}/pynq_deploy/cim_soc.xsa"
+puts "  Upload to PYNQ: use .xsa for v3.x, .bit+.hwh for v2.x"
 puts "============================================================"
 
 # Print utilization summary

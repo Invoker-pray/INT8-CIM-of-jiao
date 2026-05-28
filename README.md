@@ -1102,6 +1102,47 @@ python benchmark_e2e.py --use-dma --batch --no-fusion  # A/B 对比
 1. `cim_accel_core.sv` — bias_addr_cur 移除 cfg_bias_base
 2. `tb_cim_accel_core.sv` — Tests 7a/7b/7c + load_all_data_with_offsets() task
 
+## checkpoint 9 — PicoRV32 全优化升级 (2026.05.28)
+
+将 PicoRV32 版本从 checkpoint 2 的 50MHz MMIO-only 状态升级到与 ARM 版本对齐的最新架构。
+
+### 做了什么
+
+PicoRV32 版本自 checkpoint 2 后未更新 RTL 优化。本次升级将 Phase A (C1 100MHz TILE_SPLIT_FACTOR=4)、Phase B (IBUF/OBUF 双缓冲)、Phase C (Layer Fusion + WEIGHT_BASE/BIAS_BASE) 全部应用到 PicoRV32 版本。
+
+### 关键变更
+
+- **RTL 共享文件**：PicoRV32 直接使用 `hw/rtl/` 下的最新 CIM IP（已含 TILE_SPLIT_FACTOR=4、双缓冲、Fusion、WEIGHT_BASE/BIAS_BASE）
+- **Wrapper 更新**：`cim_axi_lite_slave_wrapper.v` 补充 M_AXIS_RESULT 端口（P0 S2MM，PicoRV32 不使用但需编译）、修正 stream 端口宽度适配 MAX_IN_DIM=1536
+- **Build 脚本**：FCLK_MHZ 50→100MHz，新增 `cim_axi_stream_source.sv` 编译依赖
+- **约束文件**：时钟周期 20ns→10ns，新增 `MAX_FANOUT=16` 约束
+- **Firmware**：新增 `cim_fusion_copy()` (OBUF→IBUF 内部拷贝), `cim_load_weights_at()` (多 layer 预加载到不同 offset), `cim_set_weight_base()` / `cim_set_bias_base()` (offset CSR), `cim_toggle_bank()` (乒乓 bank 切换)。FC1+FC2 权重一次全部加载，FC1→FC2 过渡通过 fusion 避免逐 byte MMIO 读回。
+- **模型**：保持 small_mlp (784→16→10)，FW 数据 13.4KB 适配 32KB BRAM
+
+### 架构说明
+
+PicoRV32 版本不使用 DMA stream 路径（stream 端口在 wrapper 中 tied 0）。数据加载仍通过 PicoRV32 → mini AXI master → CIM AXI4-Lite slave。PicoRV32 自主执行推理，PS 仅负责：
+1. 加载 firmware 到 FW BRAM（通过 AXI GPIO 控制 cpu_rst_n）
+2. 轮询 Result BRAM magic 等待推理完成
+3. 读取 prediction + logits
+
+### Build 结果 (2026.05.28)
+
+Bitstream 构建成功，100MHz FCLK，所有优化已应用。
+
+| 指标 | 旧 PicoRV32 (50MHz) | 新 PicoRV32 (100MHz) |
+|------|---------------------|---------------------|
+| 时钟频率 | 50 MHz | 100 MHz |
+| 时序 WNS | 干净 (WNS>0) | **-0.694 ns** (marginal, 与 ARM 版类似) |
+| FC→FC 过渡 | 逐 byte MMIO 读回 | Fusion 内部拷贝 |
+| 权重加载 | 每层独立加载 | 一次预加载双 layer |
+| BRAM primitives | — | 138 (weight/bias/IBUF/OBUF/FW/Result 全部 BRAM) |
+| LUT/FF | — | 见 utilization_report.txt |
+
+**时序说明**：WNS=-0.694 ns 与 ARM checkpoint 5 的情况类似（ARM 版 WNS 在 -0.7~-1.8ns 范围，常温上板仍正常工作）。关键路径在 CIM tile 的 `tile_psum_q2_reg → DSP48 → CARRY4` 链条，与 ARM 版本一致。如需安全余量可降频至 90MHz。
+
+Bitstream 路径: `bitstream&hwh/picorv32/cim_rv32_soc.{bit,hwh,xsa}`
+
 ## 五、各 checkpoint 上板命令速查
 
 | Checkpoint | 主要特性 | 关键 bitstream 文件 | 测试方式 |
@@ -1111,6 +1152,7 @@ python benchmark_e2e.py --use-dma --batch --no-fusion  # A/B 对比
 | 3 | C3 DMA + P0 S2MM, 60MHz | `checkpoint3/cim_soc.bit` | `benchmark_e2e.py --model lenet5` |
 | 4 | Phase A 100MHz (TILE_SPLIT=4) | `checkpoint4/cim_soc.bit` | `benchmark_e2e.py --model lenet5` |
 | 5 | Phase B 双缓冲 + Phase C v10 Layer Fusion | `checkpoint5/cim_soc.bit` | `benchmark_e2e.py --use-dma --batch` |
+| 9 | PicoRV32 全优化 (100MHz + 双缓冲 + Fusion + weight_base) | `picorv32/cim_rv32_soc.{bit,hwh,xsa}` | PS 加载 FW → PicoRV32 自主推理 (WNS=-0.694) |
 
 # 坑
 

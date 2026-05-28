@@ -6,10 +6,12 @@
 // This wrapper instantiates the real cim_axi_lite_slave.sv module with its
 // default parameters and exposes identical ports.
 //
-// Usage in vivado_build.tcl:
-//   1. Add this file to the project  (add_files ... cim_axi_lite_slave_wrapper.v)
-//   2. Replace line 87 with:
-//        create_bd_cell -type module -reference cim_axi_lite_slave_wrapper cim_0
+// For BD flows without DMA (PicoRV32), stream ports are tied off.
+// For DMA flows (ARM), use cim_top_wrapper.v instead.
+//
+// NOTE: stream port widths below are hard-coded to match the current
+// cim_pkg defaults (MAX_IN_DIM=1536, MAX_OUT_DIM=256, TILE_ROWS=16).
+// If these change in cim_pkg, the widths here must be updated.
 // ============================================================================
 
 module cim_axi_lite_slave_wrapper #(
@@ -49,9 +51,24 @@ module cim_axi_lite_slave_wrapper #(
     output wire                  S_AXI_RVALID,
     input  wire                  S_AXI_RREADY,
 
+    // ---- AXI4-Stream Master for result read-back (P0 S2MM, unused in no-DMA BD) ----
+    output wire [AXI_DATA_W-1:0] M_AXIS_RESULT_TDATA,
+    output wire                  M_AXIS_RESULT_TVALID,
+    input  wire                  M_AXIS_RESULT_TREADY,
+    output wire                  M_AXIS_RESULT_TLAST,
+
     // ---- Interrupt ----
     output wire irq_done
 );
+
+  // Hard-coded port widths for current cim_pkg (MAX_IN_DIM=1536, MAX_OUT_DIM=256):
+  //   TILE_ROWS=16            → wsram_wr_row        = 4 bits  ([3:0])
+  //   WSRAM_DEPTH=1536        → wsram_wr_tile_idx   = 11 bits ([10:0])
+  //   TILE_COLS*WEIGHT_W=128  → wsram_wr_row_data   = 128 bits
+  //   IBUF_TILES=96           → ibuf_wr_tile_idx    = 7 bits  ([6:0])
+  //   TILE_COLS*INPUT_W=128   → ibuf_wr_tile_data   = 128 bits
+  //   BSRAM_DEPTH=256         → bsram_wr_addr       = 8 bits  ([7:0])
+  //   bsram_wr_data           → 32 bits
 
   cim_axi_lite_slave #(
       .AXI_ADDR_W(AXI_ADDR_W),
@@ -86,33 +103,36 @@ module cim_axi_lite_slave_wrapper #(
 
       .irq_done(irq_done),
 
-      // C3 stream-sink side-band — unused in the legacy BD flow; commit 4
-      // switches the BD top to cim_top_wrapper.v, which wires these to the
-      // new sink. Inputs tied 0 → CTRL[3] can still be written but with all
-      // stream_*_wr_en=0 the MUX is a no-op, preserving legacy behavior.
-      // Widths hard-coded to match cim_pkg defaults:
-      //   TILE_ROWS=16, WSRAM_DEPTH=392 (9b), MAX_IN_DIM/TILE_COLS=49 (6b),
-      //   BSRAM_DEPTH=128 (7b), row/tile data = 128b.
+      // C3 stream-sink side-band — tied 0 (no DMA in non-cim_top flows)
       .stream_path_en          (),
       .cfg_dest                (),
       .cfg_len                 (),
       .cfg_base_addr           (),
+      .cfg_continue            (),
       .cfg_start               (),
       .status_clear            (),
       .stream_busy             (1'b0),
       .stream_done             (1'b0),
       .stream_overflow         (1'b0),
       .stream_underflow        (1'b0),
+
+      // C3 stream-sink write ports — tied 0 (legacy MMIO path only)
       .stream_wsram_wr_en      (1'b0),
       .stream_wsram_wr_row     (4'b0),
-      .stream_wsram_wr_tile_idx(9'b0),
+      .stream_wsram_wr_tile_idx(11'b0),
       .stream_wsram_wr_row_data(128'b0),
       .stream_ibuf_wr_en       (1'b0),
-      .stream_ibuf_wr_tile_idx (6'b0),
+      .stream_ibuf_wr_tile_idx (7'b0),
       .stream_ibuf_wr_tile_data(128'b0),
       .stream_bsram_wr_en      (1'b0),
-      .stream_bsram_wr_addr    (7'b0),
-      .stream_bsram_wr_data    (32'b0)
+      .stream_bsram_wr_addr    (8'b0),
+      .stream_bsram_wr_data    (32'b0),
+
+      // P0: M_AXIS_RESULT — tied off (no DMA S2MM in non-cim_top flows)
+      .M_AXIS_RESULT_TDATA (M_AXIS_RESULT_TDATA),
+      .M_AXIS_RESULT_TVALID(M_AXIS_RESULT_TVALID),
+      .M_AXIS_RESULT_TREADY(1'b0),
+      .M_AXIS_RESULT_TLAST (M_AXIS_RESULT_TLAST)
   );
 
 endmodule

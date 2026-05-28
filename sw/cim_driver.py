@@ -244,32 +244,82 @@ class CIMDriver:
     def __init__(self, bitstream_path="cim_soc.bit", load=True, use_dma=False):
         """
         Args:
-            bitstream_path: path to .bit file (must have matching .hwh)
+            bitstream_path: path to .bit, .hwh, or .xsa file.
             load: if True, load overlay immediately
             use_dma: if True, route weight/input/bias through AXI-Stream +
-                     axi_dma (C3). This path still depends on a board-verified
-                     bitstream/hwh pair, so the safer default remains False.
-                     Pass use_dma=False to stay on the legacy MMIO path.
+                     axi_dma (C3). Requires DMA IP in bitstream.
         """
         if not _HAS_PYNQ:
             raise RuntimeError("pynq not available — run this on PYNQ-Z2")
-        if load:
-            self.overlay = Overlay(bitstream_path)
-        self.mmio = MMIO(_BASE, _MMIO_SIZE)
+        # Init DMA state early so _load_bitstream fallback can override
         self.use_dma = use_dma
         self.dma = None
         self._buf_w = None
         self._buf_x = None
         self._buf_b = None
-        if use_dma:
+        if load:
+            self._load_bitstream(bitstream_path)
+        self.mmio = MMIO(_BASE, _MMIO_SIZE)
+        if self.use_dma:
             self._init_dma()
             # Enable DMA path in hardware by setting CTRL[3]
             self.mmio.write(_CTRL, _CTRL_STREAM_EN)
             # Clear any stale stream status from previous runs
             self.mmio.write(_CSR_STREAM_STATUS, 0)
-        # Do not pulse soft-reset during construction.
-        # Overlay download already places the IP in a known state, while some
-        # marginal board builds are sensitive to immediate CTRL[2] writes.
+
+    def _load_bitstream(self, bitstream_path):
+        """Load bitstream, handling PYNQ v2.x and v3.0.x API differences.
+
+        PYNQ v3.0.1 has a known bug: Overlay() on .bit files passes the .bit
+        directly to pynqmetadata instead of auto-discovering the companion .hwh.
+        This method tries the standard Overlay() first, then falls back to
+        Bitstream.download() for FPGA programming.
+        """
+        from pynq import Bitstream
+        import os as _os
+
+        # Determine actual .bit path regardless of what the user passed
+        _ext = _os.path.splitext(bitstream_path)[1].lower()
+        if _ext == '.hwh':
+            _candidate = bitstream_path[:-4] + '.bit'
+            if _os.path.exists(_candidate):
+                _bit_path = _candidate
+            else:
+                raise RuntimeError(
+                    f"No .bit found for .hwh: {bitstream_path}. "
+                    f"Expected {_candidate}"
+                )
+        elif _ext == '.xsa':
+            # Extract .bit name from XSA — same basename but .bit
+            _bit_path = bitstream_path[:-4] + '.bit'
+        else:
+            _bit_path = bitstream_path
+
+        # --- Try standard Overlay() path (works on PYNQ v2.x) ---
+        try:
+            self.overlay = Overlay(bitstream_path, ignore_version=True)
+            print(f"[CIMDriver] Overlay loaded from {bitstream_path}")
+            return
+        except Exception as _e:
+            _msg = str(_e)
+            if "not a valid input" not in _msg and \
+               "Unknown file format" not in _msg and \
+               "sysdef.xml" not in _msg:
+                raise
+
+        # --- PYNQ v3.0.1 fallback: Bitstream.download() + MMIO-only ---
+        print(f"[CIMDriver] Overlay() failed (PYNQ v3.0.x metadata bug), "
+              f"falling back to Bitstream.download('{_bit_path}') ...")
+        Bitstream(_bit_path).download()
+        print(f"[CIMDriver] Bitstream downloaded OK")
+
+        # DMA requires overlay IP metadata which we can't get without a working
+        # Overlay(). Force MMIO-only mode.
+        if self.use_dma:
+            print(f"[CIMDriver] WARNING: DMA requested but Overlay() failed. "
+                  f"Forcing use_dma=False.")
+            self.use_dma = False
+        self.overlay = type('_DummyOL', (), {'ip_dict': {}})()
 
     def _init_dma(self):
         """Prepare DMA channel + pinned CMA buffers. Called once from __init__

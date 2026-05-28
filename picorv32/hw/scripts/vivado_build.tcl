@@ -2,6 +2,10 @@
 # vivado_build.tcl — PicoRV32 + CIM SoC: PS loads firmware at runtime
 # ============================================================================
 #
+# Phase A (C1): 100 MHz with TILE_SPLIT_FACTOR=4
+# Phase B: IBUF/OBUF double-buffer ping-pong (CSR_PING_CTRL)
+# Phase C: Layer Fusion OBUF→IBUF + WEIGHT_BASE/BIAS_BASE
+#
 # PS AXI address map:
 #   0x4000_0000 (32KB) : FW BRAM port B    — PS writes firmware here
 #   0x4200_0000 (4KB)  : Result BRAM port B — PS reads inference results
@@ -19,7 +23,7 @@
 set PROJ_NAME  "cim_rv32_soc"
 set PART       "xc7z020clg400-1"
 set BOARD_PART "tul.com.tw:pynq-z2:part0:1.0"
-set FCLK_MHZ   50
+set FCLK_MHZ   100
 set N_JOBS     4
 set CIM_HW     "hw"
 set RV_HW      "picorv32/hw"
@@ -51,6 +55,7 @@ set all_files [list \
     ${CIM_HW}/rtl/core/cim_accel_core.sv \
     ${CIM_HW}/rtl/axi/cim_axi_lite_slave.sv \
     ${CIM_HW}/rtl/axi/cim_axi_lite_slave_wrapper.v \
+    ${CIM_HW}/rtl/axi/cim_axi_stream_source.sv \
     ${RV_HW}/rtl/riscv/picorv32.v \
     ${RV_HW}/rtl/riscv/uart_tx.sv \
     ${RV_HW}/rtl/riscv/picorv32_cim_bridge.sv \
@@ -92,7 +97,6 @@ set_property -dict [list \
 create_bd_cell -type module -reference cim_rv32_top_wrapper rv32
 
 # Set FREQ_HZ on rv32/clk to suppress "no FREQ_HZ parameter" warning
-# and ensure Vivado knows the clock frequency for timing propagation
 set fclk_hz [expr {${FCLK_MHZ} * 1000000}]
 set_property CONFIG.FREQ_HZ ${fclk_hz} [get_bd_pins rv32/clk]
 
@@ -110,7 +114,6 @@ set_property -dict [list \
     CONFIG.C_ALL_OUTPUTS   {1} \
     CONFIG.C_DOUT_DEFAULT  {0x00000000} \
 ] [get_bd_cells gpio_cpu_rst]
-# GPIO output bit[0] -> cpu_rst_n
 connect_bd_net [get_bd_pins gpio_cpu_rst/gpio_io_o] [get_bd_pins rv32/cpu_rst_n]
 
 # ---- 3e. FW BRAM Controller (32KB, port B) ----
@@ -121,13 +124,11 @@ set_property -dict [list \
     CONFIG.PROTOCOL         {AXI4LITE} \
 ] [get_bd_cells fw_bram_ctrl]
 
-# Connect data/control signals
 connect_bd_net [get_bd_pins fw_bram_ctrl/bram_en_a]     [get_bd_pins rv32/fw_b_en]
 connect_bd_net [get_bd_pins fw_bram_ctrl/bram_we_a]     [get_bd_pins rv32/fw_b_we]
 connect_bd_net [get_bd_pins fw_bram_ctrl/bram_wrdata_a] [get_bd_pins rv32/fw_b_wdata]
 connect_bd_net [get_bd_pins fw_bram_ctrl/bram_rddata_a] [get_bd_pins rv32/fw_b_rdata]
 
-# Address slice: extract [14:0] from BRAM ctrl's wider address bus
 create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 fw_addr_slice
 set_property -dict [list \
     CONFIG.DIN_WIDTH  {32} \
@@ -162,16 +163,12 @@ connect_bd_net [get_bd_pins res_bram_ctrl/bram_addr_a] [get_bd_pins res_addr_sli
 connect_bd_net [get_bd_pins res_addr_slice/Dout]       [get_bd_pins rv32/res_b_addr]
 
 # ---- 3g. AXI connections (PS GP0 -> all 3 slaves via interconnect) ----
-# First slave creates the interconnect; subsequent slaves reuse it.
-# We do NOT hardcode the interconnect name (e.g. "ps7_axi_periph") because
-# Vivado 2024.2 may auto-name it differently (axi_interconnect_0, axi_smc, etc).
 apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config [list \
     Clk_master {/ps7/FCLK_CLK0} Clk_slave {Auto} Clk_xbar {Auto} \
     Master {/ps7/M_AXI_GP0} Slave {/fw_bram_ctrl/S_AXI} \
     intc_ip {New AXI Interconnect} master_apm {0}] \
     [get_bd_intf_pins fw_bram_ctrl/S_AXI]
 
-# Dynamically find the interconnect that was just created
 set intc_cell [get_bd_cells -quiet -filter {VLNV =~ *:axi_interconnect:* || VLNV =~ *:smartconnect:*}]
 if {$intc_cell eq ""} {
     puts "ERROR: Cannot find AXI interconnect after first apply_bd_automation!"
@@ -259,17 +256,42 @@ if {[get_property STATUS [get_runs impl_1]] ne "write_bitstream Complete!"} {
 puts "INFO: Bitstream generated."
 
 # ============================================================================
-# 7. Export for PYNQ
+# 7. Export for PYNQ (.bit, .hwh, .xsa)
 # ============================================================================
 file mkdir ${OUT_DIR}/deploy
 set bf [glob ${OUT_DIR}/${PROJ_NAME}.runs/impl_1/*.bit]
 file copy -force $bf ${OUT_DIR}/deploy/cim_rv32_soc.bit
 write_hw_platform -fixed -include_bit -force ${OUT_DIR}/deploy/cim_rv32_soc.xsa
-catch {exec unzip -o -j ${OUT_DIR}/deploy/cim_rv32_soc.xsa *.hwh -d ${OUT_DIR}/deploy/}
-foreach h [glob -nocomplain ${OUT_DIR}/deploy/*.hwh] {
-    file rename -force $h ${OUT_DIR}/deploy/cim_rv32_soc.hwh
+
+# Post-process XSA: ensure sysdef.xml has proper format for PYNQ v3.x
+set tmp_xsa ${OUT_DIR}/deploy/xsa_tmp
+file mkdir ${tmp_xsa}
+exec unzip -o ${OUT_DIR}/deploy/cim_rv32_soc.xsa -d ${tmp_xsa}
+
+# Extract .hwh from XSA
+foreach hwh [glob -nocomplain ${tmp_xsa}/*.hwh] {
+    file copy -force $hwh ${OUT_DIR}/deploy/cim_rv32_soc.hwh
     break
 }
+
+# Verify sysdef.xml has <File Type="BIT"> — fix if missing (Vivado 2024.2 compat)
+if {[file exists ${tmp_xsa}/sysdef.xml]} {
+    set rc [catch {exec grep -c {Type=\"BIT\"} ${tmp_xsa}/sysdef.xml}]
+} else {
+    set rc 1
+}
+if {${rc} != 0} {
+    puts "INFO: Fixing sysdef.xml in XSA..."
+    set hwdef [glob -nocomplain ${tmp_xsa}/hwdef.xml]
+    if {[file exists ${hwdef}]} {
+        file copy -force ${hwdef} ${tmp_xsa}/sysdef.xml
+        exec sed -i {s|</Project>|<File Type="BIT" Name="cim_rv32_soc.bit"/>\n</Project>|} ${tmp_xsa}/sysdef.xml
+        exec bash -c "cd ${tmp_xsa} && zip -qr ${OUT_DIR}/deploy/cim_rv32_soc.xsa ."
+        puts "INFO: sysdef.xml fixed."
+    }
+}
+file delete -force {*}[glob -nocomplain ${tmp_xsa}/*]
+file delete -force ${tmp_xsa}
 
 # ============================================================================
 # 8. Reports
@@ -292,7 +314,7 @@ if {$wns < 0} {
 close_design
 
 puts "============================================================"
-puts "DONE: ${OUT_DIR}/deploy/cim_rv32_soc.{bit,hwh}"
+puts "DONE: ${OUT_DIR}/deploy/cim_rv32_soc.{bit,hwh,xsa}"
 puts "PS address map:"
 puts "  0x4000_0000 (32KB) : FW BRAM"
 puts "  0x4200_0000 (4KB)  : Result BRAM"
