@@ -131,5 +131,22 @@ cim_kv260/
 kv260/
 picorv32/hw/proj/
 
+# ---- LaTeX / Paper build artifacts ----
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.out
+*.run.xml
+*.toc
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.xdv
+*.log
+
+# ---- Thesis paper build outputs (PDFs in paper dirs, keep fig/ PDFs tracked) ----
+Thesis/*/paper/paper.pdf
+
 # Misc
 .codex
