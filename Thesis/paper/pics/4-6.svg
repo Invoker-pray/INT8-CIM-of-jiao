@@ -35,7 +35,7 @@
      id="title1">LeNet-5 End-to-End Latency Breakdown</title>
   <desc
      style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
-     id="desc1">Donut chart showing latency breakdown for LeNet-5 inference on 200 MNIST images at 100 MHz. MVM ping-pong wall time dominates at 86.9% (25.36 ms). Total: 29.18 ms/image at 34.3 fps.</desc>
+     id="desc1">Donut chart showing latency breakdown for LeNet-5 inference on 200 MNIST images at 100 MHz. MVM ping-pong wall time dominates at 87.5% (24.91 ms). Total: 28.47 ms/image at 35.1 fps.</desc>
   <defs
      id="defs34">
     <marker
@@ -370,7 +370,7 @@
   <!-- inner start: 230+72*cos(-90°)=230, 270+72*sin(-90°)=198 -->
   <!-- inner end: 230+72*(-0.7322)=177.28, 270+72*(-0.6810)=220.97 -->
   <path
-     d="M 230 110&#10;           A 160 160 0 1 1 112.85 161.04&#10;           L 177.28 220.97&#10;           A 72 72 0 1 0 230 198&#10;           Z"
+     d="M 230.00 110.00&#10;           A 160 160 0 1 1 116.83 156.89&#10;           L 179.07 219.10&#10;           A 72 72 0 1 0 230.00 198.00&#10;           Z"
      fill="#F5B461"
      stroke="white"
      stroke-width="2"
@@ -382,7 +382,7 @@
   <!-- outer end: 230+160*(-0.5314)=144.98, 270+160*(-0.8471)=134.66 -->
   <!-- inner end: 230+72*(-0.5314)=191.74, 270+72*(-0.8471)=209.01 -->
   <path
-     d="M 112.85 161.04&#10;           A 160 160 0 0 1 144.98 134.66&#10;           L 191.74 209.01&#10;           A 72 72 0 0 0 177.28 220.97&#10;           Z"
+     d="M 116.83 156.89&#10;           A 160 160 0 0 1 149.16 131.92&#10;           L 193.62 207.87&#10;           A 72 72 0 0 0 179.07 219.10&#10;           Z"
      fill="#A8D5E2"
      stroke="white"
      stroke-width="2"
@@ -394,7 +394,7 @@
   <!-- outer end: 230+160*(-0.2924)=183.22, 270+160*(-0.9563)=117.00 -->
   <!-- inner end: 230+72*(-0.2924)=208.94, 270+72*(-0.9563)=201.14 -->
   <path
-     d="M 144.98 134.66&#10;           A 160 160 0 0 1 183.22 117.00&#10;           L 208.94 201.14&#10;           A 72 72 0 0 0 191.74 209.01&#10;           Z"
+     d="M 149.16 131.92&#10;           A 160 160 0 0 1 189.48 115.21&#10;           L 211.77 200.35&#10;           A 72 72 0 0 0 193.62 207.87&#10;           Z"
      fill="#B5D99C"
      stroke="white"
      stroke-width="2"
@@ -406,7 +406,7 @@
   <!-- outer end: 230+160*(-0.1504)=205.94, 270+160*(-0.9886)=112.18 -->
   <!-- inner end: 230+72*(-0.1504)=219.17, 270+72*(-0.9886)=198.82 -->
   <path
-     d="M 183.22 117.00&#10;           A 160 160 0 0 1 205.94 112.18&#10;           L 219.17 198.82&#10;           A 72 72 0 0 0 208.94 201.14&#10;           Z"
+     d="M 189.48 115.21&#10;           A 160 160 0 0 1 209.93 111.26&#10;           L 220.97 198.57&#10;           A 72 72 0 0 0 211.77 200.35&#10;           Z"
      fill="#C9B6E4"
      stroke="white"
      stroke-width="2"
@@ -418,7 +418,7 @@
   <!-- outer end: 230+160*(-0.0252)=225.97, 270+160*(-0.9997)=109.95 -->
   <!-- inner end: 230+72*(-0.0252)=228.19, 270+72*(-0.9997)=197.98 -->
   <path
-     d="M 205.94 112.18&#10;           A 160 160 0 0 1 225.97 109.95&#10;           L 228.19 197.98&#10;           A 72 72 0 0 0 219.17 198.82&#10;           Z"
+     d="M 209.93 111.26&#10;           A 160 160 0 0 1 228.23 110.01&#10;           L 229.21 198.00&#10;           A 72 72 0 0 0 220.97 198.57&#10;           Z"
      fill="#D8D8D8"
      stroke="white"
      stroke-width="2"
@@ -429,7 +429,7 @@
   <!-- end 270°: cos=0, sin=-1 → back to 230,110 -->
   <!-- inner end: 230, 198 -->
   <path
-     d="M 225.97 109.95&#10;           A 160 160 0 0 1 230 110&#10;           L 230 198&#10;           A 72 72 0 0 0 228.19 197.98&#10;           Z"
+     d="M 228.23 110.01&#10;           A 160 160 0 0 1 230.00 110.00&#10;           L 230.00 198.00&#10;           A 72 72 0 0 0 229.21 198.00&#10;           Z"
      fill="#F5E6A8"
      stroke="white"
      stroke-width="2"
@@ -465,7 +465,7 @@
      font-weight="bold"
      fill="#111"
      style="fill:rgb(17, 17, 17);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:14px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
-     id="text41">29.18 ms</text>
+     id="text41">28.47 ms</text>
   <text
      x="230"
      y="277"
@@ -483,7 +483,7 @@
      font-size="11"
      fill="#555"
      style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:11px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
-     id="text43">34.3 fps</text>
+     id="text43">35.1 fps</text>
   <!-- ===== Callout label: MVM (large slice, label inside) ===== -->
   <!-- centroid angle ≈ (-90 + 222.84)/2 = 66.42° → mid-arc label inside slice -->
   <!-- mid angle = (−90 + 222.84)/2 = 66.42° mid label radius ~110 -->
@@ -506,7 +506,7 @@
      font-size="10"
      fill="#6B3A00"
      style="fill:rgb(107, 58, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
-     id="text45">25.36 ms · 86.9%</text>
+     id="text45">24.91 ms · 87.5%</text>
   <!-- Callout: im2col — leader line to top-left -->
   <line
      x1="130"
@@ -542,7 +542,7 @@
      font-size="10"
      fill="#2E5C8A"
      style="fill:rgb(46, 92, 138);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
-     id="text47">1.22 ms · 4.2%</text>
+     id="text47">1.16 ms · 4.1%</text>
   <!-- Callout: MaxPool — leader line to top -->
   <line
      x1="164"
@@ -579,7 +579,7 @@
      font-size="10"
      fill="#4A7A2E"
      style="color:#fbfbfe;font-weight:400;font-size:10px;font-family:'Times New Roman', Times, serif;dominant-baseline:auto;text-anchor:middle;opacity:1;fill:#4a7a2e;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter"
-     id="text49">1.24 ms · 4.2%</text>
+     id="text49">1.24 ms · 4.4%</text>
   <!-- Callout: SQ-mapping -->
   <line
      x1="195"
@@ -616,7 +616,7 @@
      font-size="10"
      fill="#7B5EA7"
      style="color:#fbfbfe;font-weight:400;font-size:10px;font-family:'Times New Roman', Times, serif;dominant-baseline:auto;text-anchor:middle;opacity:1;fill:#7b5ea7;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter"
-     id="text51">0.66 ms · 2.3%</text>
+     id="text51">0.59 ms · 2.1%</text>
   <!-- Callout: Setup -->
   <line
      x1="216"
@@ -653,7 +653,7 @@
      font-size="10"
      fill="#555"
      style="color:#fbfbfe;font-weight:400;font-size:10px;font-family:'Times New Roman', Times, serif;dominant-baseline:auto;text-anchor:middle;opacity:1;fill:#555555;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter"
-     id="text53">0.59 ms · 2.0%</text>
+     id="text53">0.52 ms · 1.8%</text>
   <!-- Callout: argmax (tiny, leader line up) -->
   <circle
      cx="228"
@@ -680,7 +680,7 @@
      font-size="10"
      fill="#8A7A00"
      style="color:#fbfbfe;font-weight:400;font-size:10px;font-family:'Times New Roman', Times, serif;dominant-baseline:auto;text-anchor:middle;opacity:1;fill:#8a7a00;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter"
-     id="text55">0.11 ms · 0.4%</text>
+     id="text55">0.05 ms · 0.2%</text>
   <!-- ===== LEGEND (right side) ===== -->
   <text
      x="440"
@@ -718,7 +718,7 @@
      font-size="10"
      fill="#555"
      style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;text-anchor:start;dominant-baseline:auto"
-     id="text58">25.36 ms  (86.9%)</text>
+     id="text58">24.91 ms  (87.5%)</text>
   <!-- Row 2 -->
   <rect
      x="440"
@@ -746,7 +746,7 @@
      font-size="10"
      fill="#555"
      style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;text-anchor:start;dominant-baseline:auto"
-     id="text60">1.22 ms  (4.2%)</text>
+     id="text60">1.16 ms  (4.1%)</text>
   <!-- Row 3 -->
   <rect
      x="440"
@@ -774,7 +774,7 @@
      font-size="10"
      fill="#555"
      style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;text-anchor:start;dominant-baseline:auto"
-     id="text62">1.24 ms  (4.2%)</text>
+     id="text62">1.24 ms  (4.4%)</text>
   <!-- Row 4 -->
   <rect
      x="440"
@@ -802,7 +802,7 @@
      font-size="10"
      fill="#555"
      style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;text-anchor:start;dominant-baseline:auto"
-     id="text64">0.66 ms  (2.3%)</text>
+     id="text64">0.59 ms  (2.1%)</text>
   <!-- Row 5 -->
   <rect
      x="440"
@@ -830,7 +830,7 @@
      font-size="10"
      fill="#555"
      style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;text-anchor:start;dominant-baseline:auto"
-     id="text66">0.59 ms  (2.0%)</text>
+     id="text66">0.52 ms  (1.8%)</text>
   <!-- Row 6 -->
   <rect
      x="440"
@@ -858,7 +858,7 @@
      font-size="10"
      fill="#555"
      style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;text-anchor:start;dominant-baseline:auto"
-     id="text68">0.11 ms  (0.4%)</text>
+     id="text68">0.05 ms  (0.2%)</text>
   <!-- Total separator + total line -->
   <line
      x1="440"
@@ -885,7 +885,7 @@
      font-size="10"
      fill="#555"
      style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;text-anchor:start;dominant-baseline:auto"
-     id="text70">29.18 ms / image</text>
+     id="text70">28.47 ms / image</text>
   <!-- ===== Bottom annotation ===== -->
   <line
      x1="60"

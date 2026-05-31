@@ -558,7 +558,7 @@
      font-size="9"
      fill="#111111"
      style="fill:rgb(17, 17, 17);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
-     id="text49">17,374</text>
+     id="text49">17,364</text>
   <text
      x="162"
      y="276"
@@ -567,7 +567,7 @@
      font-size="9"
      fill="#111111"
      style="fill:rgb(17, 17, 17);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
-     id="text50">17,023</text>
+     id="text50">17,042</text>
   <!-- Percent labels inside bars (if tall enough) -->
   <text
      x="121"
@@ -577,7 +577,7 @@
      font-size="9"
      fill="#1A3A5C"
      style="fill:rgb(26, 58, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
-     id="text51">32.66%</text>
+     id="text51">32.64%</text>
   <text
      x="162"
      y="345"
@@ -586,7 +586,7 @@
      font-size="9"
      fill="#6B3A0A"
      style="fill:rgb(107, 58, 10);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
-     id="text52">32.00%</text>
+     id="text52">32.03%</text>
   <!-- X label -->
   <text
      x="153"
@@ -630,7 +630,7 @@
      font-size="9"
      fill="#111111"
      style="fill:rgb(17, 17, 17);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
-     id="text54">10,911</text>
+     id="text54">10,888</text>
   <text
      x="304"
      y="358"
@@ -639,7 +639,7 @@
      font-size="9"
      fill="#111111"
      style="fill:rgb(17, 17, 17);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
-     id="text55">8,594</text>
+     id="text55">8,660</text>
   <!-- Percent outside bars (too small for inside) -->
   <text
      x="263"
@@ -649,7 +649,7 @@
      font-size="9"
      fill="#1A3A5C"
      style="fill:rgb(26, 58, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
-     id="text56">10.25%</text>
+     id="text56">10.23%</text>
   <text
      x="304"
      y="345"
@@ -658,7 +658,7 @@
      font-size="9"
      fill="#6B3A0A"
      style="fill:rgb(107, 58, 10);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
-     id="text57">8.08%</text>
+     id="text57">8.14%</text>
   <!-- X label -->
   <text
      x="295"
