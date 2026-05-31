@@ -73,12 +73,48 @@ def parse_args():
         help="Disable Phase C FC-layer fusion for A/B comparison",
     )
     p.add_argument("--verbose", action="store_true", help="Print per-image prediction")
+    p.add_argument(
+        "--out-name",
+        default=None,
+        help="Exact CSV basename (no extension). If omitted, a timestamped "
+        "name benchmark_<model>_<ts> is used. Used by benchmark.py to "
+        "produce precisely-named files like arm_dma_batch_<model>.csv.",
+    )
     return p.parse_args()
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+def make_csv_basename(args):
+    """Build the CSV basename from the run configuration.
+
+    Pattern:  arm{_dma}{_batch}{_no-fusion}_{data_dir}
+      - controller prefix is always "arm" here (ARM PS controls the run)
+      - "_dma"        present iff --use-dma
+      - "_batch"      present iff --batch
+      - "_no-fusion"  present iff --no-fusion
+      - data_dir is the basename of --data_dir (e.g. lenet5_data, mnist_real_data,
+        small_mlp_data), trailing slashes stripped
+
+    Examples:
+      arm_lenet5_data                      (MMIO, no batch, fusion on)
+      arm_dma_lenet5_data                  (DMA only)
+      arm_dma_batch_lenet5_data            (DMA + batch, fusion on)
+      arm_dma_batch_no-fusion_lenet5_data  (DMA + batch, fusion off)
+    """
+    data_tag = os.path.basename(os.path.normpath(args.data_dir))
+    parts = ["arm"]
+    if args.use_dma:
+        parts.append("dma")
+    if args.batch:
+        parts.append("batch")
+    if args.no_fusion:
+        parts.append("no-fusion")
+    parts.append(data_tag)
+    return "_".join(parts)
+
+
 def read_hex_u8(path):
     with open(path) as f:
         return [int(line.strip(), 16) & 0xFF for line in f if line.strip()]
@@ -164,14 +200,30 @@ def load_mlp_model(drv, data_dir):
     # [fc1_mult, fc1_shift, fc2_mult, fc2_shift]
     fc1_mult, fc1_shift, fc2_mult, fc2_shift = vals[:4]
 
+    # ---- Zero points ----
+    # The MNIST 784->128->10 and small_mlp 784->16->10 models are BOTH quantized
+    # with input zp = 0 (x_eff = x_u8 - 0 = x_u8).  Using zp = -128 here injects a
+    # constant +128 into every input element, which dominates FC1 and collapses
+    # every prediction to a single fixed class.  Therefore:
+    #   - if zero_points.hex exists, read it (with signed restore — -128 is
+    #     stored as the unsigned word 0xffffff80);
+    #   - if it does NOT exist, default to 0  (NOT -128), matching how the
+    #     models were actually quantized.
+    def _to_signed32(v):
+        return v - 0x100000000 if (v & 0x80000000) else v
+
     zp_path = os.path.join(data_dir, "zero_points.hex")
     if os.path.exists(zp_path):
         with open(zp_path) as f:
             zp_vals = [int(l.strip(), 16) for l in f if l.strip()]
-        fc1_zp = zp_vals[0] if zp_vals else -128
-        fc2_zp = zp_vals[1] if len(zp_vals) > 1 else -128
+        fc1_zp = _to_signed32(zp_vals[0]) if zp_vals else 0
+        fc2_zp = _to_signed32(zp_vals[1]) if len(zp_vals) > 1 else 0
     else:
-        fc1_zp = fc2_zp = -128
+        fc1_zp = fc2_zp = 0
+    print(
+        f"  MLP zero points: fc1_zp={fc1_zp}, fc2_zp={fc2_zp} "
+        f"({'from zero_points.hex' if os.path.exists(zp_path) else 'default 0'})"
+    )
 
     # Load weight tiles as raw chunk lists
     def load_hex_u32(path):
@@ -402,7 +454,13 @@ def main():
     # ---------------------------------------------------------------------------
     os.makedirs(args.out_dir, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    csv_path = os.path.join(args.out_dir, f"benchmark_{args.model}_{ts}.csv")
+    # Auto-name from config (arm{_dma}{_batch}{_no-fusion}_{data_dir}); an
+    # explicit --out-name overrides; otherwise fall back to timestamped.
+    if args.out_name:
+        base = args.out_name
+    else:
+        base = make_csv_basename(args)
+    csv_path = os.path.join(args.out_dir, f"{base}.csv")
     with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(

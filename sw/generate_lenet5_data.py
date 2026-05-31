@@ -1,40 +1,64 @@
 #!/usr/bin/env python3
 """
-lenet5_quantize.py — Train LeNet-5 on MNIST, INT8 PTQ, export for CIM SoC.
+gen_lenet5_data.py — Train LeNet-5 on MNIST from scratch, INT8 PTQ, and export
+EVERYTHING needed for both the FPGA and the SW baseline, in one run.
 
-Network: LeNet-5 (modified for MNIST 28x28)
-  Conv1:   1x28x28 → 6x24x24   (5x5 kernel, no padding)
-  Pool1:   6x24x24 → 6x12x12   (2x2 max pool)
-  Conv2:   6x12x12 → 16x8x8    (5x5 kernel, no padding)
-  Pool2:   16x8x8  → 16x4x4    (2x2 max pool)
-  FC3:     256 → 120
-  FC4:     120 → 84
-  FC5:     84 → 10
+This is a from-scratch generator (NOT an exporter from existing artifacts):
+it trains the model, quantizes it, runs bit-accurate INT8 inference, and writes
+the packed .hex tiles, the raw-matrix .npz, and N test images.
 
-Hardware mapping:
-  Conv layers: Python im2col → CIM MVM (per output pixel)
-  Pool layers: Python (trivial, no HW)
-  FC layers:   CIM MVM directly
+Network: LeNet-5 (MNIST 28x28)
+  Conv1:   1x28x28 -> 6x24x24    (5x5 kernel, no padding)
+  Pool1:   6x24x24 -> 6x12x12    (2x2 max pool)
+  Conv2:   6x12x12 -> 16x8x8     (5x5 kernel, no padding)
+  Pool2:   16x8x8  -> 16x4x4     (2x2 max pool)
+  FC3:     256 -> 120
+  FC4:     120 -> 84
+  FC5:     84  -> 10
 
-All layers fit within MAX_IN_DIM=784, MAX_OUT_DIM=128.
+Hardware mapping (matches cim_pkg.sv / golden_model.py):
+  Conv layers : Python im2col -> CIM MVM (per output pixel)
+  Pool layers : Python max-pool (no HW)
+  FC layers   : CIM MVM directly
+  Input       : fixed scale 1/255, zp=0  (x_eff = x_u8)
+  Weights     : symmetric INT8, zp=0
+  Bias        : INT32, scale = s_in * s_w
+  Requant     : multiply-shift, matches cim_pkg::requantize
 
-Usage:
-  python lenet5_quantize.py                        # Train + quantize + export
-  python lenet5_quantize.py --pretrained lenet5.pt  # Load existing
-  python lenet5_quantize.py --num-test 50           # Export 50 test images
-  python lenet5_quantize.py --seed 42               # Reproducible
+Usage (mirrors mnist_quantize.py):
+  python gen_lenet5_data.py                       # train + quantize + export 20 imgs
+  python gen_lenet5_data.py --num-test 200        # export 200 test images
+  python gen_lenet5_data.py --pretrained lenet5.pt --num-test 200   # reuse a checkpoint
+  python gen_lenet5_data.py --epochs 20 --seed 42 --output-dir lenet5_data
+
+Output (in --output-dir, default lenet5_data/):
+  {conv1,conv2,fc3,fc4,fc5}_weight_tiles.hex   packed INT8 weight tiles (FPGA)
+  {conv1,conv2,fc3,fc4,fc5}_bias.hex           INT32 bias (FPGA)
+  quant_params.hex                             per-layer mult,shift (FPGA)
+  zero_points.hex                              per-layer zp (FPGA)
+  lenet5_qparams.npz                           raw INT8 matrices (SW baseline)
+  layer_info.txt / model_info.txt              human-readable summary
+  test_images/
+    img_0000.hex        UINT8 image (784)
+    img_0000_fc5.hex    INT8 golden logits
+    img_0000_label.txt  true label
+    img_0000_pred.txt   python INT8 prediction
+    ...
 """
 
+import argparse
+import os
+import sys
+
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import datasets, transforms
-import numpy as np
-import argparse
-import os
+
 
 # ============================================================================
-# Hardware constants
+# Hardware constants (must match cim_pkg.sv)
 # ============================================================================
 TILE_ROWS = 16
 TILE_COLS = 16
@@ -43,14 +67,20 @@ CHUNKS_PER_ROW = 4
 CHUNKS_PER_TILE = 64
 
 
+def _apply_seed(seed):
+    if seed is not None:
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+
+
 # ============================================================================
-# 1. LeNet-5 Model
+# 1. LeNet-5 model
 # ============================================================================
 class LeNet5(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = nn.Conv2d(1, 6, 5)  # 28→24
-        self.conv2 = nn.Conv2d(6, 16, 5)  # 12→8
+        self.conv1 = nn.Conv2d(1, 6, 5)  # 28 -> 24
+        self.conv2 = nn.Conv2d(6, 16, 5)  # 12 -> 8
         self.fc3 = nn.Linear(16 * 4 * 4, 120)
         self.fc4 = nn.Linear(120, 84)
         self.fc5 = nn.Linear(84, 10)
@@ -71,13 +101,11 @@ class LeNet5(nn.Module):
 # 2. Training
 # ============================================================================
 def train_lenet5(epochs=15, lr=0.001, device="cpu", seed=None):
-    if seed is not None:
-        np.random.seed(seed)
-        torch.manual_seed(seed)
+    _apply_seed(seed)
 
     print("=" * 60)
-    print("Training LeNet-5 on MNIST")
-    print(f"Seed: {seed}")
+    print("Training LeNet-5 on MNIST (from scratch)")
+    print(f"Seed: {seed if seed is not None else 'None (fully random)'}")
     print("=" * 60)
 
     # NO Normalize — raw [0,1] pixels for hardware compatibility
@@ -91,6 +119,7 @@ def train_lenet5(epochs=15, lr=0.001, device="cpu", seed=None):
     optimizer = optim.Adam(model.parameters(), lr=lr)
     criterion = nn.CrossEntropyLoss()
 
+    acc = 0.0
     for epoch in range(epochs):
         model.train()
         total_loss = 0
@@ -114,7 +143,8 @@ def train_lenet5(epochs=15, lr=0.001, device="cpu", seed=None):
                 total += target.size(0)
         acc = 100.0 * correct / total
         print(
-            f"  Epoch {epoch + 1}/{epochs}: loss={total_loss / len(train_loader):.4f}, acc={acc:.2f}%"
+            f"  Epoch {epoch + 1}/{epochs}: "
+            f"loss={total_loss / len(train_loader):.4f}, acc={acc:.2f}%"
         )
 
     print(f"\nFinal float32 accuracy: {acc:.2f}%")
@@ -145,10 +175,9 @@ def compute_requant(s_in, s_w, s_out, shift=16):
 
 
 # ============================================================================
-# 4. Calibration — run float model, collect activation ranges
+# 4. Calibration
 # ============================================================================
 def calibrate(model, device="cpu"):
-    """Collect activation ranges for all layers using training data."""
     transform = transforms.Compose([transforms.ToTensor()])
     cal_set = datasets.MNIST("./data", train=True, download=True, transform=transform)
     cal_loader = torch.utils.data.DataLoader(cal_set, batch_size=500, shuffle=False)
@@ -203,72 +232,75 @@ def full_ptq_lenet5(model, device="cpu"):
     model.eval()
     model_cpu = model.cpu()
 
-    # Calibrate
     print("  Calibrating activation ranges...")
     ranges = calibrate(model_cpu, "cpu")
 
     # Input: fixed scale=1/255, zp=0
     s_in0 = 1.0 / 255.0
 
-    # Conv1: weight symmetric
+    # ---- Conv1 ----
     s_w_c1 = symmetric_scale(model_cpu.conv1.weight.data)
     w_c1 = quantize_symmetric(model_cpu.conv1.weight.data, s_w_c1)
     s_out_c1 = max(abs(ranges["conv1_out"][0]), abs(ranges["conv1_out"][1])) / 127.0
+    if s_out_c1 == 0:
+        s_out_c1 = 1e-8
     b_c1 = quantize_bias_int32(model_cpu.conv1.bias.data, s_in0, s_w_c1)
     m_c1, sh_c1 = compute_requant(s_in0, s_w_c1, s_out_c1)
     print(
         f"  Conv1: s_w={s_w_c1:.6f}, s_out={s_out_c1:.6f}, mult={m_c1}, shift={sh_c1}"
     )
 
-    # Pool1 doesn't change scale (max pool preserves quantization)
+    # ---- Conv2 ---- (input scale = conv1 output scale; pool is max so scale unchanged)
     s_in_c2 = s_out_c1
-
-    # Conv2
     s_w_c2 = symmetric_scale(model_cpu.conv2.weight.data)
     w_c2 = quantize_symmetric(model_cpu.conv2.weight.data, s_w_c2)
     s_out_c2 = max(abs(ranges["conv2_out"][0]), abs(ranges["conv2_out"][1])) / 127.0
+    if s_out_c2 == 0:
+        s_out_c2 = 1e-8
     b_c2 = quantize_bias_int32(model_cpu.conv2.bias.data, s_in_c2, s_w_c2)
     m_c2, sh_c2 = compute_requant(s_in_c2, s_w_c2, s_out_c2)
     print(
         f"  Conv2: s_w={s_w_c2:.6f}, s_out={s_out_c2:.6f}, mult={m_c2}, shift={sh_c2}"
     )
 
-    # Pool2 → FC3 input
+    # ---- FC3 ----
     s_in_fc3 = s_out_c2
-
-    # FC3
     s_w_f3 = symmetric_scale(model_cpu.fc3.weight.data)
     w_f3 = quantize_symmetric(model_cpu.fc3.weight.data, s_w_f3)
     s_out_f3 = max(abs(ranges["fc3_out"][0]), abs(ranges["fc3_out"][1])) / 127.0
+    if s_out_f3 == 0:
+        s_out_f3 = 1e-8
     b_f3 = quantize_bias_int32(model_cpu.fc3.bias.data, s_in_fc3, s_w_f3)
     m_f3, sh_f3 = compute_requant(s_in_fc3, s_w_f3, s_out_f3)
     print(
         f"  FC3:   s_w={s_w_f3:.6f}, s_out={s_out_f3:.6f}, mult={m_f3}, shift={sh_f3}"
     )
 
-    # FC4
+    # ---- FC4 ----
     s_in_f4 = s_out_f3
     s_w_f4 = symmetric_scale(model_cpu.fc4.weight.data)
     w_f4 = quantize_symmetric(model_cpu.fc4.weight.data, s_w_f4)
     s_out_f4 = max(abs(ranges["fc4_out"][0]), abs(ranges["fc4_out"][1])) / 127.0
+    if s_out_f4 == 0:
+        s_out_f4 = 1e-8
     b_f4 = quantize_bias_int32(model_cpu.fc4.bias.data, s_in_f4, s_w_f4)
     m_f4, sh_f4 = compute_requant(s_in_f4, s_w_f4, s_out_f4)
     print(
         f"  FC4:   s_w={s_w_f4:.6f}, s_out={s_out_f4:.6f}, mult={m_f4}, shift={sh_f4}"
     )
 
-    # FC5
+    # ---- FC5 ----
     s_in_f5 = s_out_f4
     s_w_f5 = symmetric_scale(model_cpu.fc5.weight.data)
     w_f5 = quantize_symmetric(model_cpu.fc5.weight.data, s_w_f5)
     s_out_f5 = max(abs(ranges["fc5_out"][0]), abs(ranges["fc5_out"][1])) / 127.0
+    if s_out_f5 == 0:
+        s_out_f5 = 1e-8
     b_f5 = quantize_bias_int32(model_cpu.fc5.bias.data, s_in_f5, s_w_f5)
     m_f5, sh_f5 = compute_requant(s_in_f5, s_w_f5, s_out_f5)
     print(
         f"  FC5:   s_w={s_w_f5:.6f}, s_out={s_out_f5:.6f}, mult={m_f5}, shift={sh_f5}"
     )
-
-    model.to(device)
 
     return {
         "layers": [
@@ -347,10 +379,9 @@ def full_ptq_lenet5(model, device="cpu"):
 
 
 # ============================================================================
-# 6. Bit-accurate INT8 inference (Python, matches CIM hardware)
+# 6. Bit-accurate INT8 inference (matches CIM hardware)
 # ============================================================================
 def hw_mvm(x_u8, w_i8, b_i32, zp, mult, shift, relu):
-    """Single MVM: ZP subtract → MAC → bias → ReLU → requantize."""
     x_eff = np.clip(x_u8.astype(np.int32) - zp, 0, 511)
     acc = w_i8.astype(np.int32) @ x_eff.astype(np.int32) + b_i32.astype(np.int32)
     if relu:
@@ -364,7 +395,6 @@ def hw_mvm(x_u8, w_i8, b_i32, zp, mult, shift, relu):
 
 
 def im2col(feat, kh, kw, stride=1, padding=0):
-    """Explicit im2col: [C,H,W] → [C*kh*kw, out_h*out_w]."""
     C, H, W = feat.shape
     if padding > 0:
         p = np.zeros((C, H + 2 * padding, W + 2 * padding), dtype=feat.dtype)
@@ -385,7 +415,6 @@ def im2col(feat, kh, kw, stride=1, padding=0):
 
 
 def maxpool2d(feat, k=2, s=2):
-    """Max pooling on INT8 feature map [C,H,W]."""
     C, H, W = feat.shape
     oh, ow = H // s, W // s
     out = np.zeros((C, oh, ow), dtype=feat.dtype)
@@ -397,19 +426,14 @@ def maxpool2d(feat, k=2, s=2):
 
 
 def int8_infer_lenet5(image_u8_flat, qparams):
-    """
-    Full LeNet-5 INT8 inference.
-    image_u8_flat: [784] UINT8 (28x28 image)
-    Returns: (pred_class, layer_outputs_dict)
-    """
-    x = image_u8_flat.reshape(1, 28, 28)  # [C=1, H=28, W=28]
+    x = image_u8_flat.reshape(1, 28, 28)
     intermediates = {}
 
     for layer in qparams["layers"]:
         name = layer["name"]
 
         if layer["type"] == "conv":
-            w4d = layer["weight"]  # [C_out, C_in, K_h, K_w]
+            w4d = layer["weight"]
             C_out = layer["C_out"]
             w2d = w4d.reshape(C_out, -1)
             col, oh, ow = im2col(
@@ -437,11 +461,7 @@ def int8_infer_lenet5(image_u8_flat, qparams):
             intermediates[name] = x.copy()
 
         elif layer["type"] == "fc":
-            if x.ndim > 1:
-                x_flat = x.flatten()
-            else:
-                x_flat = x
-            # Reinterpret signed→unsigned for hardware
+            x_flat = x.flatten() if x.ndim > 1 else x
             if x_flat.dtype == np.int8:
                 x_flat = x_flat.view(np.uint8)
             out = hw_mvm(
@@ -464,7 +484,6 @@ def int8_infer_lenet5(image_u8_flat, qparams):
 # 7. Hex export (same format as mnist_quantize.py)
 # ============================================================================
 def weight_to_chunk_hex(w_i8, tile_rows=TILE_ROWS, tile_cols=TILE_COLS):
-    """Pack [out_dim, in_dim] INT8 → list of hex strings."""
     od, id_ = w_i8.shape
     n_ob = (od + tile_rows - 1) // tile_rows
     n_ib = (id_ + tile_cols - 1) // tile_cols
@@ -488,12 +507,6 @@ def bias_hex(b):
     return [f"{int(v) & 0xFFFFFFFF:08x}" for v in b]
 
 
-def save_hex(lines, path):
-    with open(path, "w") as f:
-        for l in lines:
-            f.write(l + "\n")
-
-
 def input_hex(x):
     return [f"{int(v) & 0xFF:02x}" for v in x]
 
@@ -502,19 +515,54 @@ def int8_hex(x):
     return [f"{int(v) & 0xFF:02x}" for v in x]
 
 
+def save_hex(lines, path):
+    with open(path, "w") as f:
+        for l in lines:
+            f.write(l + "\n")
+
+
+def export_qparams_npz(qparams, output_dir):
+    """Raw INT8 matrices for the SW baseline (NumPy GEMV) and packed-conv driver.
+
+    Keys per compute layer: {name}_weight, {name}_bias, {name}_zp/_mult/_shift.
+    Conv weights kept 4D [C_out,C_in,K,K]; FC weights 2D [out,in].
+    """
+    npz = {}
+    for l in qparams["layers"]:
+        if l["type"] in ("conv", "fc"):
+            name = l["name"]
+            npz[f"{name}_weight"] = np.asarray(l["weight"]).astype(np.int8)
+            npz[f"{name}_bias"] = np.asarray(l["bias"]).astype(np.int32)
+            npz[f"{name}_mult"] = np.int32(l["mult"])
+            npz[f"{name}_shift"] = np.int32(l["shift"])
+            npz[f"{name}_zp"] = np.int32(l["zp"])
+    path = os.path.join(output_dir, "lenet5_qparams.npz")
+    np.savez(path, **npz)
+    print(f"  Raw INT8 matrices saved to {path}")
+    return path
+
+
 # ============================================================================
 # 8. Main
 # ============================================================================
 def main():
-    parser = argparse.ArgumentParser(
-        description="LeNet-5 quantize & export for CIM SoC"
+    parser = argparse.ArgumentParser(description="Generate lenet5_data from scratch")
+    parser.add_argument(
+        "--pretrained",
+        type=str,
+        default=None,
+        help="Load this .pt instead of training (optional)",
     )
-    parser.add_argument("--pretrained", type=str, default=None)
     parser.add_argument("--epochs", type=int, default=15)
-    parser.add_argument("--num-test", type=int, default=20)
+    parser.add_argument(
+        "--num-test",
+        type=int,
+        default=20,
+        help="Number of test images to generate (default 20)",
+    )
     parser.add_argument("--output-dir", type=str, default="lenet5_data")
     parser.add_argument("--save-model", type=str, default="lenet5.pt")
-    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--seed", type=int, default=42, help="Random seed (default 42)")
     args = parser.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -522,21 +570,21 @@ def main():
 
     # ---- Train or load ----
     if args.pretrained and os.path.exists(args.pretrained):
-        print(f"Loading: {args.pretrained}")
+        print(f"Loading pretrained model: {args.pretrained}")
         model = LeNet5()
         model.load_state_dict(torch.load(args.pretrained, map_location=device))
-        float_acc = "pretrained"
+        float_acc = float("nan")
     else:
         model, float_acc = train_lenet5(args.epochs, device=device, seed=args.seed)
         torch.save(model.state_dict(), args.save_model)
-        print(f"Saved to {args.save_model}")
+        print(f"Model saved to {args.save_model}")
 
     model = model.to(device).eval()
 
     # ---- PTQ ----
     qparams = full_ptq_lenet5(model, device)
 
-    # ---- INT8 accuracy ----
+    # ---- INT8 accuracy on full test set ----
     print("\n" + "=" * 60)
     print("INT8 accuracy (bit-accurate)")
     print("=" * 60)
@@ -554,27 +602,29 @@ def main():
         if pred == label:
             correct_int8 += 1
     acc_int8 = 100.0 * correct_int8 / total
-    print(f"  Float32: {float_acc}%")
+    acc_float_str = (
+        f"{float_acc:.2f}"
+        if isinstance(float_acc, float) and not np.isnan(float_acc)
+        else "N/A (pretrained)"
+    )
+    print(f"  Float32: {acc_float_str}%")
     print(f"  INT8:    {acc_int8:.2f}% ({correct_int8}/{total})")
 
-    # ---- Export hex ----
+    # ---- Export hex (FPGA) ----
     print("\n" + "=" * 60)
-    print("Exporting hex files")
+    print("Exporting hex files (FPGA)")
     print("=" * 60)
-
-    # Export each layer's weights and params
     for layer in qparams["layers"]:
         name = layer["name"]
         if layer["type"] in ("conv", "fc"):
             w = layer["weight"]
             if w.ndim == 4:
-                w = w.reshape(w.shape[0], -1)  # [C_out, C_in*K*K]
+                w = w.reshape(w.shape[0], -1)
             save_hex(
                 weight_to_chunk_hex(w), f"{args.output_dir}/{name}_weight_tiles.hex"
             )
             save_hex(bias_hex(layer["bias"]), f"{args.output_dir}/{name}_bias.hex")
 
-    # Quant params for all compute layers
     compute_layers = [l for l in qparams["layers"] if l["type"] in ("conv", "fc")]
     qp_lines = []
     for l in compute_layers:
@@ -582,30 +632,19 @@ def main():
         qp_lines.append(f"{l['shift'] & 0xFFFFFFFF:08x}")
     save_hex(qp_lines, f"{args.output_dir}/quant_params.hex")
 
-    # Zero points
     zp_lines = [f"{l['zp'] & 0xFFFFFFFF:08x}" for l in compute_layers]
     save_hex(zp_lines, f"{args.output_dir}/zero_points.hex")
+    print(f"  Weights/bias/quant/zp saved to {args.output_dir}/")
 
-    # Save raw numpy arrays for CIMModel (packed conv needs original weight_int8)
-    npz_data = {}
-    for l in qparams["layers"]:
-        name = l["name"]
-        if l["type"] in ("conv", "fc"):
-            npz_data[f"{name}_weight"] = l["weight"]
-            npz_data[f"{name}_bias"] = l["bias"]
-            npz_data[f"{name}_mult"] = np.int32(l["mult"])
-            npz_data[f"{name}_shift"] = np.int32(l["shift"])
-            npz_data[f"{name}_zp"] = np.int32(l["zp"])
-    npz_path = f"{args.output_dir}/lenet5_qparams.npz"
-    np.savez(npz_path, **npz_data)
-    print(f"  NumPy params saved to {npz_path}")
+    # ---- Export raw INT8 matrices (SW baseline) ----
+    export_qparams_npz(qparams, args.output_dir)
 
-    # Layer info
+    # ---- Layer / model info ----
     with open(f"{args.output_dir}/layer_info.txt", "w") as f:
         for l in qparams["layers"]:
             if l["type"] == "conv":
                 f.write(
-                    f"{l['name']}: conv {l['C_in']}ch {l['K_h']}x{l['K_w']} → {l['C_out']}ch "
+                    f"{l['name']}: conv {l['C_in']}ch {l['K_h']}x{l['K_w']} -> {l['C_out']}ch "
                     f"stride={l['stride']} pad={l['padding']} mult={l['mult']} shift={l['shift']}\n"
                 )
             elif l["type"] == "pool":
@@ -614,12 +653,20 @@ def main():
                 )
             elif l["type"] == "fc":
                 f.write(
-                    f"{l['name']}: fc {l['in_dim']}→{l['out_dim']} "
+                    f"{l['name']}: fc {l['in_dim']}->{l['out_dim']} "
                     f"mult={l['mult']} shift={l['shift']} relu={l['relu']}\n"
                 )
-    print(f"  Layer info saved to {args.output_dir}/layer_info.txt")
+    with open(f"{args.output_dir}/model_info.txt", "w") as f:
+        f.write("Model: LeNet-5 (Conv1->Pool->Conv2->Pool->FC3->FC4->FC5)\n")
+        f.write(f"Float accuracy: {acc_float_str}%\n")
+        f.write(f"INT8 accuracy: {acc_int8:.2f}%\n")
+        f.write(f"Exported test images: {min(args.num_test, len(test_set))}\n")
+    print(f"  Layer/model info saved to {args.output_dir}/")
 
-    # Export test images
+    # ---- Export N test images ----
+    print("\n" + "=" * 60)
+    print(f"Exporting {min(args.num_test, len(test_set))} test images")
+    print("=" * 60)
     img_dir = f"{args.output_dir}/test_images"
     os.makedirs(img_dir, exist_ok=True)
     n_export = min(args.num_test, len(test_set))
@@ -634,28 +681,29 @@ def main():
 
         prefix = f"img_{i:04d}"
         save_hex(input_hex(img_u8), f"{img_dir}/{prefix}.hex")
-        # Save final FC5 output as golden
         save_hex(int8_hex(intermediates["fc5"]), f"{img_dir}/{prefix}_fc5.hex")
         with open(f"{img_dir}/{prefix}_label.txt", "w") as f:
             f.write(f"{label}\n")
         with open(f"{img_dir}/{prefix}_pred.txt", "w") as f:
             f.write(f"{pred}\n")
-
-        mark = "✓" if pred == label else "✗"
-        print(f"  [{i:04d}] label={label}, pred={pred} {mark}")
+        if n_export <= 50 or (i % 20 == 0):
+            mark = "OK" if pred == label else "x"
+            print(f"  [{i:04d}] label={label}, pred={pred} {mark}")
 
     print(
-        f"\n  Exported {n_export} images, INT8 acc: {100.0 * export_correct / n_export:.1f}%"
+        f"\n  Exported {n_export} images, INT8 acc on them: "
+        f"{100.0 * export_correct / n_export:.1f}%"
     )
 
     # ---- Summary ----
     print("\n" + "=" * 60)
     print("SUMMARY")
     print("=" * 60)
-    print(f"  Float32 accuracy: {float_acc}%")
+    print(f"  Float32 accuracy: {acc_float_str}%")
     print(f"  INT8 accuracy:    {acc_int8:.2f}%")
-    print(f"  Network: Conv1→Pool→Conv2→Pool→FC3→FC4→FC5")
-    print(f"  Upload {args.output_dir}/ to PYNQ")
+    print(f"  Test images:      {n_export}")
+    print(f"  Output dir:       {args.output_dir}/")
+    print(f"  npz (SW baseline):{args.output_dir}/lenet5_qparams.npz")
     print("=" * 60)
 
 

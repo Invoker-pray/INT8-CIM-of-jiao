@@ -30,15 +30,16 @@ from datetime import datetime
 # ============================================================================
 # PicoRV32 system constants
 # ============================================================================
-FW_BRAM_BASE    = 0x40000000   # PS side: FW BRAM port B
-FW_BRAM_SIZE    = 0x8000       # 32 KB
-RES_BRAM_BASE   = 0x42000000   # PS side: Result BRAM port B
-GPIO_BASE       = 0x43000000   # AXI GPIO: bit[0] = cpu_rst_n
-IMAGE_BUF_OFFSET = 0x6000      # FW BRAM offset for PS-loaded image
+FW_BRAM_BASE = 0x40000000  # PS side: FW BRAM port B
+FW_BRAM_SIZE = 0x8000  # 32 KB
+RES_BRAM_BASE = 0x42000000  # PS side: Result BRAM port B
+GPIO_BASE = 0x43000000  # AXI GPIO: bit[0] = cpu_rst_n
+IMAGE_BUF_OFFSET = 0x6000  # FW BRAM offset for PS-loaded image
 
-RES_MAGIC       = 0xC1AA0001
-RES_GO_SIGNAL   = 0x00000000
+RES_MAGIC = 0xC1AA0001
+RES_GO_SIGNAL = 0x00000000
 RES_STOP_SIGNAL = 0xDEADBEEF
+
 
 # ============================================================================
 # Helpers
@@ -69,31 +70,35 @@ class RV32Driver:
         # Load bitstream (try Overlay first, fall back to Bitstream)
         try:
             from pynq import Overlay
+
             self.overlay = Overlay(bitstream_path, ignore_version=True)
             print(f"[RV32] Overlay loaded from {bitstream_path}")
         except Exception as _e:
             _msg = str(_e)
-            if "not a valid input" not in _msg and \
-               "Unknown file format" not in _msg and \
-               "sysdef.xml" not in _msg and \
-               "tuple index" not in _msg:
+            if (
+                "not a valid input" not in _msg
+                and "Unknown file format" not in _msg
+                and "sysdef.xml" not in _msg
+                and "tuple index" not in _msg
+            ):
                 raise
             # Fallback: Bitstream.download() + MMIO
             print(f"[RV32] Overlay() failed, falling back to Bitstream.download()")
-            if _ext == '.xsa':
+            if _ext == ".xsa":
                 import zipfile as _zf
-                with _zf.ZipFile(bitstream_path, 'r') as _z:
-                    _bit_name = [n for n in _z.namelist() if n.endswith('.bit')][0]
-                    _z.extract(_bit_name, '/tmp')
-                    _bit_path = f'/tmp/{_bit_name}'
+
+                with _zf.ZipFile(bitstream_path, "r") as _z:
+                    _bit_name = [n for n in _z.namelist() if n.endswith(".bit")][0]
+                    _z.extract(_bit_name, "/tmp")
+                    _bit_path = f"/tmp/{_bit_name}"
             else:
                 _bit_path = bitstream_path
             Bitstream(_bit_path).download()
             print(f"[RV32] Bitstream downloaded OK")
-            self.overlay = type('_DummyOL', (), {'ip_dict': {}})()
+            self.overlay = type("_DummyOL", (), {"ip_dict": {}})()
 
         # MMIO for three regions
-        self.mmio_fw  = MMIO(FW_BRAM_BASE, FW_BRAM_SIZE)
+        self.mmio_fw = MMIO(FW_BRAM_BASE, FW_BRAM_SIZE)
         self.mmio_res = MMIO(RES_BRAM_BASE, 0x1000)
         self.mmio_gpio = MMIO(GPIO_BASE, 0x1000)
 
@@ -115,11 +120,11 @@ class RV32Driver:
         """Write image + label to FW BRAM image buffer.
         Layout: [0..3] = label (uint32 LE), [4..787] = pixels (784 × uint8)
         """
-        buf = struct.pack('<I', label)
+        buf = struct.pack("<I", label)
         buf += bytes(img_u8[:784].tolist())
         # Write as 32-bit words
         for i in range(0, len(buf), 4):
-            word = int.from_bytes(buf[i:i+4], 'little')
+            word = int.from_bytes(buf[i : i + 4], "little")
             self.mmio_fw.write(IMAGE_BUF_OFFSET + i, word)
 
     def signal_go(self):
@@ -139,9 +144,9 @@ class RV32Driver:
 
     def read_result(self):
         """Read prediction + logits + diagnostics from Result BRAM."""
-        pred     = self.mmio_res.read(4)
+        pred = self.mmio_res.read(4)
         expected = self.mmio_res.read(8)
-        match    = self.mmio_res.read(12)
+        match = self.mmio_res.read(12)
         logits = []
         for i in range(10):
             v = self.mmio_res.read(16 + 4 * i)
@@ -151,14 +156,18 @@ class RV32Driver:
             logits.append(v32)
         # Diagnostics (firmware echoes first image bytes for verification)
         diag_expected = self.mmio_res.read(56)  # RES_WORD(14)
-        diag_pix_sum  = self.mmio_res.read(60)  # RES_WORD(15)
-        diag_pix0     = self.mmio_res.read(64)  # RES_WORD(16)
-        diag_pix1     = self.mmio_res.read(68)  # RES_WORD(17)
+        diag_pix_sum = self.mmio_res.read(60)  # RES_WORD(15)
+        diag_pix0 = self.mmio_res.read(64)  # RES_WORD(16)
+        diag_pix1 = self.mmio_res.read(68)  # RES_WORD(17)
         return {
-            "pred": pred, "expected": expected, "match": match,
+            "pred": pred,
+            "expected": expected,
+            "match": match,
             "logits": logits,
-            "diag_expected": diag_expected, "diag_pix_sum": diag_pix_sum,
-            "diag_pix0": diag_pix0, "diag_pix1": diag_pix1,
+            "diag_expected": diag_expected,
+            "diag_pix_sum": diag_pix_sum,
+            "diag_pix0": diag_pix0,
+            "diag_pix1": diag_pix1,
         }
 
 
@@ -167,17 +176,35 @@ class RV32Driver:
 # ============================================================================
 def main():
     parser = argparse.ArgumentParser(description="PicoRV32 CIM SoC batch benchmark")
-    parser.add_argument("--model",     default="mlp", choices=["mlp"],
-                        help="Model: mlp = 784→16→10 small_mlp (default). "
-                             "Firmware must match the model!")
+    parser.add_argument(
+        "--model",
+        default="mlp",
+        choices=["mlp"],
+        help="Model: mlp = 784→16→10 small_mlp (default). "
+        "Firmware must match the model!",
+    )
     parser.add_argument("--bitstream", default="cim_rv32_soc.xsa")
-    parser.add_argument("--firmware",  default=None,
-                        help="Firmware hex file (default: firmware_<model>.hex)")
-    parser.add_argument("--data-dir",  default=None,
-                        help="Data directory (default: auto from --model)")
-    parser.add_argument("--n-images",  type=int, default=None,
-                        help="Number of test images (default: all in test_images/)")
-    parser.add_argument("--out-dir",   default="results")
+    parser.add_argument(
+        "--firmware",
+        default=None,
+        help="Firmware hex file (default: firmware_<model>.hex)",
+    )
+    parser.add_argument(
+        "--data-dir", default=None, help="Data directory (default: auto from --model)"
+    )
+    parser.add_argument(
+        "--n-images",
+        type=int,
+        default=None,
+        help="Number of test images (default: all in test_images/)",
+    )
+    parser.add_argument("--out-dir", default="results")
+    parser.add_argument(
+        "--out-name",
+        default=None,
+        help="Exact CSV basename (no extension). If omitted, a "
+        "timestamped name benchmark_rv32_<ts> is used.",
+    )
     args = parser.parse_args()
 
     # Auto-select data_dir and firmware based on model
@@ -253,19 +280,23 @@ def main():
         # Show diagnostics for first image
         if idx == 0:
             print(f"\n  [DIAG] Image {name}: label={label}")
-            print(f"  [DIAG] FW reads: expected={result['diag_expected']} "
-                  f"pix[0:4]={result['diag_pix0']:08x} "
-                  f"pix[4:8]={result['diag_pix1']:08x} "
-                  f"pix_sum(first 16)={result['diag_pix_sum']}")
+            print(
+                f"  [DIAG] FW reads: expected={result['diag_expected']} "
+                f"pix[0:4]={result['diag_pix0']:08x} "
+                f"pix[4:8]={result['diag_pix1']:08x} "
+                f"pix_sum(first 16)={result['diag_pix_sum']}"
+            )
             # PS side: show what we wrote
             expected_ps = label
-            pix0_ps = int.from_bytes(bytes(img_u8[:4].tolist()), 'little')
-            pix1_ps = int.from_bytes(bytes(img_u8[4:8].tolist()), 'little')
+            pix0_ps = int.from_bytes(bytes(img_u8[:4].tolist()), "little")
+            pix1_ps = int.from_bytes(bytes(img_u8[4:8].tolist()), "little")
             pix_sum_ps = sum(int(b) for b in img_u8[:16])
-            print(f"  [DIAG] PS wrote: expected={expected_ps} "
-                  f"pix[0:4]={pix0_ps:08x} "
-                  f"pix[4:8]={pix1_ps:08x} "
-                  f"pix_sum(first 16)={pix_sum_ps}")
+            print(
+                f"  [DIAG] PS wrote: expected={expected_ps} "
+                f"pix[0:4]={pix0_ps:08x} "
+                f"pix[4:8]={pix1_ps:08x} "
+                f"pix_sum(first 16)={pix_sum_ps}"
+            )
 
         if pred == label:
             correct += 1
@@ -280,18 +311,29 @@ def main():
     t_end = time.time()
 
     # --- Results ---
-    total_s    = t_end - t_start
+    total_s = t_end - t_start
     ms_per_img = total_s / n * 1000
-    fps        = n / total_s
-    accuracy   = correct / n * 100
+    fps = n / total_s
+    accuracy = correct / n * 100
 
-    col = [("Model", 12), ("n_img", 6), ("total_s", 9),
-           ("ms/img", 9), ("fps", 7), ("accuracy", 10)]
+    col = [
+        ("Model", 12),
+        ("n_img", 6),
+        ("total_s", 9),
+        ("ms/img", 9),
+        ("fps", 7),
+        ("accuracy", 10),
+    ]
     hdr = "  ".join(f"{name:<{w}}" for name, w in col)
     sep = "  ".join("-" * w for _, w in col)
-    vals = ["PicoRV32", str(n),
-            f"{total_s:.2f}s", f"{ms_per_img:.1f}",
-            f"{fps:.2f}", f"{correct}/{n} ({accuracy:.1f}%)"]
+    vals = [
+        "PicoRV32",
+        str(n),
+        f"{total_s:.2f}s",
+        f"{ms_per_img:.1f}",
+        f"{fps:.2f}",
+        f"{correct}/{n} ({accuracy:.1f}%)",
+    ]
     row = "  ".join(f"{v:<{w}}" for v, (_, w) in zip(vals, col))
 
     print("\n" + sep)
@@ -303,9 +345,11 @@ def main():
     # Per-image timing stats
     if timings:
         t_sorted = sorted(timings)
-        print(f"\nPer-image timing (ms): "
-              f"min={t_sorted[0]:.1f}  p50={t_sorted[len(t_sorted)//2]:.1f}  "
-              f"avg={sum(timings)/len(timings):.1f}  max={t_sorted[-1]:.1f}")
+        print(
+            f"\nPer-image timing (ms): "
+            f"min={t_sorted[0]:.1f}  p50={t_sorted[len(t_sorted) // 2]:.1f}  "
+            f"avg={sum(timings) / len(timings):.1f}  max={t_sorted[-1]:.1f}"
+        )
 
     if wrong_list:
         print(f"\nWrong predictions ({len(wrong_list)}):")
@@ -315,18 +359,48 @@ def main():
     # --- CSV export ---
     os.makedirs(args.out_dir, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    csv_path = os.path.join(args.out_dir, f"benchmark_rv32_{ts}.csv")
+    # Auto-name: picorv32_{data_dir}. PicoRV32 is always MMIO-style (no DMA,
+    # no batch, no fusion), so those optional tags are always empty and the
+    # name collapses to the controller prefix + data dir. Explicit --out-name
+    # overrides.
+    if args.out_name:
+        base = args.out_name
+    else:
+        data_tag = os.path.basename(os.path.normpath(args.data_dir))
+        base = f"picorv32_{data_tag}"
+    csv_path = os.path.join(args.out_dir, f"{base}.csv")
     with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["model", "n_img", "total_s", "ms_per_img", "fps",
-                         "correct", "accuracy_pct",
-                         "min_ms", "p50_ms", "avg_ms", "max_ms"])
-        writer.writerow(["rv32_mlp", n, f"{total_s:.3f}", f"{ms_per_img:.2f}",
-                         f"{fps:.3f}", correct, f"{accuracy:.2f}",
-                         f"{min(timings):.1f}" if timings else "",
-                         f"{sorted(timings)[len(timings)//2]:.1f}" if timings else "",
-                         f"{sum(timings)/len(timings):.1f}" if timings else "",
-                         f"{max(timings):.1f}" if timings else ""])
+        writer.writerow(
+            [
+                "model",
+                "n_img",
+                "total_s",
+                "ms_per_img",
+                "fps",
+                "correct",
+                "accuracy_pct",
+                "min_ms",
+                "p50_ms",
+                "avg_ms",
+                "max_ms",
+            ]
+        )
+        writer.writerow(
+            [
+                "rv32_mlp",
+                n,
+                f"{total_s:.3f}",
+                f"{ms_per_img:.2f}",
+                f"{fps:.3f}",
+                correct,
+                f"{accuracy:.2f}",
+                f"{min(timings):.1f}" if timings else "",
+                f"{sorted(timings)[len(timings) // 2]:.1f}" if timings else "",
+                f"{sum(timings) / len(timings):.1f}" if timings else "",
+                f"{max(timings):.1f}" if timings else "",
+            ]
+        )
     print(f"\nCSV saved: {csv_path}")
 
 

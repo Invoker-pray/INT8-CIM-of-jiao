@@ -11,6 +11,11 @@ Usage:
   python small_mlp_quantize.py                    # Train + export
   python small_mlp_quantize.py --seed 42          # Reproducible
   python small_mlp_quantize.py --output-dir small_mlp_data
+
+  # NEW: only (re)export the raw INT8 matrices needed by the SW baseline,
+  # from an existing checkpoint, WITHOUT retraining or touching the hex files:
+  python small_mlp_quantize.py --export-npz-only --pretrained small_mlp.pt \
+                               --output-dir small_mlp_data
 """
 
 import torch
@@ -20,6 +25,7 @@ from torchvision import datasets, transforms
 import numpy as np
 import argparse
 import os
+import sys
 
 
 # ============================================================================
@@ -37,6 +43,7 @@ CHUNKS_PER_TILE = 64
 # ============================================================================
 class SmallMLP(nn.Module):
     """784→16→10 MLP — fits in 32KB BRAM for PicoRV32."""
+
     def __init__(self):
         super().__init__()
         self.fc1 = nn.Linear(784, 16)
@@ -90,7 +97,9 @@ def train(epochs=20, lr=0.001, device="cpu", seed=None):
                 correct += model(data).argmax(1).eq(target).sum().item()
                 total += target.size(0)
         acc = 100.0 * correct / total
-        print(f"  Epoch {epoch+1}/{epochs}: loss={loss_sum/len(train_loader):.4f}, acc={acc:.2f}%")
+        print(
+            f"  Epoch {epoch + 1}/{epochs}: loss={loss_sum / len(train_loader):.4f}, acc={acc:.2f}%"
+        )
 
     return model, acc
 
@@ -102,15 +111,21 @@ def symmetric_scale(t):
     m = t.abs().max().item()
     return m / 127.0 if m > 0 else 1e-8
 
+
 def quant_sym(t, s):
     return torch.clamp(torch.round(t / s), -128, 127).to(torch.int8)
 
+
 def quant_bias(b, s_in, s_w):
-    return torch.clamp(torch.round(b / (s_in * s_w)), -(2**31), 2**31-1).to(torch.int32)
+    return torch.clamp(torch.round(b / (s_in * s_w)), -(2**31), 2**31 - 1).to(
+        torch.int32
+    )
+
 
 def requant_params(s_in, s_w, s_out, shift=16):
     M = (s_in * s_w) / s_out
     return max(1, int(round(M * (1 << shift)))), shift
+
 
 def calibrate(model, device="cpu"):
     transform = transforms.Compose([transforms.ToTensor()])
@@ -130,6 +145,7 @@ def calibrate(model, device="cpu"):
             fc2_max = max(fc2_max, o2.max().item())
     return {"fc1": (fc1_min, fc1_max), "fc2": (fc2_min, fc2_max)}
 
+
 def full_ptq(model, device="cpu"):
     print("\nQuantizing...")
     model = model.to(device).eval()
@@ -140,7 +156,8 @@ def full_ptq(model, device="cpu"):
     s_w1 = symmetric_scale(model.fc1.weight.data)
     w1_q = quant_sym(model.fc1.weight.data, s_w1)
     s_out1 = max(abs(ranges["fc1"][0]), abs(ranges["fc1"][1])) / 127.0
-    if s_out1 == 0: s_out1 = 1e-8
+    if s_out1 == 0:
+        s_out1 = 1e-8
     b1_q = quant_bias(model.fc1.bias.data, s_in, s_w1)
     m1, sh1 = requant_params(s_in, s_w1, s_out1)
 
@@ -148,7 +165,8 @@ def full_ptq(model, device="cpu"):
     s_w2 = symmetric_scale(model.fc2.weight.data)
     w2_q = quant_sym(model.fc2.weight.data, s_w2)
     s_out2 = max(abs(ranges["fc2"][0]), abs(ranges["fc2"][1])) / 127.0
-    if s_out2 == 0: s_out2 = 1e-8
+    if s_out2 == 0:
+        s_out2 = 1e-8
     b2_q = quant_bias(model.fc2.bias.data, s_in2, s_w2)
     m2, sh2 = requant_params(s_in2, s_w2, s_out2)
 
@@ -156,11 +174,16 @@ def full_ptq(model, device="cpu"):
     print(f"  FC2: s_w={s_w2:.6f}, s_out={s_out2:.6f}, mult={m2}, shift={sh2}")
 
     return {
-        "w1": w1_q.cpu().numpy(), "b1": b1_q.cpu().numpy(),
-        "w2": w2_q.cpu().numpy(), "b2": b2_q.cpu().numpy(),
-        "fc1_mult": m1, "fc1_shift": sh1,
-        "fc2_mult": m2, "fc2_shift": sh2,
-        "hw_zp1": 0, "hw_zp2": 0,
+        "w1": w1_q.cpu().numpy(),
+        "b1": b1_q.cpu().numpy(),
+        "w2": w2_q.cpu().numpy(),
+        "b2": b2_q.cpu().numpy(),
+        "fc1_mult": m1,
+        "fc1_shift": sh1,
+        "fc2_mult": m2,
+        "fc2_shift": sh2,
+        "hw_zp1": 0,
+        "hw_zp2": 0,
     }
 
 
@@ -175,14 +198,19 @@ def hw_mvm(x_u8, w_i8, b_i32, zp, mult, shift, relu):
     out = np.zeros(len(acc), dtype=np.int8)
     for i in range(len(acc)):
         prod = int(acc[i]) * int(mult)
-        shifted = (prod + (1 << (shift-1))) >> shift if shift > 0 else prod
+        shifted = (prod + (1 << (shift - 1))) >> shift if shift > 0 else prod
         out[i] = np.int8(max(-128, min(127, shifted)))
     return out
 
+
 def int8_infer(img_u8, qp):
-    fc1 = hw_mvm(img_u8, qp["w1"], qp["b1"], qp["hw_zp1"], qp["fc1_mult"], qp["fc1_shift"], True)
+    fc1 = hw_mvm(
+        img_u8, qp["w1"], qp["b1"], qp["hw_zp1"], qp["fc1_mult"], qp["fc1_shift"], True
+    )
     fc2_in = fc1.view(np.uint8)
-    fc2 = hw_mvm(fc2_in, qp["w2"], qp["b2"], qp["hw_zp2"], qp["fc2_mult"], qp["fc2_shift"], False)
+    fc2 = hw_mvm(
+        fc2_in, qp["w2"], qp["b2"], qp["hw_zp2"], qp["fc2_mult"], qp["fc2_shift"], False
+    )
     return int(np.argmax(fc2)), fc1, fc2
 
 
@@ -208,10 +236,39 @@ def w2chunks(w):
                 chunks.append(word)
     return chunks
 
+
 def save_hex(lines, path):
     with open(path, "w") as f:
         for l in lines:
             f.write(l + "\n")
+
+
+# ============================================================================
+# Raw INT8 matrix export (for the SW baseline NumPy GEMV)
+# ============================================================================
+def export_qparams_npz(qp, output_dir):
+    """Dump the raw INT8 weight matrices + quant params as a single .npz.
+
+    The SW baseline (benchmark_sw_baseline.py) loads this to run the SAME
+    integer inference in NumPy. Shapes: w1 [16,784], w2 [10,16], biases INT32.
+    """
+    path = os.path.join(output_dir, "mlp_qparams.npz")
+    np.savez(
+        path,
+        fc1_weight=qp["w1"],
+        fc1_bias=qp["b1"],
+        fc1_zp=qp["hw_zp1"],
+        fc1_mult=qp["fc1_mult"],
+        fc1_shift=qp["fc1_shift"],
+        fc2_weight=qp["w2"],
+        fc2_bias=qp["b2"],
+        fc2_zp=qp["hw_zp2"],
+        fc2_mult=qp["fc2_mult"],
+        fc2_shift=qp["fc2_shift"],
+    )
+    print(f"  Raw INT8 matrices saved to {path}")
+    print(f"    fc1_weight {qp['w1'].shape}, fc2_weight {qp['w2'].shape}")
+    return path
 
 
 # ============================================================================
@@ -223,14 +280,58 @@ def main():
     parser.add_argument("--num-test", type=int, default=20)
     parser.add_argument("--output-dir", type=str, default="small_mlp_data")
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--pretrained",
+        type=str,
+        default=None,
+        help="Load pretrained .pt (required for --export-npz-only)",
+    )
+    parser.add_argument(
+        "--export-npz-only",
+        action="store_true",
+        help="Load --pretrained, quantize, and ONLY write mlp_qparams.npz "
+        "(no retraining, no hex/test-image regeneration). Use this to add "
+        "the SW-baseline file without disturbing existing FPGA data.",
+    )
     args = parser.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     os.makedirs(args.output_dir, exist_ok=True)
 
-    # Train
-    model, float_acc = train(args.epochs, device=device, seed=args.seed)
-    torch.save(model.state_dict(), "small_mlp.pt")
+    # ------------------------------------------------------------------
+    # FAST PATH: only (re)export the raw INT8 matrices for the SW baseline.
+    # Requires an existing checkpoint so the weights match the FPGA results.
+    # ------------------------------------------------------------------
+    if args.export_npz_only:
+        if not (args.pretrained and os.path.exists(args.pretrained)):
+            sys.exit(
+                "ERROR: --export-npz-only requires --pretrained <model.pt> that exists.\n"
+                "       Point it at the SAME checkpoint used to generate the FPGA\n"
+                "       data in Thesis/data/ (e.g. --pretrained small_mlp.pt), so the\n"
+                "       SW baseline runs the identical model.\n"
+                "       If you do not have that .pt, you must retrain (drop this flag),\n"
+                "       and then ALSO re-run the hardware benchmarks for consistency."
+            )
+        print(f"[export-npz-only] Loading checkpoint: {args.pretrained}")
+        model = SmallMLP()
+        model.load_state_dict(torch.load(args.pretrained, map_location=device))
+        model = model.to(device).eval()
+
+        qp = full_ptq(model, device)
+        export_qparams_npz(qp, args.output_dir)
+        print("[export-npz-only] Done. No hex files or test images were modified.")
+        return
+
+    # Train (or load if --pretrained given)
+    if args.pretrained and os.path.exists(args.pretrained):
+        print(f"Loading pretrained model: {args.pretrained}")
+        model = SmallMLP()
+        model.load_state_dict(torch.load(args.pretrained, map_location=device))
+        model = model.to(device).eval()
+        float_acc = float("nan")
+    else:
+        model, float_acc = train(args.epochs, device=device, seed=args.seed)
+        torch.save(model.state_dict(), "small_mlp.pt")
 
     # Quantize
     qp = full_ptq(model, device)
@@ -238,7 +339,9 @@ def main():
     # INT8 accuracy
     print("\nINT8 accuracy:")
     transform_raw = transforms.ToTensor()
-    test_set = datasets.MNIST("./data", train=False, download=True, transform=transform_raw)
+    test_set = datasets.MNIST(
+        "./data", train=False, download=True, transform=transform_raw
+    )
     correct = 0
     total = len(test_set)
     for i in range(total):
@@ -257,15 +360,27 @@ def main():
 
     save_hex([f"{v:08x}" for v in fc1_chunks], f"{d}/fc1_weight_tiles.hex")
     save_hex([f"{v:08x}" for v in fc2_chunks], f"{d}/fc2_weight_tiles.hex")
-    save_hex([f"{int(v)&0xFFFFFFFF:08x}" for v in qp["b1"]], f"{d}/fc1_bias.hex")
-    save_hex([f"{int(v)&0xFFFFFFFF:08x}" for v in qp["b2"]], f"{d}/fc2_bias.hex")
-    save_hex([
-        f"{qp['fc1_mult']&0xFFFFFFFF:08x}", f"{qp['fc1_shift']&0xFFFFFFFF:08x}",
-        f"{qp['fc2_mult']&0xFFFFFFFF:08x}", f"{qp['fc2_shift']&0xFFFFFFFF:08x}",
-    ], f"{d}/quant_params.hex")
-    save_hex([
-        f"{qp['hw_zp1']&0xFFFFFFFF:08x}", f"{qp['hw_zp2']&0xFFFFFFFF:08x}",
-    ], f"{d}/zero_points.hex")
+    save_hex([f"{int(v) & 0xFFFFFFFF:08x}" for v in qp["b1"]], f"{d}/fc1_bias.hex")
+    save_hex([f"{int(v) & 0xFFFFFFFF:08x}" for v in qp["b2"]], f"{d}/fc2_bias.hex")
+    save_hex(
+        [
+            f"{qp['fc1_mult'] & 0xFFFFFFFF:08x}",
+            f"{qp['fc1_shift'] & 0xFFFFFFFF:08x}",
+            f"{qp['fc2_mult'] & 0xFFFFFFFF:08x}",
+            f"{qp['fc2_shift'] & 0xFFFFFFFF:08x}",
+        ],
+        f"{d}/quant_params.hex",
+    )
+    save_hex(
+        [
+            f"{qp['hw_zp1'] & 0xFFFFFFFF:08x}",
+            f"{qp['hw_zp2'] & 0xFFFFFFFF:08x}",
+        ],
+        f"{d}/zero_points.hex",
+    )
+
+    # Raw INT8 matrices for the SW baseline (NumPy GEMV)
+    export_qparams_npz(qp, d)
 
     # Export test images
     img_dir = f"{d}/test_images"
@@ -279,17 +394,23 @@ def main():
         if pred == label:
             exp_correct += 1
         pf = f"img_{i:04d}"
-        save_hex([f"{int(v)&0xFF:02x}" for v in img_u8], f"{img_dir}/{pf}.hex")
-        save_hex([f"{int(v)&0xFF:02x}" for v in fc2_out], f"{img_dir}/{pf}_fc2.hex")
+        save_hex([f"{int(v) & 0xFF:02x}" for v in img_u8], f"{img_dir}/{pf}.hex")
+        save_hex([f"{int(v) & 0xFF:02x}" for v in fc2_out], f"{img_dir}/{pf}_fc2.hex")
         with open(f"{img_dir}/{pf}_label.txt", "w") as f:
             f.write(f"{label}\n")
         with open(f"{img_dir}/{pf}_pred.txt", "w") as f:
             f.write(f"{pred}\n")
-        print(f"  [{i:04d}] label={label}, pred={pred} {'✓' if pred==label else '✗'}")
+        print(f"  [{i:04d}] label={label}, pred={pred} {'✓' if pred == label else '✗'}")
 
     # BRAM size report
-    data_bytes = len(fc1_chunks)*4 + len(fc2_chunks)*4 + len(qp["b1"])*4 + len(qp["b2"])*4 + 784
-    print(f"\nBRAM data size: {data_bytes} bytes ({data_bytes/1024:.1f} KB)")
+    data_bytes = (
+        len(fc1_chunks) * 4
+        + len(fc2_chunks) * 4
+        + len(qp["b1"]) * 4
+        + len(qp["b2"]) * 4
+        + 784
+    )
+    print(f"\nBRAM data size: {data_bytes} bytes ({data_bytes / 1024:.1f} KB)")
     print(f"Fits in 32KB BRAM: {'YES' if data_bytes < 28000 else 'NO'}")
     print(f"FC1 chunks: {len(fc1_chunks)}, FC2 chunks: {len(fc2_chunks)}")
     print(f"\nExported to {d}/")

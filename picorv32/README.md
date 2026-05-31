@@ -85,7 +85,7 @@ python3 small_mlp_quantize.py --seed 42
 #-> small_mlp_data
 
 # generate c array.
-python3 gen_fw_data.py --data-dir small_mlp_data --image-idx0
+python3 gen_fw_data.py --data-dir small_mlp_data --image-idx 0
 ```
 
 ### 3. 获取　PicoRV32

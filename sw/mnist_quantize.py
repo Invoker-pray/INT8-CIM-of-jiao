@@ -21,6 +21,11 @@ Usage:
   python mnist_quantize.py --num-test 100        # Export 100 test images
   python mnist_quantize.py --output-dir mnist_real_data
 
+  # NEW: only (re)export the raw INT8 matrices needed by the SW baseline,
+  # from an existing checkpoint, WITHOUT retraining or touching the hex files:
+  python mnist_quantize.py --export-npz-only --pretrained mnist_mlp.pt \
+                           --output-dir mnist_real_data
+
 Output files (per test image):
   mnist_real_data/
     model_info.txt          — model summary + accuracy
@@ -29,6 +34,8 @@ Output files (per test image):
     fc1_bias.hex            — FC1 bias INT32
     fc2_bias.hex            — FC2 bias INT32
     quant_params.hex        — fc1_mult, fc1_shift, fc2_mult, fc2_shift
+    zero_points.hex         — fc1 input zp, fc2 input zp (both 0 for this model)
+    mlp_qparams.npz         — raw INT8 weight matrices (for SW baseline GEMV)
     test_images/
       img_0000.hex          — test image UINT8
       img_0000_label.txt    — true label
@@ -420,6 +427,34 @@ def save_hex(lines, path):
 
 
 # ============================================================================
+# 5b. Raw INT8 matrix export (for the SW baseline NumPy GEMV)
+# ============================================================================
+def export_qparams_npz(qparams, output_dir):
+    """Dump the raw INT8 weight matrices + quant params as a single .npz.
+
+    The SW baseline (benchmark_sw_baseline.py) loads this to run the SAME
+    integer inference in NumPy. Shapes: w1 [128,784], w2 [10,128], biases INT32.
+    """
+    path = os.path.join(output_dir, "mlp_qparams.npz")
+    np.savez(
+        path,
+        fc1_weight=qparams["w1"],
+        fc1_bias=qparams["b1"],
+        fc1_zp=qparams["hw_zp1"],
+        fc1_mult=qparams["fc1_mult"],
+        fc1_shift=qparams["fc1_shift"],
+        fc2_weight=qparams["w2"],
+        fc2_bias=qparams["b2"],
+        fc2_zp=qparams["hw_zp2"],
+        fc2_mult=qparams["fc2_mult"],
+        fc2_shift=qparams["fc2_shift"],
+    )
+    print(f"  Raw INT8 matrices saved to {path}")
+    print(f"    fc1_weight {qparams['w1'].shape}, fc2_weight {qparams['w2'].shape}")
+    return path
+
+
+# ============================================================================
 # 6. Main pipeline
 # ============================================================================
 def main():
@@ -439,10 +474,47 @@ def main():
         default=None,
         help="Random seed (default: None = fully random)",
     )
+    parser.add_argument(
+        "--export-npz-only",
+        action="store_true",
+        help="Load --pretrained, quantize, and ONLY write mlp_qparams.npz "
+        "(no retraining, no hex/test-image regeneration). Use this to add "
+        "the SW-baseline file without disturbing existing FPGA data.",
+    )
     args = parser.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     os.makedirs(args.output_dir, exist_ok=True)
+
+    # ------------------------------------------------------------------
+    # FAST PATH: only (re)export the raw INT8 matrices for the SW baseline.
+    # Requires an existing checkpoint so the weights match the FPGA results.
+    # ------------------------------------------------------------------
+    if args.export_npz_only:
+        if not (args.pretrained and os.path.exists(args.pretrained)):
+            sys.exit(
+                "ERROR: --export-npz-only requires --pretrained <model.pt> that exists.\n"
+                "       Point it at the SAME checkpoint used to generate the FPGA\n"
+                "       data in Thesis/data/ (e.g. --pretrained mnist_mlp.pt), so the\n"
+                "       SW baseline runs the identical model.\n"
+                "       If you do not have that .pt, you must retrain (drop this flag),\n"
+                "       and then ALSO re-run the hardware benchmarks for consistency."
+            )
+        print(f"[export-npz-only] Loading checkpoint: {args.pretrained}")
+        model = MnistMLP()
+        model.load_state_dict(torch.load(args.pretrained, map_location=device))
+        model = model.to(device).eval()
+
+        cal_loader = torch.utils.data.DataLoader(
+            datasets.MNIST(
+                "./data", train=False, download=True, transform=transforms.ToTensor()
+            ),
+            batch_size=1000,
+        )
+        qparams = full_ptq(model, cal_loader, device)
+        export_qparams_npz(qparams, args.output_dir)
+        print("[export-npz-only] Done. No hex files or test images were modified.")
+        return
 
     # ---- Train or load ----
     # Model is trained on raw [0,1] pixels (no Normalize)
@@ -531,7 +603,20 @@ def main():
         ],
         os.path.join(args.output_dir, "quant_params.hex"),
     )
-    print(f"  Weights/bias/quant saved to {args.output_dir}/")
+    # Zero points — write them explicitly so benchmark_e2e.load_mlp_model reads
+    # the true zp (0) instead of falling back to a wrong default. This MNIST MLP
+    # is quantized with hw_zp1 = hw_zp2 = 0.
+    save_hex(
+        [
+            f"{qparams['hw_zp1'] & 0xFFFFFFFF:08x}",
+            f"{qparams['hw_zp2'] & 0xFFFFFFFF:08x}",
+        ],
+        os.path.join(args.output_dir, "zero_points.hex"),
+    )
+    print(f"  Weights/bias/quant/zp saved to {args.output_dir}/")
+
+    # Raw INT8 matrices for the SW baseline (NumPy GEMV)
+    export_qparams_npz(qparams, args.output_dir)
 
     # Test images
     img_dir = os.path.join(args.output_dir, "test_images")
