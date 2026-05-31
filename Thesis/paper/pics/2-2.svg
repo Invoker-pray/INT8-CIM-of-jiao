@@ -1,0 +1,1054 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="680"
+   height="560"
+   viewBox="0 0 680 560"
+   role="img"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="2-2.svg"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="2"
+     inkscape:cx="288.5"
+     inkscape:cy="167.5"
+     inkscape:window-width="1908"
+     inkscape:window-height="1035"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg1" />
+  <title
+     id="title1">CIM Accelerator — Zynq-7000 (fully editable elements)</title>
+  <desc
+     id="desc1">Every box, label and arrow is a separate named element for easy editing in Illustrator/Inkscape.</desc>
+  <defs
+     id="defs1">
+    <marker
+       id="arw"
+       viewBox="0 0 10 10"
+       refX="8"
+       refY="5"
+       markerWidth="5"
+       markerHeight="5"
+       orient="auto-start-reverse"
+       preserveAspectRatio="xMidYMid">
+      <path
+         d="M2 1L8 5L2 9"
+         fill="none"
+         stroke="context-stroke"
+         stroke-width="1.5"
+         stroke-linecap="round"
+         stroke-linejoin="round"
+         id="path1" />
+    </marker>
+    <marker
+       id="arw-7"
+       viewBox="0 0 10 10"
+       refX="8"
+       refY="5"
+       markerWidth="5"
+       markerHeight="5"
+       orient="auto-start-reverse"
+       preserveAspectRatio="xMidYMid">
+      <path
+         d="M 2,1 8,5 2,9"
+         fill="none"
+         stroke="context-stroke"
+         stroke-width="1.5"
+         stroke-linecap="round"
+         stroke-linejoin="round"
+         id="path1-5" />
+    </marker>
+  </defs>
+  <!-- BACKGROUND -->
+  <rect
+     id="bg"
+     x="0"
+     y="0"
+     width="680"
+     height="560"
+     fill="white" />
+  <path
+     style="fill:none;stroke:#6b6b6b;stroke-width:1.6;stroke-linejoin:bevel;stroke-opacity:1;marker-end:url(#arw-7)"
+     d="m 488.45106,65.291518 h 13.6388"
+     id="path5-5" />
+  <!-- TITLE -->
+  <text
+     id="title"
+     x="340"
+     y="18"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="13"
+     font-weight="700"
+     fill="#111">CIM Accelerator System — Zynq-7000 SoC</text>
+  <!-- ── PS REGION BG ── -->
+  <rect
+     id="ps-bg"
+     x="6"
+     y="26"
+     width="112"
+     height="320"
+     rx="5"
+     fill="#EBEBEB"
+     stroke="#888"
+     stroke-width="0.75" />
+  <text
+     id="ps-bg-label"
+     x="62"
+     y="40"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="9"
+     font-weight="700"
+     fill="#444">Processing System (PS)</text>
+  <!-- BOX: ARM -->
+  <rect
+     id="box-arm"
+     x="14"
+     y="48"
+     width="96"
+     height="44"
+     rx="3"
+     fill="#D8D8D8"
+     stroke="#555555"
+     stroke-width="0.75" />
+  <text
+     id="lbl-arm-1"
+     x="62"
+     y="66"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="9.5"
+     font-weight="700"
+     fill="#222">ARM Cortex-A9</text>
+  <text
+     id="lbl-arm-2"
+     x="62"
+     y="80"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="8"
+     fill="#555">dual-core 667 MHz</text>
+  <!-- BOX: DDR3 -->
+  <rect
+     id="box-ddr"
+     x="14"
+     y="118"
+     width="96"
+     height="40"
+     rx="3"
+     fill="#D8D8D8"
+     stroke="#555555"
+     stroke-width="0.75" />
+  <text
+     id="lbl-ddr-1"
+     x="62"
+     y="134"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="9.5"
+     font-weight="700"
+     fill="#222">DDR3 Memory</text>
+  <text
+     id="lbl-ddr-2"
+     x="62"
+     y="148"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="8"
+     fill="#555">512 MB</text>
+  <!-- ── AXI COLUMN BG ── -->
+  <rect
+     id="axi-bg"
+     x="128"
+     y="26"
+     width="84"
+     height="320"
+     rx="4"
+     fill="#EBEBEB"
+     stroke="#888"
+     stroke-width="0.75" />
+  <text
+     id="axi-bg-label"
+     x="170"
+     y="40"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="9"
+     font-weight="700"
+     fill="#444">AXI Interconnect</text>
+  <!-- BOX: AXI Bus -->
+  <rect
+     id="box-axibus"
+     x="136"
+     y="48"
+     width="68"
+     height="100"
+     rx="3"
+     fill="#D8D8D8"
+     stroke="#555555"
+     stroke-width="0.75" />
+  <text
+     id="lbl-axibus-title"
+     x="170"
+     y="63"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="9"
+     font-weight="700"
+     fill="#222">AXI Bus</text>
+  <text
+     id="lbl-axibus-l1"
+     x="170"
+     y="79"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#333">AXI4-Lite (CSR)</text>
+  <text
+     id="lbl-axibus-l2"
+     x="170"
+     y="93"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#333">AXI4-S MM2S</text>
+  <text
+     id="lbl-axibus-l3"
+     x="170"
+     y="107"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#333">AXI4-S S2MM</text>
+  <text
+     id="lbl-axibus-bw"
+     x="170"
+     y="138"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#777">32-bit</text>
+  <!-- BOX: AXI DMA -->
+  <rect
+     id="box-dma"
+     x="136"
+     y="160"
+     width="68"
+     height="48"
+     rx="3"
+     fill="#D8D8D8"
+     stroke="#555555"
+     stroke-width="0.75" />
+  <text
+     id="lbl-dma-1"
+     x="170"
+     y="177"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="9"
+     font-weight="700"
+     fill="#222">AXI DMA IP</text>
+  <text
+     id="lbl-dma-2"
+     x="170"
+     y="190"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#444">MM2S+S2MM</text>
+  <text
+     id="lbl-dma-3"
+     x="170"
+     y="202"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#777">AXI4-S 32-bit</text>
+  <!-- ── CIM IP BOUNDARY ── -->
+  <rect
+     id="cim-boundary"
+     x="222"
+     y="26"
+     width="452"
+     height="494"
+     rx="6"
+     fill="none"
+     stroke="#2E5C8A"
+     stroke-width="2"
+     stroke-dasharray="8 4" />
+  <text
+     id="cim-boundary-label"
+     x="232"
+     y="42"
+     font-family="'Times New Roman',Times,serif"
+     font-size="11"
+     font-weight="700"
+     fill="#2E5C8A">CIM IP Core (PL Fabric)</text>
+  <!-- ── INTERFACE ROW ── -->
+  <rect
+     id="box-csr"
+     x="230"
+     y="48"
+     width="120"
+     height="36"
+     rx="3"
+     fill="#D8D8D8"
+     stroke="#555555"
+     stroke-width="0.75" />
+  <text
+     id="lbl-csr-1"
+     x="290"
+     y="63"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="9"
+     font-weight="700"
+     fill="#222">AXI4-Lite Slave</text>
+  <text
+     id="lbl-csr-2"
+     x="290"
+     y="76"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#555">CSR registers</text>
+  <rect
+     id="box-sink"
+     x="364"
+     y="48"
+     width="124"
+     height="36"
+     rx="3"
+     fill="#D8D8D8"
+     stroke="#555555"
+     stroke-width="0.75" />
+  <text
+     id="lbl-sink-1"
+     x="426"
+     y="63"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="9"
+     font-weight="700"
+     fill="#222">AXIS Sink (MM2S)</text>
+  <text
+     id="lbl-sink-2"
+     x="426"
+     y="76"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#555">wt + input data in</text>
+  <rect
+     id="box-source"
+     x="502"
+     y="48"
+     width="164"
+     height="36"
+     rx="3"
+     fill="#D8D8D8"
+     stroke="#555555"
+     stroke-width="0.75" />
+  <text
+     id="lbl-source-1"
+     x="584"
+     y="63"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="9"
+     font-weight="700"
+     fill="#222">AXIS Source (S2MM)</text>
+  <text
+     id="lbl-source-2"
+     x="584"
+     y="76"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#555">INT8 output out</text>
+  <!-- ── cim_accel_core BG ── -->
+  <rect
+     id="box-core-bg"
+     x="230"
+     y="130"
+     width="436"
+     height="178"
+     rx="5"
+     fill="#B5D99C"
+     stroke="#4A7A2E"
+     stroke-width="1.2" />
+  <text
+     id="lbl-core-title"
+     x="448"
+     y="149"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="12"
+     font-weight="700"
+     fill="#1f4010">cim_accel_core</text>
+  <text
+     id="lbl-core-sub"
+     x="448"
+     y="163"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="9"
+     fill="#2d5a18">FSM + Pipeline Controller</text>
+  <!-- BOX: cim_tile -->
+  <rect
+     id="box-tile"
+     x="240"
+     y="174"
+     width="144"
+     height="68"
+     rx="4"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75" />
+  <text
+     id="lbl-tile-1"
+     x="312"
+     y="192"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="10"
+     font-weight="700"
+     fill="#5a2a00">cim_tile 16×16</text>
+  <text
+     id="lbl-tile-2"
+     x="312"
+     y="206"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="8.5"
+     fill="#5a2a00">INT8×INT8 + ACC</text>
+  <text
+     id="lbl-tile-3"
+     x="312"
+     y="218"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="8"
+     fill="#5a2a00">256 MACs/cycle</text>
+  <text
+     id="lbl-tile-4"
+     x="312"
+     y="231"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#B86B1F">DSP48E1 mapped</text>
+  <!-- BOX: psum_accum -->
+  <rect
+     id="box-psum"
+     x="398"
+     y="174"
+     width="114"
+     height="42"
+     rx="4"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75" />
+  <text
+     id="lbl-psum-1"
+     x="455"
+     y="191"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="9.5"
+     font-weight="700"
+     fill="#5a2a00">psum_accum</text>
+  <text
+     id="lbl-psum-2"
+     x="455"
+     y="204"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="8"
+     fill="#5a2a00">bias_add · ReLU</text>
+  <text
+     id="lbl-psum-3"
+     x="455"
+     y="214"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#B86B1F">INT32</text>
+  <!-- BOX: requant -->
+  <rect
+     id="box-requant"
+     x="398"
+     y="228"
+     width="114"
+     height="36"
+     rx="4"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75" />
+  <text
+     id="lbl-requant-1"
+     x="455"
+     y="244"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="9.5"
+     font-weight="700"
+     fill="#5a2a00">requant</text>
+  <text
+     id="lbl-requant-2"
+     x="455"
+     y="257"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="8"
+     fill="#5a2a00">scale · clip → INT8</text>
+  <!-- BOX: ctrl_reg -->
+  <rect
+     id="box-ctrlreg"
+     x="240"
+     y="258"
+     width="72"
+     height="32"
+     rx="2"
+     fill="#D8D8D8"
+     stroke="#555555"
+     stroke-width="0.5" />
+  <text
+     id="lbl-ctrlreg-1"
+     x="276"
+     y="271"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="8"
+     font-weight="700"
+     fill="#222">ctrl_reg</text>
+  <text
+     id="lbl-ctrlreg-2"
+     x="276"
+     y="282"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#555">start/done/cfg</text>
+  <!-- BOX: loop_ctrl -->
+  <rect
+     id="box-loopctrl"
+     x="322"
+     y="258"
+     width="66"
+     height="32"
+     rx="2"
+     fill="#D8D8D8"
+     stroke="#555555"
+     stroke-width="0.5" />
+  <text
+     id="lbl-loopctrl-1"
+     x="355"
+     y="271"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="8"
+     font-weight="700"
+     fill="#222">loop_ctrl</text>
+  <text
+     id="lbl-loopctrl-2"
+     x="355"
+     y="282"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#555">tile iter/stride</text>
+  <!-- BOX: irq_gen -->
+  <rect
+     id="box-irq"
+     x="528"
+     y="174"
+     width="128"
+     height="32"
+     rx="2"
+     fill="#D8D8D8"
+     stroke="#555555"
+     stroke-width="0.5" />
+  <text
+     id="lbl-irq-1"
+     x="592"
+     y="187"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="8"
+     font-weight="700"
+     fill="#222">irq_gen</text>
+  <text
+     id="lbl-irq-2"
+     x="592"
+     y="199"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#555">done interrupt</text>
+  <!-- ── STORAGE ROW ── -->
+  <rect
+     id="box-wsram"
+     x="230"
+     y="332"
+     width="154"
+     height="52"
+     rx="4"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     stroke-width="0.75" />
+  <text
+     id="lbl-wsram-1"
+     x="307"
+     y="350"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="9.5"
+     font-weight="700"
+     fill="#1a3a50">weight_sram</text>
+  <text
+     id="lbl-wsram-2"
+     x="307"
+     y="364"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="8.5"
+     fill="#2E5C8A">16 banks × 128-bit</text>
+  <text
+     id="lbl-wsram-3"
+     x="307"
+     y="377"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#4a7a9b">INT8 weights</text>
+  <rect
+     id="box-bsram"
+     x="394"
+     y="332"
+     width="118"
+     height="52"
+     rx="4"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     stroke-width="0.75" />
+  <text
+     id="lbl-bsram-1"
+     x="453"
+     y="350"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="9.5"
+     font-weight="700"
+     fill="#1a3a50">bias_sram</text>
+  <text
+     id="lbl-bsram-2"
+     x="453"
+     y="364"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="8.5"
+     fill="#2E5C8A">256 × 32-bit</text>
+  <text
+     id="lbl-bsram-3"
+     x="453"
+     y="377"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#4a7a9b">INT32 bias</text>
+  <rect
+     id="box-ibuf"
+     x="230"
+     y="400"
+     width="148"
+     height="52"
+     rx="4"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     stroke-width="0.75" />
+  <text
+     id="lbl-ibuf-1"
+     x="304"
+     y="418"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="9.5"
+     font-weight="700"
+     fill="#1a3a50">input_buffer</text>
+  <text
+     id="lbl-ibuf-2"
+     x="304"
+     y="432"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="8.5"
+     fill="#2E5C8A">dual-bank × 128-bit</text>
+  <text
+     id="lbl-ibuf-3"
+     x="304"
+     y="445"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#4a7a9b">ping-pong INT8</text>
+  <rect
+     id="box-obuf"
+     x="388"
+     y="400"
+     width="150"
+     height="52"
+     rx="4"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     stroke-width="0.75" />
+  <text
+     id="lbl-obuf-1"
+     x="463"
+     y="418"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="9.5"
+     font-weight="700"
+     fill="#1a3a50">output_buffer</text>
+  <text
+     id="lbl-obuf-2"
+     x="463"
+     y="432"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="8.5"
+     fill="#2E5C8A">dual-bank × 32-bit</text>
+  <text
+     id="lbl-obuf-3"
+     x="463"
+     y="445"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#4a7a9b">INT8 results</text>
+  <!-- ══ ARROWS ══ -->
+  <!-- arr-arm-ddr -->
+  <path
+     id="arr-arm-ddr"
+     d="M62 92 L62 118"
+     fill="none"
+     stroke="#555555"
+     stroke-width="1"
+     marker-end="url(#arw)" />
+  <text
+     id="lbl-arr-arm-ddr"
+     x="64"
+     y="107"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#555">DDR ctrl</text>
+  <!-- arr-ps-axi-gp -->
+  <path
+     id="arr-ps-axi-gp"
+     d="M110 66 L136 66"
+     fill="none"
+     stroke="#555555"
+     stroke-width="1.2"
+     marker-end="url(#arw)" />
+  <text
+     id="lbl-arr-ps-axi-gp"
+     x="123"
+     y="63"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#555">GP0</text>
+  <!-- arr-ps-axi-hp -->
+  <path
+     id="arr-ps-axi-hp"
+     d="M110 144 L126 144 L126 178 L136 178"
+     fill="none"
+     stroke="#888888"
+     stroke-width="1"
+     marker-end="url(#arw)" />
+  <text
+     id="lbl-arr-ps-axi-hp"
+     x="113.13567"
+     y="142.45105"
+     font-family="'Times New Roman', Times, serif"
+     font-size="7.5px"
+     fill="#666666">HP0</text>
+  <!-- arr-axi-dma-link -->
+  <path
+     id="arr-axi-dma-link"
+     d="M170 148 L170 160"
+     fill="none"
+     stroke="#555555"
+     stroke-width="0.75"
+     stroke-dasharray="3 2"
+     marker-end="url(#arw)" />
+  <!-- arr-axi-csr -->
+  <path
+     id="arr-axi-csr"
+     d="M204 66 L230 66"
+     fill="none"
+     stroke="#555555"
+     stroke-width="1.2"
+     marker-end="url(#arw)" />
+  <text
+     id="lbl-arr-axi-csr"
+     x="214.27225"
+     y="63.227314"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="7.5px"
+     fill="#555555">CSR</text>
+  <!-- arr-dma-sink -->
+  <text
+     id="lbl-arr-dma-sink"
+     x="290"
+     y="103"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#666">AXI4-S</text>
+  <!-- arr-dma-source -->
+  <text
+     id="lbl-arr-dma-source"
+     x="507.86453"
+     y="111.87485"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="7.5px"
+     fill="#666666">AXI4-S</text>
+  <!-- arr-csr-core -->
+  <path
+     id="arr-csr-core"
+     d="M290 84 L290 130"
+     fill="none"
+     stroke="#333333"
+     stroke-width="0.9"
+     stroke-dasharray="4 3"
+     marker-end="url(#arw)" />
+  <text
+     id="lbl-arr-csr-core"
+     x="292"
+     y="111.72776"
+     font-family="'Times New Roman', Times, serif"
+     font-size="7.5px"
+     fill="#333333">ctrl</text>
+  <!-- arr-sink-wsram  RED weight path -->
+  <path
+     id="arr-sink-wsram"
+     d="M426 84 L426 120 L307 120 L307 332"
+     fill="none"
+     stroke="#C0392B"
+     stroke-width="1.8"
+     marker-end="url(#arw)" />
+  <text
+     id="lbl-arr-sink-wsram"
+     x="320.16251"
+     y="320.56662"
+     font-family="'Times New Roman', Times, serif"
+     font-size="8px"
+     fill="#c0392b">128-bit</text>
+  <!-- arr-wsram-tile  RED -->
+  <!-- arr-sink-ibuf  BLUE activation path -->
+  <path
+     id="arr-sink-ibuf"
+     d="M442 84 L442 124 L304 124 L304 400"
+     fill="none"
+     stroke="#1155CC"
+     stroke-width="1.8"
+     marker-end="url(#arw)" />
+  <text
+     id="lbl-arr-sink-ibuf"
+     x="251.55339"
+     y="330.18466"
+     font-family="'Times New Roman', Times, serif"
+     font-size="8px"
+     fill="#1155cc"
+     inkscape:transform-center-x="5.833631"
+     inkscape:transform-center-y="0.35355339">128-bit</text>
+  <!-- arr-ibuf-tile  BLUE -->
+  <!-- arr-tile-psum  GREEN -->
+  <path
+     id="arr-tile-psum"
+     d="M384 204 L398 204"
+     fill="none"
+     stroke="#1A8A1A"
+     stroke-width="1.8"
+     marker-end="url(#arw)" />
+  <text
+     id="lbl-arr-tile-psum"
+     x="391"
+     y="200"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#1A8A1A">32-bit</text>
+  <!-- arr-bsram-psum  GREEN dashed -->
+  <path
+     id="arr-bsram-psum"
+     d="M453 332 L453 296 L512 296 L512 216"
+     fill="none"
+     stroke="#1A8A1A"
+     stroke-width="1.2"
+     stroke-dasharray="5 3"
+     marker-end="url(#arw)" />
+  <text
+     id="lbl-arr-bsram-psum"
+     x="486"
+     y="293"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#1A8A1A">32-bit</text>
+  <!-- arr-psum-requant  GREEN -->
+  <path
+     id="arr-psum-requant"
+     d="M455 216 L455 228"
+     fill="none"
+     stroke="#1A8A1A"
+     stroke-width="1.8"
+     marker-end="url(#arw)" />
+  <!-- arr-requant-obuf  AMBER -->
+  <path
+     id="arr-requant-obuf"
+     d="M455 264 L455 308 L463 308 L463 400"
+     fill="none"
+     stroke="#B8960A"
+     stroke-width="1.8"
+     marker-end="url(#arw)" />
+  <text
+     id="lbl-arr-requant-obuf"
+     x="467.50046"
+     y="327.17523"
+     font-family="'Times New Roman', Times, serif"
+     font-size="8px"
+     fill="#b8960a">INT8</text>
+  <!-- arr-obuf-source  AMBER -->
+  <path
+     id="arr-obuf-source"
+     d="M538 426 L608 426 L608 112 L584 112 L584 84"
+     fill="none"
+     stroke="#B8960A"
+     stroke-width="1.8"
+     marker-end="url(#arw)" />
+  <text
+     id="lbl-arr-obuf-source"
+     x="611.54535"
+     y="315.45551"
+     font-family="'Times New Roman', Times, serif"
+     font-size="8px"
+     fill="#b8960a">AXI4-S</text>
+  <text
+     id="lbl-arr-obuf-source-bw"
+     x="612"
+     y="321"
+     font-family="'Times New Roman',Times,serif"
+     font-size="8"
+     fill="#B8960A">32-bit</text>
+  <!-- arr-ctrl-wsram  ctrl dashed -->
+  <path
+     id="arr-ctrl-wsram"
+     d="M276 290 L276 318 L307 318 L307 332"
+     fill="none"
+     stroke="#444444"
+     stroke-width="0.75"
+     stroke-dasharray="3 2"
+     marker-end="url(#arw)" />
+  <!-- arr-ctrl-ibuf  ctrl dashed -->
+  <path
+     id="arr-ctrl-ibuf"
+     d="M276 290 L276 322 L304 322 L304 400"
+     fill="none"
+     stroke="#444444"
+     stroke-width="0.75"
+     stroke-dasharray="3 2"
+     marker-end="url(#arw)" />
+  <!-- arr-ctrl-obuf  ctrl dashed -->
+  <path
+     id="arr-ctrl-obuf"
+     d="M355 290 L355 316 L463 316 L463 400"
+     fill="none"
+     stroke="#444444"
+     stroke-width="0.75"
+     stroke-dasharray="3 2"
+     marker-end="url(#arw)" />
+  <!-- arr-irq-ps  IRQ back to PS -->
+  <path
+     id="arr-irq-ps"
+     d="M592 206 L648 206 L648 490 L62 490 L62 460"
+     fill="none"
+     stroke="#444444"
+     stroke-width="0.75"
+     stroke-dasharray="4 2"
+     marker-end="url(#arw)" />
+  <text
+     id="lbl-arr-irq-ps"
+     x="651"
+     y="360"
+     font-family="'Times New Roman',Times,serif"
+     font-size="7.5"
+     fill="#444">IRQ</text>
+  <!-- REGION LABELS -->
+  <text
+     id="lbl-region-ps"
+     x="62"
+     y="480"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="8"
+     font-style="italic"
+     fill="#999">Zynq PS</text>
+  <text
+     id="lbl-region-axi"
+     x="170"
+     y="480"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="8"
+     font-style="italic"
+     fill="#999">AXI fabric</text>
+  <text
+     id="lbl-region-pl"
+     x="420"
+     y="508"
+     text-anchor="middle"
+     font-family="'Times New Roman',Times,serif"
+     font-size="8"
+     font-style="italic"
+     fill="#999">PL (programmable logic)</text>
+  <path
+     style="fill:none;stroke:#b2b2b2;stroke-linejoin:bevel;stroke-linecap:butt;stroke-opacity:1;marker-end:;stroke-width:1.6;stroke-dasharray:none"
+     d="m 203.81171,185.00574 h 21.53846 l 0.32147,-71.68771 343.32951,1.76808 -0.26323,-26.66123 -10e-6,-4.034812"
+     id="path2" />
+  <path
+     style="fill:none;stroke:#6b6b6b;stroke-width:1.6;stroke-linejoin:bevel;stroke-opacity:1;marker-end:url(#arw)"
+     d="m 350.0625,64.102354 h 13.6388"
+     id="path5" />
+  <path
+     style="fill:none;stroke:#6b6b6b;stroke-width:1.6;stroke-linejoin:bevel;stroke-opacity:1"
+     d="M 405.52695,84.560552 V 103.88218 H 216.8569 l -0.22731,64.32967 -12.27492,-0.22731"
+     id="path6" />
+  <path
+     style="fill:none;stroke:#ce0808;stroke-width:1.6;stroke-linejoin:bevel;stroke-opacity:1;marker-end:url(#arw-7)"
+     d="m 315.5464,331.63308 0.70711,-88.7419"
+     id="path7" />
+  <path
+     style="fill:none;stroke:#0928de;stroke-width:1.6;stroke-linejoin:bevel;stroke-opacity:1;marker-end:url(#arw)"
+     d="m 245.0125,399.33856 0.88388,-156.97771"
+     id="path8" />
+</svg>

@@ -1,0 +1,1107 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="100%"
+   viewBox="0 0 685.2 820"
+   role="img"
+   style=""
+   version="1.1"
+   id="svg95"
+   sodipodi:docname="4-5.svg"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview95"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="2.1243902"
+     inkscape:cx="348.80597"
+     inkscape:cy="131.3318"
+     inkscape:window-width="1908"
+     inkscape:window-height="1035"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg95" />
+  <title
+     style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="title1">SQ-mapping block-diagonal weight packing optimization</title>
+  <desc
+     style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="desc1">Side-by-side comparison of naive per-pixel MVM (0.04% utilization) versus SQ-mapping with k_pack=42 (42 simultaneous output pixels, block-diagonal structure).</desc>
+  <defs
+     id="defs45">
+    <marker
+       id="arrow"
+       viewBox="0 0 10 10"
+       refX="8"
+       refY="5"
+       markerWidth="6"
+       markerHeight="6"
+       orient="auto-start-reverse">
+      <path
+         d="M2 1L8 5L2 9"
+         fill="none"
+         stroke="context-stroke"
+         stroke-width="1.5"
+         stroke-linecap="round"
+         stroke-linejoin="round"
+         id="path1" />
+    </marker>
+    <pattern
+       id="hatch"
+       patternUnits="userSpaceOnUse"
+       width="5"
+       height="5"
+       patternTransform="rotate(45)">
+      <line
+         x1="0"
+         y1="0"
+         x2="0"
+         y2="5"
+         stroke="#aaaaaa"
+         stroke-width="0.8"
+         stroke-opacity="0.45"
+         id="line1" />
+    </pattern>
+    <mask
+       id="imagine-text-gaps-9l5u1f"
+       maskUnits="userSpaceOnUse">
+      <rect
+         x="0"
+         y="0"
+         width="685.2"
+         height="820"
+         fill="white"
+         id="rect1" />
+      <rect
+         x="109.21477508544922"
+         y="28.668136596679688"
+         width="121.5704574584961"
+         height="18.353693962097168"
+         fill="black"
+         rx="2"
+         id="rect2" />
+      <rect
+         x="131.0978546142578"
+         y="45.93450927734375"
+         width="77.80428314208984"
+         height="15.331863403320312"
+         fill="black"
+         rx="2"
+         id="rect3" />
+      <rect
+         x="111.38265228271484"
+         y="71.6899642944336"
+         width="121.23469543457031"
+         height="14.576406478881836"
+         fill="black"
+         rx="2"
+         id="rect4" />
+      <rect
+         x="38"
+         y="86.5"
+         width="16"
+         height="13.75"
+         fill="black"
+         rx="2"
+         id="rect5" />
+      <rect
+         x="136.1062774658203"
+         y="107.6899642944336"
+         width="47.78743362426758"
+         height="14.576406478881836"
+         fill="black"
+         rx="2"
+         id="rect6" />
+      <rect
+         x="122.67254638671875"
+         y="183.93450927734375"
+         width="98.6549072265625"
+         height="15.331863403320312"
+         fill="black"
+         rx="2"
+         id="rect7" />
+      <rect
+         x="81.9007797241211"
+         y="298.93450927734375"
+         width="176.19842529296875"
+         height="15.33184814453125"
+         fill="black"
+         rx="2"
+         id="rect8" />
+      <rect
+         x="114.15882110595703"
+         y="314.6899719238281"
+         width="111.68235778808594"
+         height="14.576406478881836"
+         fill="black"
+         rx="2"
+         id="rect9" />
+      <rect
+         x="104.11962890625"
+         y="344.93450927734375"
+         width="131.7607421875"
+         height="15.331863403320312"
+         fill="black"
+         rx="2"
+         id="rect10" />
+      <rect
+         x="123.52649688720703"
+         y="359.6899719238281"
+         width="92.94701385498047"
+         height="14.576406478881836"
+         fill="black"
+         rx="2"
+         id="rect11" />
+      <rect
+         x="127.59757995605469"
+         y="389.6899719238281"
+         width="84.80485534667969"
+         height="14.576406478881836"
+         fill="black"
+         rx="2"
+         id="rect12" />
+      <rect
+         x="472.62554931640625"
+         y="28.668136596679688"
+         width="74.7488784790039"
+         height="18.353693962097168"
+         fill="black"
+         rx="2"
+         id="rect13" />
+      <rect
+         x="477.88018798828125"
+         y="45.93450927734375"
+         width="64.23962020874023"
+         height="15.331863403320312"
+         fill="black"
+         rx="2"
+         id="rect14" />
+      <rect
+         x="451.3826599121094"
+         y="71.6899642944336"
+         width="121.23469543457031"
+         height="14.576406478881836"
+         fill="black"
+         rx="2"
+         id="rect15" />
+      <rect
+         x="441.48516845703125"
+         y="114.1790542602539"
+         width="19.029680252075195"
+         height="16.8427791595459"
+         fill="black"
+         rx="2"
+         id="rect16" />
+      <rect
+         x="517.4851684570312"
+         y="165.17904663085938"
+         width="19.029680252075195"
+         height="16.8427791595459"
+         fill="black"
+         rx="2"
+         id="rect17" />
+      <rect
+         x="594"
+         y="90.5"
+         width="12"
+         height="13.75"
+         fill="black"
+         rx="2"
+         id="rect18" />
+      <rect
+         x="389"
+         y="230.5"
+         width="12"
+         height="13.75"
+         fill="black"
+         rx="2"
+         id="rect19" />
+      <rect
+         x="534"
+         y="105.5"
+         width="12"
+         height="13.75"
+         fill="black"
+         rx="2"
+         id="rect20" />
+      <rect
+         x="409"
+         y="210.5"
+         width="12"
+         height="13.75"
+         fill="black"
+         rx="2"
+         id="rect21" />
+      <rect
+         x="438"
+         y="49.68996810913086"
+         width="40.702919006347656"
+         height="14.576406478881836"
+         fill="black"
+         rx="2"
+         id="rect22" />
+      <rect
+         x="631"
+         y="101.6899642944336"
+         width="27.356502532958984"
+         height="14.576406478881836"
+         fill="black"
+         rx="2"
+         id="rect23" />
+      <rect
+         x="631"
+         y="114.5"
+         width="48.21666717529297"
+         height="13.75"
+         fill="black"
+         rx="2"
+         id="rect24" />
+      <rect
+         x="631"
+         y="124.5"
+         width="28.883333206176758"
+         height="13.75"
+         fill="black"
+         rx="2"
+         id="rect25" />
+      <rect
+         x="414.4637145996094"
+         y="298.93450927734375"
+         width="191.07254028320312"
+         height="15.33184814453125"
+         fill="black"
+         rx="2"
+         id="rect26" />
+      <rect
+         x="433.45928955078125"
+         y="314.6899719238281"
+         width="153.0814208984375"
+         height="14.576416015625"
+         fill="black"
+         rx="2"
+         id="rect27" />
+      <rect
+         x="431.32720947265625"
+         y="344.93450927734375"
+         width="157.34556579589844"
+         height="15.331863403320312"
+         fill="black"
+         rx="2"
+         id="rect28" />
+      <rect
+         x="475.7565002441406"
+         y="359.6899719238281"
+         width="68.48696899414062"
+         height="14.576406478881836"
+         fill="black"
+         rx="2"
+         id="rect29" />
+      <rect
+         x="461.83929443359375"
+         y="389.6899719238281"
+         width="96.3213882446289"
+         height="14.576406478881836"
+         fill="black"
+         rx="2"
+         id="rect30" />
+      <rect
+         x="320.3005065917969"
+         y="192.93450927734375"
+         width="19.399015426635742"
+         height="15.331863403320312"
+         fill="black"
+         rx="2"
+         id="rect31" />
+      <rect
+         x="277.47723388671875"
+         y="441.1790466308594"
+         width="125.0455551147461"
+         height="16.8427791595459"
+         fill="black"
+         rx="2"
+         id="rect32" />
+      <rect
+         x="218.66903686523438"
+         y="459.1790466308594"
+         width="242.6619110107422"
+         height="16.8427791595459"
+         fill="black"
+         rx="2"
+         id="rect33" />
+      <rect
+         x="296.1202392578125"
+         y="493.1790466308594"
+         width="87.75953674316406"
+         height="16.8427791595459"
+         fill="black"
+         rx="2"
+         id="rect34" />
+      <rect
+         x="188.4171600341797"
+         y="505.1353759765625"
+         width="304.1058044433594"
+         height="25.90826988220215"
+         fill="black"
+         rx="2"
+         id="rect35" />
+      <rect
+         x="264.6512145996094"
+         y="550.1790771484375"
+         width="150.69754028320312"
+         height="16.8427791595459"
+         fill="black"
+         rx="2"
+         id="rect36" />
+      <rect
+         x="271.55108642578125"
+         y="568.9126586914062"
+         width="136.89785766601562"
+         height="19.10915184020996"
+         fill="black"
+         rx="2"
+         id="rect37" />
+      <rect
+         x="448"
+         y="568.9126586914062"
+         width="100.23297882080078"
+         height="19.10915184020996"
+         fill="black"
+         rx="2"
+         id="rect38" />
+      <rect
+         x="571"
+         y="568.9126586914062"
+         width="12.331290245056152"
+         height="19.10915184020996"
+         fill="black"
+         rx="2"
+         id="rect39" />
+      <rect
+         x="72"
+         y="620.68994140625"
+         width="66.75780868530273"
+         height="14.576406478881836"
+         fill="black"
+         rx="2"
+         id="rect40" />
+      <rect
+         x="192"
+         y="620.68994140625"
+         width="108.74446868896484"
+         height="14.576406478881836"
+         fill="black"
+         rx="2"
+         id="rect41" />
+      <rect
+         x="382"
+         y="620.68994140625"
+         width="92.72876739501953"
+         height="14.576406478881836"
+         fill="black"
+         rx="2"
+         id="rect42" />
+      <rect
+         x="532"
+         y="620.68994140625"
+         width="65.196533203125"
+         height="14.576406478881836"
+         fill="black"
+         rx="2"
+         id="rect43" />
+      <rect
+         x="118.66324615478516"
+         y="656.9345092773438"
+         width="442.6734924316406"
+         height="15.331863403320312"
+         fill="black"
+         rx="2"
+         id="rect44" />
+      <rect
+         x="117.01802825927734"
+         y="669.9345092773438"
+         width="445.96392822265625"
+         height="15.331863403320312"
+         fill="black"
+         rx="2"
+         id="rect45" />
+    </mask>
+  </defs>
+  <!-- ═══════════════════════════════════════════════
+       LEFT PANEL — Naive Per-Pixel MVM
+  ═══════════════════════════════════════════════ -->
+  <!-- Panel background / border -->
+  <rect
+     x="20"
+     y="20"
+     width="300"
+     height="390"
+     rx="6"
+     fill="white"
+     stroke="#555555"
+     stroke-width="0.75"
+     style="fill:rgb(255, 255, 255);stroke:rgb(85, 85, 85);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect46" />
+  <!-- Panel title -->
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="12"
+     font-weight="700"
+     x="170"
+     y="42"
+     text-anchor="middle"
+     fill="#1a1a1a"
+     style="fill:rgb(26, 26, 26);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:12px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
+     id="text46">Naive Per-Pixel MVM</text>
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     x="170"
+     y="57"
+     text-anchor="middle"
+     fill="#444"
+     style="fill:rgb(68, 68, 68);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text47">(Conv1 example)</text>
+  <!-- Full 1536×256 CIM array outline (faint) -->
+  <rect
+     x="35"
+     y="68"
+     width="275"
+     height="218"
+     rx="3"
+     fill="#f9f9f9"
+     stroke="#999999"
+     stroke-width="0.75"
+     stroke-dasharray="4 3"
+     style="fill:rgb(249, 249, 249);stroke:rgb(153, 153, 153);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-dasharray:4px, 3px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect47" />
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="9"
+     x="172"
+     y="82"
+     text-anchor="middle"
+     fill="#aaaaaa"
+     style="fill:rgb(170, 170, 170);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text48">1536 × 256 CIM array capacity</text>
+  <!-- Tiny W block (25×6 → scaled: 275*(25/1536) ≈ 4.5px wide, 218*(6/256) ≈ 5.1px tall — too small to see; scale up for visibility but keep proportional feel -->
+  <!-- Rendered: ~18×14 at top-left corner to emphasize smallness -->
+  <rect
+     x="37"
+     y="86"
+     width="18"
+     height="14"
+     rx="1"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect48" />
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="8"
+     font-weight="700"
+     x="46"
+     y="96"
+     text-anchor="middle"
+     fill="#B86B1F"
+     style="fill:rgb(184, 107, 31);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:8px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
+     id="text49">W</text>
+  <!-- Arrow pointing to tiny block -->
+  <line
+     x1="130"
+     y1="120"
+     x2="60"
+     y2="100"
+     stroke="#C0392B"
+     stroke-width="1"
+     marker-end="url(#arrow)"
+     style="fill:rgb(0, 0, 0);stroke:rgb(192, 57, 43);color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line49" />
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="9"
+     x="160"
+     y="118"
+     text-anchor="middle"
+     fill="#C0392B"
+     style="fill:rgb(192, 57, 43);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text50">W (25 × 6)</text>
+  <!-- Vast empty space label -->
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     font-style="italic"
+     x="172"
+     y="195"
+     text-anchor="middle"
+     fill="#cccccc"
+     style="fill:rgb(204, 204, 204);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;font-style:italic;text-anchor:middle;dominant-baseline:auto"
+     id="text51">— vast empty space —</text>
+  <!-- Utilization annotation box -->
+  <rect
+     x="30"
+     y="296"
+     width="280"
+     height="36"
+     rx="3"
+     fill="#f0f0f0"
+     stroke="#aaaaaa"
+     stroke-width="0.5"
+     style="fill:rgb(240, 240, 240);stroke:rgb(170, 170, 170);color:rgb(251, 251, 254);stroke-width:0.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect51" />
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="9.5"
+     x="170"
+     y="310"
+     text-anchor="middle"
+     fill="#333"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:9.5px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text52">Utilization ≈ 25 × 6 / (1536 × 256) ≈ <tspan
+   font-weight="700"
+   fill="#C0392B"
+   style="fill:rgb(192, 57, 43);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:9.5px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
+   id="tspan51">0.04%</tspan></text>
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="9"
+     x="170"
+     y="325"
+     text-anchor="middle"
+     fill="#555"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text53">(most array capacity wasted)</text>
+  <!-- MVM calls label -->
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="9.5"
+     x="170"
+     y="356"
+     text-anchor="middle"
+     fill="#333"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:9.5px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text54">576 MVM calls per Conv1 layer</text>
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="9"
+     x="170"
+     y="370"
+     text-anchor="middle"
+     fill="#555"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text55">(1 call per output pixel)</text>
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="9"
+     font-weight="700"
+     fill="#C0392B"
+     x="170"
+     y="400"
+     text-anchor="middle"
+     style="fill:rgb(192, 57, 43);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:9px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
+     id="text56">↑ HIGH LATENCY</text>
+  <!-- ═══════════════════════════════════════════════
+       RIGHT PANEL — SQ-mapping
+  ═══════════════════════════════════════════════ -->
+  <!-- Panel background / border -->
+  <rect
+     x="360"
+     y="20"
+     width="300"
+     height="390"
+     rx="6"
+     fill="white"
+     stroke="#555555"
+     stroke-width="0.75"
+     style="fill:rgb(255, 255, 255);stroke:rgb(85, 85, 85);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect56" />
+  <!-- Panel title -->
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="12"
+     font-weight="700"
+     x="510"
+     y="42"
+     text-anchor="middle"
+     fill="#1a1a1a"
+     style="fill:rgb(26, 26, 26);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:12px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
+     id="text57">SQ-Mapping</text>
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     x="510"
+     y="57"
+     text-anchor="middle"
+     fill="#444"
+     style="fill:rgb(68, 68, 68);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text58">(k_pack = 42)</text>
+  <!-- Full 1536×256 CIM array outline (faint) -->
+  <rect
+     x="375"
+     y="68"
+     width="275"
+     height="218"
+     rx="3"
+     fill="#f9f9f9"
+     stroke="#999999"
+     stroke-width="0.75"
+     stroke-dasharray="4 3"
+     style="fill:rgb(249, 249, 249);stroke:rgb(153, 153, 153);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-dasharray:4px, 3px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect58" />
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="9"
+     x="512"
+     y="82"
+     text-anchor="middle"
+     fill="#aaaaaa"
+     style="fill:rgb(170, 170, 170);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text59">1536 × 256 CIM array capacity</text>
+  <!-- Block-diagonal structure: draw ~7 visible blocks along diagonal + "..." -->
+  <!-- Array area: x:375..650, y:68..286, size 275×218 -->
+  <!-- k_pack=42 blocks of 25×6. Total: 42*25=1050 rows, 42*6=252 cols -->
+  <!-- Scale: each unit row = 275/1536 ≈ 0.179 px, each unit col = 218/256 ≈ 0.852 px -->
+  <!-- block pixel size: 25*0.179≈4.5 wide, 6*0.852≈5.1 tall — need to show pattern, use artistic sizing -->
+  <!-- Use 7 representative blocks + "..." to show pattern; blocks ~7px wide, 6px tall to be visible -->
+  <!-- Total diagonal span: use 260x210 of the array region with slight margin -->
+  <!-- Block step: 260/42 ≈ 6.2 each, 210/42 = 5.0 each -->
+  <!-- Off-diagonal fill: hatched grey for zero regions -->
+  <!-- Full array region, then blocks drawn on top -->
+  <rect
+     x="377"
+     y="70"
+     width="271"
+     height="214"
+     fill="url(#hatch)"
+     rx="2"
+     style="stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect59" />
+  <!-- Draw first 3 diagonal blocks -->
+  <rect
+     x="377"
+     y="70"
+     width="19"
+     height="15"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     rx="1"
+     style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect60" />
+  <rect
+     x="397"
+     y="86"
+     width="19"
+     height="15"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     rx="1"
+     style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect61" />
+  <rect
+     x="417"
+     y="102"
+     width="19"
+     height="15"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     rx="1"
+     style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect62" />
+  <!-- "..." indicator -->
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="11"
+     font-weight="700"
+     x="451"
+     y="126"
+     text-anchor="middle"
+     fill="#777"
+     style="fill:rgb(119, 119, 119);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:11px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
+     id="text62">···</text>
+  <!-- Middle blocks (around center) -->
+  <rect
+     x="473"
+     y="136"
+     width="19"
+     height="15"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     rx="1"
+     style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect63" />
+  <rect
+     x="493"
+     y="152"
+     width="19"
+     height="15"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     rx="1"
+     style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect64" />
+  <!-- "..." indicator -->
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="11"
+     font-weight="700"
+     x="527"
+     y="177"
+     text-anchor="middle"
+     fill="#777"
+     style="fill:rgb(119, 119, 119);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:11px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
+     id="text64">···</text>
+  <!-- Last 3 diagonal blocks -->
+  <rect
+     x="553"
+     y="186"
+     width="19"
+     height="15"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     rx="1"
+     style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect65" />
+  <rect
+     x="573"
+     y="201"
+     width="19"
+     height="15"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     rx="1"
+     style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect66" />
+  <rect
+     x="593"
+     y="217"
+     width="19"
+     height="15"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     rx="1"
+     style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect67" />
+  <!-- Partial last block clipped at edge -->
+  <rect
+     x="613"
+     y="233"
+     width="16"
+     height="13"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     rx="1"
+     style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect68" />
+  <!-- Off-diagonal "0" labels (sparse) -->
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="8"
+     fill="#aaaaaa"
+     x="600"
+     y="100"
+     text-anchor="middle"
+     style="fill:rgb(170, 170, 170);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:8px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text68">0</text>
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="8"
+     fill="#aaaaaa"
+     x="395"
+     y="240"
+     text-anchor="middle"
+     style="fill:rgb(170, 170, 170);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:8px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text69">0</text>
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="8"
+     fill="#aaaaaa"
+     x="540"
+     y="115"
+     text-anchor="middle"
+     style="fill:rgb(170, 170, 170);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:8px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text70">0</text>
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="8"
+     fill="#aaaaaa"
+     x="415"
+     y="220"
+     text-anchor="middle"
+     style="fill:rgb(170, 170, 170);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:8px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text71">0</text>
+  <!-- Annotation: W(copy) pointing to first block -->
+  <line
+     x1="396"
+     y1="77"
+     x2="440"
+     y2="62"
+     stroke="#2E5C8A"
+     stroke-width="1"
+     marker-end="url(#arrow)"
+     mask="url(#imagine-text-gaps-9l5u1f)"
+     style="fill:rgb(0, 0, 0);stroke:rgb(46, 92, 138);color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line71" />
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="9"
+     font-style="italic"
+     x="442"
+     y="60"
+     fill="#2E5C8A"
+     style="fill:rgb(46, 92, 138);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:9px;font-weight:400;font-style:italic;text-anchor:start;dominant-baseline:auto"
+     id="text72">W (copy)</text>
+  <!-- Annotation: Zeros pointing to off-diagonal -->
+  <line
+     x1="600"
+     y1="104"
+     x2="632"
+     y2="115"
+     stroke="#555555"
+     stroke-width="0.75"
+     marker-end="url(#arrow)"
+     mask="url(#imagine-text-gaps-9l5u1f)"
+     style="fill:rgb(0, 0, 0);stroke:rgb(85, 85, 85);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line72" />
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="8.5"
+     x="635"
+     y="112"
+     fill="#555555"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:8.5px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="text73">Zeros</text>
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="8"
+     x="635"
+     y="124"
+     fill="#777"
+     style="fill:rgb(119, 119, 119);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:8px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="text74">(no compute</text>
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="8"
+     x="635"
+     y="134"
+     fill="#777"
+     style="fill:rgb(119, 119, 119);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:8px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="text75"> waste)</text>
+  <!-- Utilization annotation box -->
+  <rect
+     x="370"
+     y="296"
+     width="280"
+     height="36"
+     rx="3"
+     fill="#f0f0f0"
+     stroke="#aaaaaa"
+     stroke-width="0.5"
+     style="fill:rgb(240, 240, 240);stroke:rgb(170, 170, 170);color:rgb(251, 251, 254);stroke-width:0.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect75" />
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="9.5"
+     x="510"
+     y="310"
+     text-anchor="middle"
+     fill="#333"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:9.5px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text76">Utilization ≈ 42 × 25 × 6 / (1536 × 256) ≈ <tspan
+   font-weight="700"
+   fill="#2E5C8A"
+   style="fill:rgb(46, 92, 138);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:9.5px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
+   id="tspan75">1.6%</tspan></text>
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="9"
+     x="510"
+     y="325"
+     text-anchor="middle"
+     fill="#555"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text77">MVM calls reduced <tspan
+   font-weight="700"
+   style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:9px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
+   id="tspan76">42×</tspan> simultaneously</text>
+  <!-- MVM calls label -->
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="9.5"
+     x="510"
+     y="356"
+     text-anchor="middle"
+     fill="#333"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:9.5px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text78">1 MVM call processes 42 output pixels</text>
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="9"
+     x="510"
+     y="370"
+     text-anchor="middle"
+     fill="#555"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text79">(simultaneously)</text>
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="9"
+     font-weight="700"
+     fill="#2E5C8A"
+     x="510"
+     y="400"
+     text-anchor="middle"
+     style="fill:rgb(46, 92, 138);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:9px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
+     id="text80">↓ 42× FEWER CALLS</text>
+  <!-- ═══════════════════════════════════════════════
+       DIVIDER / VS label
+  ═══════════════════════════════════════════════ -->
+  <!-- ═══════════════════════════════════════════════
+       BOTTOM EQUATIONS & RESULT
+  ═══════════════════════════════════════════════ -->
+  <!-- Section divider -->
+  <line
+     x1="20"
+     y1="425"
+     x2="660"
+     y2="425"
+     stroke="#cccccc"
+     stroke-width="0.75"
+     style="fill:rgb(0, 0, 0);stroke:rgb(204, 204, 204);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line81" />
+  <!-- Equation box 1 -->
+  <rect
+     x="40"
+     y="438"
+     width="600"
+     height="42"
+     rx="4"
+     fill="#f8f8f8"
+     stroke="#D8D8D8"
+     stroke-width="0.75"
+     style="fill:rgb(248, 248, 248);stroke:rgb(216, 216, 216);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect81" />
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="11"
+     font-weight="700"
+     x="340"
+     y="453"
+     text-anchor="middle"
+     fill="#2E5C8A"
+     style="fill:rgb(46, 92, 138);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:11px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
+     id="text82">Block-Diagonal Packing:</text>
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="11"
+     font-style="italic"
+     x="340"
+     y="471"
+     text-anchor="middle"
+     fill="#1a1a1a"
+     style="fill:rgb(26, 26, 26);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:11px;font-weight:400;font-style:italic;text-anchor:middle;dominant-baseline:auto"
+     id="text83">W_packed = blockdiag(W, W, …, W)   [k_pack copies]</text>
+  <!-- Equation box 2 -->
+  <rect
+     x="40"
+     y="490"
+     width="600"
+     height="42"
+     rx="4"
+     fill="#f8f8f8"
+     stroke="#D8D8D8"
+     stroke-width="0.75"
+     style="fill:rgb(248, 248, 248);stroke:rgb(216, 216, 216);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect83" />
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="11"
+     font-weight="700"
+     x="340"
+     y="505"
+     text-anchor="middle"
+     fill="#2E5C8A"
+     style="fill:rgb(46, 92, 138);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:11px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
+     id="text84">Optimal k_pack:</text>
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="10.5"
+     font-style="italic"
+     x="340"
+     y="523"
+     text-anchor="middle"
+     fill="#1a1a1a"
+     style="fill:rgb(26, 26, 26);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10.5px;font-weight:400;font-style:italic;text-anchor:middle;dominant-baseline:auto"
+     id="text85">k_pack = min(⌊MAX_IN_DIM / col_len⌋,  ⌊MAX_OUT_DIM / C_out⌋)</text>
+  <!-- Quantitative result box -->
+  <rect
+     x="40"
+     y="544"
+     width="600"
+     height="52"
+     rx="4"
+     fill="#FFF3CD"
+     stroke="#B86B1F"
+     stroke-width="1"
+     style="fill:rgb(255, 243, 205);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect85" />
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="11"
+     font-weight="700"
+     x="340"
+     y="562"
+     text-anchor="middle"
+     fill="#B86B1F"
+     style="fill:rgb(184, 107, 31);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:11px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
+     id="text86">Quantitative Result — Conv1:</text>
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="13"
+     font-weight="700"
+     x="340"
+     y="583"
+     text-anchor="middle"
+     fill="#1a1a1a"
+     style="fill:rgb(26, 26, 26);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:13px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
+     id="text87">MVM calls:   576  →  14   (</text>
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="13"
+     font-weight="700"
+     x="452"
+     y="583"
+     text-anchor="start"
+     fill="#C0392B"
+     style="fill:rgb(192, 57, 43);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:13px;font-weight:700;text-anchor:start;dominant-baseline:auto"
+     id="text88">97.6% reduction</text>
+  <text
+     font-family="'Times New Roman', Times, serif"
+     font-size="13"
+     font-weight="700"
+     x="575"
+     y="583"
+     text-anchor="start"
+     fill="#1a1a1a"
+     style="fill:rgb(26, 26, 26);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:13px;font-weight:700;text-anchor:start;dominant-baseline:auto"
+     id="text89">)</text>
+  <!-- Legend row -->
+  <!-- Figure caption -->
+</svg>

@@ -1,0 +1,529 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="1220"
+   height="480"
+   version="1.1"
+   id="svg47"
+   sodipodi:docname="2-5.svg"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview47"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="1.1885246"
+     inkscape:cx="632.71724"
+     inkscape:cy="153.97241"
+     inkscape:window-width="1908"
+     inkscape:window-height="1035"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg47" />
+  <defs
+     id="defs4">
+    <marker
+       id="arrow-red-start"
+       markerWidth="10"
+       markerHeight="10"
+       refX="0"
+       refY="3"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M9,0 L0,3 L9,6 z"
+         fill="#C0392B"
+         id="path1" />
+    </marker>
+    <marker
+       id="arrow-red-end"
+       markerWidth="10"
+       markerHeight="10"
+       refX="9"
+       refY="3"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L9,3 L0,6 z"
+         fill="#C0392B"
+         id="path2" />
+    </marker>
+    <marker
+       id="arrow-black-end"
+       markerWidth="10"
+       markerHeight="10"
+       refX="9"
+       refY="3"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L9,3 L0,6 z"
+         fill="#000000"
+         id="path3" />
+    </marker>
+    <marker
+       id="arrow-time"
+       markerWidth="10"
+       markerHeight="10"
+       refX="9"
+       refY="3"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L9,3 L0,6 z"
+         fill="#333333"
+         id="path4" />
+    </marker>
+  </defs>
+  <style
+     id="style4">
+    .text-title { font-family: 'Times New Roman', serif; font-size: 14px; font-weight: bold; fill: #000000; }
+    .text-label { font-family: 'Times New Roman', serif; font-size: 12px; fill: #000000; }
+    .text-bold { font-family: 'Times New Roman', serif; font-size: 12px; font-weight: bold; fill: #000000; }
+    .text-small { font-family: 'Times New Roman', serif; font-size: 10px; fill: #333333; }
+    .box { stroke-width: 1pt; rx: 2; ry: 2; }
+    .data-path { stroke: #000000; stroke-width: 1.5pt; fill: none; }
+    .divider { stroke: #dddddd; stroke-width: 1pt; stroke-dasharray: 6, 4; }
+    .time-grid { stroke: #aaaaaa; stroke-width: 0.75pt; stroke-dasharray: 4, 4; }
+    .highlight { stroke: #C0392B; stroke-width: 1.5pt; fill: none; }
+    .highlight-text { fill: #C0392B; font-family: 'Times New Roman', serif; font-size: 11px; font-style: italic; font-weight: bold; }
+    .annotation-box { fill: #fcfcfc; stroke: #555555; stroke-width: 0.75pt; rx: 3; ry: 3; }
+  </style>
+  <rect
+     width="100%"
+     height="100%"
+     fill="#ffffff"
+     id="rect4" />
+  <text
+     x="250"
+     y="65"
+     text-anchor="middle"
+     class="text-title"
+     id="text6">PHASE 1: Cold Start</text>
+  <text
+     x="650"
+     y="65"
+     text-anchor="middle"
+     class="text-title"
+     id="text7">PHASE 2: Overlap (i=1..N-1)</text>
+  <text
+     x="1050"
+     y="65"
+     text-anchor="middle"
+     class="text-title"
+     id="text8">PHASE 3: Tail</text>
+  <line
+     x1="150"
+     y1="75"
+     x2="150"
+     y2="380"
+     class="time-grid"
+     id="line8" />
+  <line
+     x1="350"
+     y1="75"
+     x2="350"
+     y2="380"
+     class="time-grid"
+     id="line9" />
+  <line
+     x1="550"
+     y1="75"
+     x2="550"
+     y2="380"
+     class="time-grid"
+     id="line10" />
+  <line
+     x1="750"
+     y1="75"
+     x2="750"
+     y2="380"
+     class="time-grid"
+     id="line11" />
+  <line
+     x1="950"
+     y1="75"
+     x2="950"
+     y2="380"
+     class="time-grid"
+     id="line12" />
+  <line
+     x1="1150"
+     y1="75"
+     x2="1150"
+     y2="380"
+     class="time-grid"
+     id="line13" />
+  <line
+     x1="10"
+     y1="170"
+     x2="1180"
+     y2="170"
+     class="divider"
+     id="line14" />
+  <line
+     x1="10"
+     y1="270"
+     x2="1180"
+     y2="270"
+     class="divider"
+     id="line15" />
+  <text
+     x="135"
+     y="125"
+     text-anchor="end"
+     class="text-bold"
+     id="text15">DMA Load</text>
+  <text
+     x="135"
+     y="140"
+     text-anchor="end"
+     class="text-small"
+     id="text16">(IBUF write)</text>
+  <text
+     x="135"
+     y="225"
+     text-anchor="end"
+     class="text-bold"
+     id="text17">CIM Compute</text>
+  <text
+     x="135"
+     y="240"
+     text-anchor="end"
+     class="text-small"
+     id="text18">(MAC array)</text>
+  <text
+     x="135"
+     y="325"
+     text-anchor="end"
+     class="text-bold"
+     id="text19">DMA Read-back</text>
+  <text
+     x="135"
+     y="340"
+     text-anchor="end"
+     class="text-small"
+     id="text20">(OBUF read)</text>
+  <rect
+     x="160"
+     y="95"
+     width="180"
+     height="55"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     class="box"
+     id="rect20" />
+  <text
+     x="250"
+     y="127"
+     text-anchor="middle"
+     class="text-label"
+     id="text21">Load X[0] → bank0</text>
+  <rect
+     x="360"
+     y="95"
+     width="180"
+     height="55"
+     fill="#BBE2EE"
+     stroke="#2E5C8A"
+     class="box"
+     id="rect21" />
+  <text
+     x="450"
+     y="127"
+     text-anchor="middle"
+     class="text-label"
+     id="text22">Load X[1] → bank1</text>
+  <rect
+     x="360"
+     y="195"
+     width="180"
+     height="55"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     class="box"
+     id="rect22" />
+  <text
+     x="450"
+     y="219"
+     text-anchor="middle"
+     class="text-label"
+     id="text23">Compute Y[0]</text>
+  <text
+     x="450"
+     y="235"
+     text-anchor="middle"
+     class="text-label"
+     id="text24">from bank0</text>
+  <rect
+     x="560"
+     y="95"
+     width="180"
+     height="55"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     class="box"
+     id="rect24" />
+  <text
+     x="650"
+     y="127"
+     text-anchor="middle"
+     class="text-label"
+     id="text25">Load X[2] → bank0</text>
+  <rect
+     x="560"
+     y="195"
+     width="180"
+     height="55"
+     fill="#F8C88A"
+     stroke="#B86B1F"
+     class="box"
+     id="rect25" />
+  <text
+     x="650"
+     y="219"
+     text-anchor="middle"
+     class="text-label"
+     id="text26">Compute Y[1]</text>
+  <text
+     x="650"
+     y="235"
+     text-anchor="middle"
+     class="text-label"
+     id="text27">from bank1</text>
+  <rect
+     x="560"
+     y="295"
+     width="180"
+     height="55"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     class="box"
+     id="rect27" />
+  <text
+     x="650"
+     y="319"
+     text-anchor="middle"
+     class="text-label"
+     id="text28">Read Y[0]</text>
+  <text
+     x="650"
+     y="335"
+     text-anchor="middle"
+     class="text-label"
+     id="text29">from bank0</text>
+  <rect
+     x="760"
+     y="95"
+     width="180"
+     height="55"
+     fill="#BBE2EE"
+     stroke="#2E5C8A"
+     class="box"
+     id="rect29" />
+  <text
+     x="850"
+     y="127"
+     text-anchor="middle"
+     class="text-label"
+     id="text30">Load X[3] → bank1</text>
+  <rect
+     x="760"
+     y="195"
+     width="180"
+     height="55"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     class="box"
+     id="rect30" />
+  <text
+     x="850"
+     y="219"
+     text-anchor="middle"
+     class="text-label"
+     id="text31">Compute Y[2]</text>
+  <text
+     x="850"
+     y="235"
+     text-anchor="middle"
+     class="text-label"
+     id="text32">from bank0</text>
+  <rect
+     x="760"
+     y="295"
+     width="180"
+     height="55"
+     fill="#BBE2EE"
+     stroke="#2E5C8A"
+     class="box"
+     id="rect32" />
+  <text
+     x="850"
+     y="319"
+     text-anchor="middle"
+     class="text-label"
+     id="text33">Read Y[1]</text>
+  <text
+     x="850"
+     y="335"
+     text-anchor="middle"
+     class="text-label"
+     id="text34">from bank1</text>
+  <rect
+     x="960"
+     y="295"
+     width="180"
+     height="55"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     class="box"
+     id="rect34" />
+  <text
+     x="1050"
+     y="319"
+     text-anchor="middle"
+     class="text-label"
+     id="text35">Read Y[N-1]</text>
+  <text
+     x="1050"
+     y="335"
+     text-anchor="middle"
+     class="text-label"
+     id="text36">from bank0</text>
+  <path
+     d="M 320 150 L 320 222 L 352 222"
+     class="data-path"
+     marker-end="url(#arrow-black-end)"
+     id="path36" />
+  <text
+     x="315"
+     y="200"
+     text-anchor="end"
+     class="text-small"
+     id="text37">128-bit</text>
+  <path
+     d="M 520 250 L 520 322 L 552 322"
+     class="data-path"
+     marker-end="url(#arrow-black-end)"
+     id="path37" />
+  <text
+     x="515"
+     y="300"
+     text-anchor="end"
+     class="text-small"
+     id="text38">AXI4-S</text>
+  <path
+     d="M 520 150 L 520 222 L 552 222"
+     class="data-path"
+     marker-end="url(#arrow-black-end)"
+     id="path38" />
+  <text
+     x="516.18988"
+     y="191.67078"
+     text-anchor="end"
+     class="text-small"
+     id="text39">128-bit</text>
+  <path
+     d="M 720 250 L 720 322 L 752 322"
+     class="data-path"
+     marker-end="url(#arrow-black-end)"
+     id="path39" />
+  <text
+     x="715"
+     y="290.74484"
+     text-anchor="end"
+     class="text-small"
+     id="text40">AXI4-S</text>
+  <path
+     d="M 720 150 L 720 222 L 752 222"
+     class="data-path"
+     marker-end="url(#arrow-black-end)"
+     id="path40" />
+  <text
+     x="715.42072"
+     y="186.95862"
+     text-anchor="end"
+     class="text-small"
+     id="text41">128-bit</text>
+  <path
+     d="M 920 250 L 920 322 L 952 322"
+     class="data-path"
+     stroke-dasharray="3,3"
+     marker-end="url(#arrow-black-end)"
+     id="path41" />
+  <text
+     x="913.73792"
+     y="290.74484"
+     text-anchor="end"
+     class="text-small"
+     id="text42">AXI4-S</text>
+  <line
+     x1="359.23395"
+     y1="177.08231"
+     x2="509.23395"
+     y2="177.08231"
+     class="highlight"
+     marker-start="url(#arrow-red-start)"
+     marker-end="url(#arrow-red-end)"
+     id="line42" />
+  <text
+     x="435.12637"
+     y="170.29747"
+     text-anchor="middle"
+     class="highlight-text"
+     id="text43">Hidden DMA latency</text>
+  <line
+     x1="575"
+     y1="275"
+     x2="725"
+     y2="275"
+     class="highlight"
+     marker-start="url(#arrow-red-start)"
+     marker-end="url(#arrow-red-end)"
+     id="line43" />
+  <text
+     x="650"
+     y="270"
+     text-anchor="middle"
+     class="highlight-text"
+     id="text44">Hidden DMA latency</text>
+  <line
+     x1="775"
+     y1="175"
+     x2="925"
+     y2="175"
+     class="highlight"
+     marker-start="url(#arrow-red-start)"
+     marker-end="url(#arrow-red-end)"
+     id="line44" />
+  <text
+     x="850"
+     y="170"
+     text-anchor="middle"
+     class="highlight-text"
+     id="text45">Hidden DMA latency</text>
+  <line
+     x1="150"
+     y1="410"
+     x2="1150"
+     y2="410"
+     stroke="#333333"
+     stroke-width="1.5pt"
+     marker-end="url(#arrow-time)"
+     id="line45" />
+  <text
+     x="1160"
+     y="414"
+     text-anchor="start"
+     class="text-bold"
+     fill="#333333"
+     id="text46">Time</text>
+</svg>

@@ -1,0 +1,963 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="900"
+   height="620"
+   viewBox="0 0 900 620"
+   role="img"
+   version="1.1"
+   id="svg9"
+   sodipodi:docname="1-3.svg"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview9"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="1.986742"
+     inkscape:cx="512.39669"
+     inkscape:cy="322.63878"
+     inkscape:window-width="1908"
+     inkscape:window-height="1035"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg9" />
+  <title
+     id="title1">CIM Technology Taxonomy Tree</title>
+  <desc
+     id="desc1">Hierarchical classification of Computing-in-Memory technologies from root through storage medium, analog/digital split, to representative works. Red path highlights root → SRAM-CIM → Digital SRAM-CIM → THIS WORK.</desc>
+  <!-- White background -->
+  <rect
+     x="0"
+     y="0"
+     width="900"
+     height="437.77267"
+     fill="#ffffff"
+     id="rect1"
+     style="stroke-width:0.840289" />
+  <defs
+     id="defs1">
+    <marker
+       id="arr"
+       viewBox="0 0 10 10"
+       refX="8"
+       refY="5"
+       markerWidth="6"
+       markerHeight="6"
+       orient="auto-start-reverse">
+      <path
+         d="M2 1L8 5L2 9"
+         fill="none"
+         stroke="context-stroke"
+         stroke-width="1.5"
+         stroke-linecap="round"
+         stroke-linejoin="round"
+         id="path1" />
+    </marker>
+  </defs>
+  <!-- ─────────────────────────────────────────────────────────────────
+       LEVEL 1 — ROOT NODE
+  ───────────────────────────────────────────────────────────────────── -->
+  <rect
+     id="rect-root"
+     x="310"
+     y="22"
+     width="280"
+     height="40"
+     rx="4"
+     fill="#D8D8D8"
+     stroke="#555555"
+     stroke-width="1" />
+  <text
+     id="text-root"
+     x="450"
+     y="42"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="13"
+     font-weight="bold"
+     fill="#222">
+    Computing-in-Memory (CIM)
+  </text>
+  <!-- ─────────────────────────────────────────────────────────────────
+       L1 → L2 CONNECTORS
+  ───────────────────────────────────────────────────────────────────── -->
+  <!-- Vertical trunk from root -->
+  <line
+     id="vline-root"
+     x1="450"
+     y1="62"
+     x2="450"
+     y2="100"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <!-- Horizontal bus -->
+  <line
+     id="hbus-l2"
+     x1="100"
+     y1="100"
+     x2="800"
+     y2="100"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <!-- Drops to L2 -->
+  <!-- SRAM-CIM: highlighted red -->
+  <line
+     id="drop-sram"
+     x1="100"
+     y1="100"
+     x2="100"
+     y2="126"
+     stroke="#C0392B"
+     stroke-width="2.5"
+     fill="none" />
+  <line
+     id="drop-dram"
+     x1="367"
+     y1="100"
+     x2="367"
+     y2="126"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <line
+     id="drop-rram"
+     x1="600"
+     y1="100"
+     x2="600"
+     y2="126"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <line
+     id="drop-pcm"
+     x1="800"
+     y1="100"
+     x2="800"
+     y2="126"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <!-- ─────────────────────────────────────────────────────────────────
+       LEVEL 2 — STORAGE MEDIUM
+  ───────────────────────────────────────────────────────────────────── -->
+  <!-- SRAM-CIM — red highlight border -->
+  <rect
+     id="rect-sram"
+     x="42"
+     y="126"
+     width="116"
+     height="36"
+     rx="4"
+     fill="#A8D5E2"
+     stroke="#C0392B"
+     stroke-width="2.5" />
+  <text
+     id="text-sram"
+     x="100"
+     y="144"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="12"
+     font-weight="bold"
+     fill="#1a3d54">
+    SRAM-CIM
+  </text>
+  <!-- DRAM-PIM -->
+  <rect
+     id="rect-dram"
+     x="303"
+     y="126"
+     width="128"
+     height="36"
+     rx="4"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     stroke-width="1" />
+  <text
+     id="text-dram"
+     x="367"
+     y="144"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="12"
+     font-weight="bold"
+     fill="#1a3d54">
+    DRAM-PIM
+  </text>
+  <!-- RRAM/ReRAM -->
+  <rect
+     id="rect-rram"
+     x="536"
+     y="126"
+     width="128"
+     height="36"
+     rx="4"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="1" />
+  <text
+     id="text-rram"
+     x="600"
+     y="144"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="12"
+     font-weight="bold"
+     fill="#5a3200">
+    RRAM/ReRAM
+  </text>
+  <!-- PCM/MRAM -->
+  <rect
+     id="rect-pcm"
+     x="744"
+     y="126"
+     width="112"
+     height="36"
+     rx="4"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="1" />
+  <text
+     id="text-pcm"
+     x="800"
+     y="144"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="12"
+     font-weight="bold"
+     fill="#5a3200">
+    PCM/MRAM
+  </text>
+  <!-- ─────────────────────────────────────────────────────────────────
+       L2 → L3 CONNECTORS
+  ───────────────────────────────────────────────────────────────────── -->
+  <!-- SRAM → Digital/Analog (red highlighted branch) -->
+  <line
+     id="vline-sram"
+     x1="100"
+     y1="162"
+     x2="100"
+     y2="216"
+     stroke="#C0392B"
+     stroke-width="2.5"
+     fill="none" />
+  <line
+     id="hbus-sram"
+     x1="52"
+     y1="216"
+     x2="148"
+     y2="216"
+     stroke="#C0392B"
+     stroke-width="2.5"
+     fill="none" />
+  <line
+     id="drop-digsram"
+     x1="52"
+     y1="216"
+     x2="52"
+     y2="240"
+     stroke="#C0392B"
+     stroke-width="2.5"
+     fill="none" />
+  <line
+     id="drop-anasram"
+     x1="148"
+     y1="216"
+     x2="148"
+     y2="240"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <!-- DRAM → Bulk / Near-bank -->
+  <line
+     id="vline-dram"
+     x1="367"
+     y1="162"
+     x2="367"
+     y2="216"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <line
+     id="hbus-dram"
+     x1="318"
+     y1="216"
+     x2="416"
+     y2="216"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <line
+     id="drop-bulk"
+     x1="318"
+     y1="216"
+     x2="318"
+     y2="240"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <line
+     id="drop-near"
+     x1="416"
+     y1="216"
+     x2="416"
+     y2="240"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <!-- RRAM → Crossbar / Digital RRAM -->
+  <line
+     id="vline-rram"
+     x1="600"
+     y1="162"
+     x2="600"
+     y2="216"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <line
+     id="hbus-rram"
+     x1="546"
+     y1="216"
+     x2="654"
+     y2="216"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <line
+     id="drop-xbar"
+     x1="546"
+     y1="216"
+     x2="546"
+     y2="240"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <line
+     id="drop-digrram"
+     x1="654"
+     y1="216"
+     x2="654"
+     y2="240"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <!-- PCM → FloatPIM only -->
+  <line
+     id="vline-pcm"
+     x1="800"
+     y1="162"
+     x2="800"
+     y2="240"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <!-- ─────────────────────────────────────────────────────────────────
+       LEVEL 3 — ANALOG / DIGITAL SPLIT
+  ───────────────────────────────────────────────────────────────────── -->
+  <!-- Digital SRAM-CIM — red highlight -->
+  <rect
+     id="rect-digsram"
+     x="10"
+     y="240"
+     width="86"
+     height="42"
+     rx="4"
+     fill="#B5D99C"
+     stroke="#C0392B"
+     stroke-width="2.5" />
+  <text
+     id="text-digsram1"
+     x="53"
+     y="253"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     font-weight="bold"
+     fill="#1e3a0c">Digital</text>
+  <text
+     id="text-digsram2"
+     x="53"
+     y="267"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     font-weight="bold"
+     fill="#1e3a0c">SRAM-CIM</text>
+  <!-- Analog SRAM-CIM -->
+  <rect
+     id="rect-anasram"
+     x="110"
+     y="240"
+     width="80"
+     height="42"
+     rx="4"
+     fill="#B5D99C"
+     stroke="#4A7A2E"
+     stroke-width="1" />
+  <text
+     id="text-anasram1"
+     x="150"
+     y="253"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     font-weight="bold"
+     fill="#1e3a0c">Analog</text>
+  <text
+     id="text-anasram2"
+     x="150"
+     y="267"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     font-weight="bold"
+     fill="#1e3a0c">SRAM-CIM</text>
+  <!-- Bulk-Bitwise (Ambit) -->
+  <rect
+     id="rect-bulk"
+     x="278"
+     y="240"
+     width="82"
+     height="42"
+     rx="4"
+     fill="#B5D99C"
+     stroke="#4A7A2E"
+     stroke-width="1" />
+  <text
+     id="text-bulk1"
+     x="319"
+     y="253"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     font-weight="bold"
+     fill="#1e3a0c">Bulk-Bitwise</text>
+  <text
+     id="text-bulk2"
+     x="319"
+     y="267"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     fill="#1e3a0c">(Ambit)</text>
+  <!-- Near-bank PIM -->
+  <rect
+     id="rect-near"
+     x="374"
+     y="240"
+     width="84"
+     height="42"
+     rx="4"
+     fill="#B5D99C"
+     stroke="#4A7A2E"
+     stroke-width="1" />
+  <text
+     id="text-near1"
+     x="416"
+     y="253"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     font-weight="bold"
+     fill="#1e3a0c">Near-bank</text>
+  <text
+     id="text-near2"
+     x="416"
+     y="267"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     fill="#1e3a0c">PIM</text>
+  <!-- Crossbar Analog -->
+  <rect
+     id="rect-xbar"
+     x="498"
+     y="240"
+     width="100"
+     height="42"
+     rx="4"
+     fill="#B5D99C"
+     stroke="#4A7A2E"
+     stroke-width="1" />
+  <text
+     id="text-xbar1"
+     x="548"
+     y="250"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="9.5"
+     font-weight="bold"
+     fill="#1e3a0c">Crossbar Analog</text>
+  <text
+     id="text-xbar2"
+     x="548"
+     y="263"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="9"
+     fill="#1e3a0c">(ISAAC, PRIME)</text>
+  <!-- Digital RRAM -->
+  <rect
+     id="rect-digrram"
+     x="610"
+     y="240"
+     width="88"
+     height="42"
+     rx="4"
+     fill="#B5D99C"
+     stroke="#4A7A2E"
+     stroke-width="1" />
+  <text
+     id="text-digrram1"
+     x="654"
+     y="253"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     font-weight="bold"
+     fill="#1e3a0c">Digital</text>
+  <text
+     id="text-digrram2"
+     x="654"
+     y="267"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     fill="#1e3a0c">RRAM</text>
+  <!-- FloatPIM-style -->
+  <rect
+     id="rect-floatpim"
+     x="754"
+     y="240"
+     width="92"
+     height="42"
+     rx="4"
+     fill="#B5D99C"
+     stroke="#4A7A2E"
+     stroke-width="1" />
+  <text
+     id="text-floatpim"
+     x="800"
+     y="261"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     font-weight="bold"
+     fill="#1e3a0c">FloatPIM-style</text>
+  <!-- ─────────────────────────────────────────────────────────────────
+       L3 → L4 CONNECTORS
+  ───────────────────────────────────────────────────────────────────── -->
+  <!-- Digital SRAM-CIM → 4 leaves (red highlighted) -->
+  <line
+     id="vline-digsram"
+     x1="53"
+     y1="282"
+     x2="53"
+     y2="338"
+     stroke="#C0392B"
+     stroke-width="2.5"
+     fill="none" />
+  <line
+     id="hbus-digsram"
+     x1="16"
+     y1="338"
+     x2="186"
+     y2="338"
+     stroke="#C0392B"
+     stroke-width="2.5"
+     fill="none" />
+  <line
+     id="drop-thiswork"
+     x1="16"
+     y1="338"
+     x2="16"
+     y2="360"
+     stroke="#C0392B"
+     stroke-width="2.5"
+     fill="none" />
+  <line
+     id="drop-redcim"
+     x1="75"
+     y1="338"
+     x2="75"
+     y2="360"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <line
+     id="drop-trancim"
+     x1="130"
+     y1="338"
+     x2="130"
+     y2="360"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <line
+     id="drop-multcim"
+     x1="186"
+     y1="338"
+     x2="186"
+     y2="360"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <!-- Analog SRAM-CIM → 1 leaf -->
+  <!-- Bulk-Bitwise → Ambit, Neural Cache -->
+  <line
+     id="vline-bulk"
+     x1="319"
+     y1="282"
+     x2="319"
+     y2="338"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <line
+     id="hbus-bulk"
+     x1="284"
+     y1="338"
+     x2="354"
+     y2="338"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <line
+     id="drop-ambit"
+     x1="284"
+     y1="338"
+     x2="284"
+     y2="360"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <line
+     id="drop-ncache"
+     x1="354"
+     y1="338"
+     x2="354"
+     y2="360"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <!-- Crossbar Analog → ISAAC, PRIME, PUMA -->
+  <line
+     id="vline-xbar"
+     x1="548"
+     y1="282"
+     x2="548"
+     y2="338"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <line
+     id="hbus-xbar"
+     x1="499"
+     y1="338"
+     x2="613"
+     y2="338"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <line
+     id="drop-isaac"
+     x1="499"
+     y1="338"
+     x2="499"
+     y2="360"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <line
+     id="drop-prime"
+     x1="556"
+     y1="338"
+     x2="556"
+     y2="360"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <line
+     id="drop-puma"
+     x1="613"
+     y1="338"
+     x2="613"
+     y2="360"
+     stroke="#333"
+     stroke-width="1"
+     fill="none" />
+  <!-- ─────────────────────────────────────────────────────────────────
+       LEVEL 4 — LEAF NODES
+  ───────────────────────────────────────────────────────────────────── -->
+  <!-- THIS WORK — red highlight box -->
+  <rect
+     id="rect-thiswork"
+     x="-2"
+     y="360"
+     width="38"
+     height="38"
+     rx="3"
+     fill="#FADBD8"
+     stroke="#C0392B"
+     stroke-width="2.5" />
+  <text
+     id="text-thiswork1"
+     x="17"
+     y="373"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="9"
+     font-weight="bold"
+     fill="#C0392B">THIS</text>
+  <text
+     id="text-thiswork2"
+     x="17"
+     y="388"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="9"
+     font-weight="bold"
+     fill="#C0392B">WORK</text>
+  <!-- ReDCIM -->
+  <rect
+     id="rect-redcim"
+     x="52"
+     y="360"
+     width="48"
+     height="38"
+     rx="3"
+     fill="#EAF3DE"
+     stroke="#4A7A2E"
+     stroke-width="0.75" />
+  <text
+     id="text-redcim"
+     x="76"
+     y="379"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="9"
+     fill="#1e3a0c">ReDCIM</text>
+  <!-- TranCIM -->
+  <rect
+     id="rect-trancim"
+     x="106"
+     y="360"
+     width="50"
+     height="38"
+     rx="3"
+     fill="#EAF3DE"
+     stroke="#4A7A2E"
+     stroke-width="0.75" />
+  <text
+     id="text-trancim"
+     x="131"
+     y="379"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="9"
+     fill="#1e3a0c">TranCIM</text>
+  <!-- MulTCIM -->
+  <rect
+     id="rect-multcim"
+     x="162"
+     y="360"
+     width="52"
+     height="38"
+     rx="3"
+     fill="#EAF3DE"
+     stroke="#4A7A2E"
+     stroke-width="0.75" />
+  <text
+     id="text-multcim"
+     x="188"
+     y="379"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="9"
+     fill="#1e3a0c">MulTCIM</text>
+  <!-- 8b SRAM Macro -->
+  <rect
+     id="rect-8bsram"
+     x="117.28818"
+     y="290.95294"
+     width="66"
+     height="38"
+     rx="3"
+     fill="#eaf3de"
+     stroke="#4a7a2e"
+     stroke-width="0.75" />
+  <text
+     id="text-8bsram1"
+     x="149.93227"
+     y="302.17337"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="8.5px"
+     fill="#1e3a0c">8b SRAM</text>
+  <text
+     id="text-8bsram2"
+     x="151"
+     y="315.10562"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="8px"
+     fill="#1e3a0c">Macro [ref]</text>
+  <!-- Ambit -->
+  <rect
+     id="rect-ambit"
+     x="262"
+     y="360"
+     width="46"
+     height="38"
+     rx="3"
+     fill="#EAF3DE"
+     stroke="#4A7A2E"
+     stroke-width="0.75" />
+  <text
+     id="text-ambit"
+     x="285"
+     y="379"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="9"
+     fill="#1e3a0c">Ambit</text>
+  <!-- Neural Cache -->
+  <rect
+     id="rect-ncache"
+     x="322"
+     y="360"
+     width="66"
+     height="38"
+     rx="3"
+     fill="#EAF3DE"
+     stroke="#4A7A2E"
+     stroke-width="0.75" />
+  <text
+     id="text-ncache"
+     x="355"
+     y="373"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="8.5"
+     fill="#1e3a0c">Neural</text>
+  <text
+     id="text-ncache2"
+     x="355"
+     y="387"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="8.5"
+     fill="#1e3a0c">Cache</text>
+  <!-- ISAAC -->
+  <rect
+     id="rect-isaac"
+     x="476"
+     y="360"
+     width="48"
+     height="38"
+     rx="3"
+     fill="#EAF3DE"
+     stroke="#4A7A2E"
+     stroke-width="0.75" />
+  <text
+     id="text-isaac"
+     x="500"
+     y="379"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="9"
+     fill="#1e3a0c">ISAAC</text>
+  <!-- PRIME -->
+  <rect
+     id="rect-prime"
+     x="533"
+     y="360"
+     width="48"
+     height="38"
+     rx="3"
+     fill="#EAF3DE"
+     stroke="#4A7A2E"
+     stroke-width="0.75" />
+  <text
+     id="text-prime"
+     x="557"
+     y="379"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="9"
+     fill="#1e3a0c">PRIME</text>
+  <!-- PUMA -->
+  <rect
+     id="rect-puma"
+     x="591"
+     y="360"
+     width="46"
+     height="38"
+     rx="3"
+     fill="#EAF3DE"
+     stroke="#4A7A2E"
+     stroke-width="0.75" />
+  <text
+     id="text-puma"
+     x="614"
+     y="379"
+     text-anchor="middle"
+     dominant-baseline="central"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="9"
+     fill="#1e3a0c">PUMA</text>
+  <!-- ─────────────────────────────────────────────────────────────────
+       LEGEND BOX
+  ───────────────────────────────────────────────────────────────────── -->
+  <!-- Row 1 -->
+  <!-- Row 2 -->
+  <!-- ─────────────────────────────────────────────────────────────────
+       FIGURE CAPTION
+  ───────────────────────────────────────────────────────────────────── -->
+  <path
+     style="fill:none;stroke:#010418;stroke-width:1.6;stroke-linejoin:bevel;stroke-opacity:1"
+     d="m 148.77153,282.59472 -0.35592,8.89782"
+     id="path9" />
+</svg>

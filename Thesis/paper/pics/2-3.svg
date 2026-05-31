@@ -1,0 +1,367 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1180" viewBox="0 0 1600 1180">
+<defs>
+  <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth">
+    <path d="M0,0 L9,4.5 L0,9 Z" fill="#000000"/>
+  </marker>
+  <marker id="arrowStart" markerWidth="9" markerHeight="9" refX="1" refY="4.5" orient="auto" markerUnits="strokeWidth">
+    <path d="M9,0 L0,4.5 L9,9 Z" fill="#000000"/>
+  </marker>
+</defs>
+<rect x="0" y="0" width="1600" height="1180" fill="#FFFFFF" stroke="none"/>
+
+<rect x="10" y="10" width="1580" height="915" rx="0" ry="0" fill="#FFFFFF" stroke="#000000" stroke-width="1.0" />
+<rect x="10" y="945" width="1580" height="215" rx="0" ry="0" fill="#FFFFFF" stroke="#000000" stroke-width="1.0" />
+<text x="800.0" y="42" font-family="Times New Roman, Times, serif" font-size="28" font-weight="bold" text-anchor="middle" >(a) Internal Structure of a 16×16 CIM Tile</text>
+<text x="1210" y="48" font-family="Times New Roman, Times, serif" font-size="26" font-weight="normal" text-anchor="start" font-style="italic">psum[r] = Σ x_eff[c] × w[r][c]</text>
+<line x1="275" y1="82" x2="1290" y2="82" stroke="#000000" stroke-width="1.2" fill="none" marker-end="url(#arrow)" marker-start="url(#arrowStart)" stroke-linecap="butt" />
+<text x="782" y="77" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >16 columns</text>
+<line x1="58" y1="275" x2="58" y2="867" stroke="#000000" stroke-width="1.2" fill="none" marker-end="url(#arrow)" marker-start="url(#arrowStart)" stroke-linecap="butt" />
+<text x="70" y="571" font-family="Times New Roman, Times, serif" font-size="18" text-anchor="middle" transform="rotate(-90 70 571)">16 rows</text>
+<rect x="287.5" y="105" width="130" height="68" rx="0" ry="0" fill="#A8D5E2" stroke="#2E5C8A" stroke-width="1.4" />
+<text x="352.5" y="130" font-family="Times New Roman, Times, serif" font-size="16" font-weight="normal" text-anchor="middle" >weight_sram</text>
+<text x="352.5" y="155" font-family="Times New Roman, Times, serif" font-size="16" font-weight="normal" text-anchor="middle" >bank[0]</text>
+<line x1="352.5" y1="173" x2="352.5" y2="265" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="364.5" y="207" font-family="Times New Roman, Times, serif" font-size="15" font-weight="normal" text-anchor="start" font-style="italic">w[r][0]</text>
+<text x="364.5" y="232" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="start" >(INT8 signed)</text>
+<rect x="442.5" y="105" width="130" height="68" rx="0" ry="0" fill="#A8D5E2" stroke="#2E5C8A" stroke-width="1.4" />
+<text x="507.5" y="130" font-family="Times New Roman, Times, serif" font-size="16" font-weight="normal" text-anchor="middle" >weight_sram</text>
+<text x="507.5" y="155" font-family="Times New Roman, Times, serif" font-size="16" font-weight="normal" text-anchor="middle" >bank[1]</text>
+<line x1="507.5" y1="173" x2="507.5" y2="265" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="519.5" y="207" font-family="Times New Roman, Times, serif" font-size="15" font-weight="normal" text-anchor="start" font-style="italic">w[r][1]</text>
+<text x="519.5" y="232" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="start" >(INT8 signed)</text>
+<rect x="597.5" y="105" width="130" height="68" rx="0" ry="0" fill="#A8D5E2" stroke="#2E5C8A" stroke-width="1.4" />
+<text x="662.5" y="130" font-family="Times New Roman, Times, serif" font-size="16" font-weight="normal" text-anchor="middle" >weight_sram</text>
+<text x="662.5" y="155" font-family="Times New Roman, Times, serif" font-size="16" font-weight="normal" text-anchor="middle" >bank[2]</text>
+<line x1="662.5" y1="173" x2="662.5" y2="265" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="674.5" y="207" font-family="Times New Roman, Times, serif" font-size="15" font-weight="normal" text-anchor="start" font-style="italic">w[r][2]</text>
+<text x="674.5" y="232" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="start" >(INT8 signed)</text>
+<rect x="837.5" y="105" width="130" height="68" rx="0" ry="0" fill="#A8D5E2" stroke="#2E5C8A" stroke-width="1.4" />
+<text x="902.5" y="130" font-family="Times New Roman, Times, serif" font-size="16" font-weight="normal" text-anchor="middle" >weight_sram</text>
+<text x="902.5" y="155" font-family="Times New Roman, Times, serif" font-size="16" font-weight="normal" text-anchor="middle" >bank[13]</text>
+<line x1="902.5" y1="173" x2="902.5" y2="265" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="914.5" y="207" font-family="Times New Roman, Times, serif" font-size="15" font-weight="normal" text-anchor="start" font-style="italic">w[r][13]</text>
+<text x="914.5" y="232" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="start" >(INT8 signed)</text>
+<rect x="992.5" y="105" width="130" height="68" rx="0" ry="0" fill="#A8D5E2" stroke="#2E5C8A" stroke-width="1.4" />
+<text x="1057.5" y="130" font-family="Times New Roman, Times, serif" font-size="16" font-weight="normal" text-anchor="middle" >weight_sram</text>
+<text x="1057.5" y="155" font-family="Times New Roman, Times, serif" font-size="16" font-weight="normal" text-anchor="middle" >bank[14]</text>
+<line x1="1057.5" y1="173" x2="1057.5" y2="265" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="1069.5" y="207" font-family="Times New Roman, Times, serif" font-size="15" font-weight="normal" text-anchor="start" font-style="italic">w[r][14]</text>
+<text x="1069.5" y="232" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="start" >(INT8 signed)</text>
+<rect x="1147.5" y="105" width="130" height="68" rx="0" ry="0" fill="#A8D5E2" stroke="#2E5C8A" stroke-width="1.4" />
+<text x="1212.5" y="130" font-family="Times New Roman, Times, serif" font-size="16" font-weight="normal" text-anchor="middle" >weight_sram</text>
+<text x="1212.5" y="155" font-family="Times New Roman, Times, serif" font-size="16" font-weight="normal" text-anchor="middle" >bank[15]</text>
+<line x1="1212.5" y1="173" x2="1212.5" y2="265" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="1224.5" y="207" font-family="Times New Roman, Times, serif" font-size="15" font-weight="normal" text-anchor="start" font-style="italic">w[r][15]</text>
+<text x="1224.5" y="232" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="start" >(INT8 signed)</text>
+<circle cx="762.5" cy="147" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="782.5" cy="147" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="802.5" cy="147" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<text x="140" y="515" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >Each x_eff[r]</text>
+<text x="140" y="540" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >is 9-bit</text>
+<text x="140" y="565" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >unsigned</text>
+<line x1="240" y1="306.0" x2="300" y2="306.0" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="222" y="311.0" font-family="Times New Roman, Times, serif" font-size="17" font-weight="normal" text-anchor="end" font-style="italic">x_eff[0]</text>
+<line x1="240" y1="396.0" x2="300" y2="396.0" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="222" y="401.0" font-family="Times New Roman, Times, serif" font-size="17" font-weight="normal" text-anchor="end" font-style="italic">x_eff[1]</text>
+<line x1="240" y1="486.0" x2="300" y2="486.0" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="222" y="491.0" font-family="Times New Roman, Times, serif" font-size="17" font-weight="normal" text-anchor="end" font-style="italic">x_eff[2]</text>
+<line x1="240" y1="656.0" x2="300" y2="656.0" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="222" y="661.0" font-family="Times New Roman, Times, serif" font-size="17" font-weight="normal" text-anchor="end" font-style="italic">x_eff[13]</text>
+<line x1="240" y1="746.0" x2="300" y2="746.0" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="222" y="751.0" font-family="Times New Roman, Times, serif" font-size="17" font-weight="normal" text-anchor="end" font-style="italic">x_eff[14]</text>
+<line x1="240" y1="836.0" x2="300" y2="836.0" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="222" y="841.0" font-family="Times New Roman, Times, serif" font-size="17" font-weight="normal" text-anchor="end" font-style="italic">x_eff[15]</text>
+<circle cx="235" cy="552.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="235" cy="571.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="235" cy="590.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<rect x="300" y="275" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="333" y="299" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="373" y="299" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="352.5" y="324" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[0][0]</text>
+<rect x="455" y="275" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="488" y="299" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="528" y="299" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="507.5" y="324" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[0][1]</text>
+<rect x="610" y="275" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="643" y="299" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="683" y="299" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="662.5" y="324" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[0][2]</text>
+<rect x="850" y="275" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="883" y="299" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="923" y="299" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="902.5" y="324" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[0][13]</text>
+<rect x="1005" y="275" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="1038" y="299" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="1078" y="299" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="1057.5" y="324" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[0][14]</text>
+<rect x="1160" y="275" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="1193" y="299" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="1233" y="299" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="1212.5" y="324" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[0][15]</text>
+<rect x="300" y="365" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="333" y="389" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="373" y="389" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="352.5" y="414" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[1][0]</text>
+<rect x="455" y="365" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="488" y="389" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="528" y="389" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="507.5" y="414" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[1][1]</text>
+<rect x="610" y="365" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="643" y="389" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="683" y="389" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="662.5" y="414" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[1][2]</text>
+<rect x="850" y="365" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="883" y="389" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="923" y="389" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="902.5" y="414" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[1][13]</text>
+<rect x="1005" y="365" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="1038" y="389" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="1078" y="389" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="1057.5" y="414" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[1][14]</text>
+<rect x="1160" y="365" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="1193" y="389" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="1233" y="389" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="1212.5" y="414" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[1][15]</text>
+<rect x="300" y="455" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="333" y="479" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="373" y="479" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="352.5" y="504" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[2][0]</text>
+<rect x="455" y="455" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="488" y="479" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="528" y="479" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="507.5" y="504" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[2][1]</text>
+<rect x="610" y="455" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="643" y="479" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="683" y="479" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="662.5" y="504" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[2][2]</text>
+<rect x="850" y="455" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="883" y="479" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="923" y="479" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="902.5" y="504" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[2][13]</text>
+<rect x="1005" y="455" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="1038" y="479" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="1078" y="479" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="1057.5" y="504" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[2][14]</text>
+<rect x="1160" y="455" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="1193" y="479" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="1233" y="479" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="1212.5" y="504" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[2][15]</text>
+<rect x="300" y="625" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="333" y="649" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="373" y="649" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="352.5" y="674" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[13][0]</text>
+<rect x="455" y="625" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="488" y="649" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="528" y="649" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="507.5" y="674" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[13][1]</text>
+<rect x="610" y="625" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="643" y="649" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="683" y="649" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="662.5" y="674" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[13][2]</text>
+<rect x="850" y="625" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="883" y="649" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="923" y="649" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="902.5" y="674" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[13][13]</text>
+<rect x="1005" y="625" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="1038" y="649" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="1078" y="649" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="1057.5" y="674" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[13][14]</text>
+<rect x="1160" y="625" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="1193" y="649" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="1233" y="649" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="1212.5" y="674" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[13][15]</text>
+<rect x="300" y="715" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="333" y="739" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="373" y="739" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="352.5" y="764" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[14][0]</text>
+<rect x="455" y="715" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="488" y="739" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="528" y="739" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="507.5" y="764" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[14][1]</text>
+<rect x="610" y="715" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="643" y="739" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="683" y="739" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="662.5" y="764" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[14][2]</text>
+<rect x="850" y="715" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="883" y="739" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="923" y="739" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="902.5" y="764" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[14][13]</text>
+<rect x="1005" y="715" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="1038" y="739" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="1078" y="739" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="1057.5" y="764" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[14][14]</text>
+<rect x="1160" y="715" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="1193" y="739" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="1233" y="739" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="1212.5" y="764" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[14][15]</text>
+<rect x="300" y="805" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="333" y="829" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="373" y="829" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="352.5" y="854" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[15][0]</text>
+<rect x="455" y="805" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="488" y="829" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="528" y="829" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="507.5" y="854" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[15][1]</text>
+<rect x="610" y="805" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="643" y="829" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="683" y="829" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="662.5" y="854" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[15][2]</text>
+<rect x="850" y="805" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="883" y="829" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="923" y="829" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="902.5" y="854" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[15][13]</text>
+<rect x="1005" y="805" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="1038" y="829" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="1078" y="829" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="1057.5" y="854" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[15][14]</text>
+<rect x="1160" y="805" width="105" height="62" rx="0" ry="0" fill="#F5B461" stroke="#B86B1F" stroke-width="1.2" />
+<text x="1193" y="829" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >×</text>
+<text x="1233" y="829" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >+</text>
+<text x="1212.5" y="854" font-family="Times New Roman, Times, serif" font-size="14" font-weight="normal" text-anchor="middle" >MAC[15][15]</text>
+<line x1="405" y1="306.0" x2="455" y2="306.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="430.0" y="294.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="560" y1="306.0" x2="610" y2="306.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="585.0" y="294.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="715" y1="306.0" x2="770" y2="306.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="742.5" y="294.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<circle cx="790" cy="306.0" r="3.8" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="805" cy="306.0" r="3.8" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="820" cy="306.0" r="3.8" fill="#000000" stroke="none" stroke-width="0"/>
+<line x1="830" y1="306.0" x2="850" y2="306.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<line x1="955" y1="306.0" x2="1005" y2="306.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="980.0" y="294.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="1110" y1="306.0" x2="1160" y2="306.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="1135.0" y="294.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="1265" y1="306.0" x2="1375" y2="306.0" stroke="#000000" stroke-width="2.4" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="1392" y="299.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="start" font-style="italic">psum[0]</text>
+<text x="1392" y="324.0" font-family="Times New Roman, Times, serif" font-size="16" font-weight="normal" text-anchor="start" >(INT32)</text>
+<line x1="405" y1="396.0" x2="455" y2="396.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="430.0" y="384.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="560" y1="396.0" x2="610" y2="396.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="585.0" y="384.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="715" y1="396.0" x2="770" y2="396.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="742.5" y="384.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<circle cx="790" cy="396.0" r="3.8" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="805" cy="396.0" r="3.8" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="820" cy="396.0" r="3.8" fill="#000000" stroke="none" stroke-width="0"/>
+<line x1="830" y1="396.0" x2="850" y2="396.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<line x1="955" y1="396.0" x2="1005" y2="396.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="980.0" y="384.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="1110" y1="396.0" x2="1160" y2="396.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="1135.0" y="384.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="1265" y1="396.0" x2="1375" y2="396.0" stroke="#000000" stroke-width="2.4" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="1392" y="389.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="start" font-style="italic">psum[1]</text>
+<text x="1392" y="414.0" font-family="Times New Roman, Times, serif" font-size="16" font-weight="normal" text-anchor="start" >(INT32)</text>
+<line x1="405" y1="486.0" x2="455" y2="486.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="430.0" y="474.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="560" y1="486.0" x2="610" y2="486.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="585.0" y="474.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="715" y1="486.0" x2="770" y2="486.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="742.5" y="474.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<circle cx="790" cy="486.0" r="3.8" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="805" cy="486.0" r="3.8" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="820" cy="486.0" r="3.8" fill="#000000" stroke="none" stroke-width="0"/>
+<line x1="830" y1="486.0" x2="850" y2="486.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<line x1="955" y1="486.0" x2="1005" y2="486.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="980.0" y="474.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="1110" y1="486.0" x2="1160" y2="486.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="1135.0" y="474.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="1265" y1="486.0" x2="1375" y2="486.0" stroke="#000000" stroke-width="2.4" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="1392" y="479.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="start" font-style="italic">psum[2]</text>
+<text x="1392" y="504.0" font-family="Times New Roman, Times, serif" font-size="16" font-weight="normal" text-anchor="start" >(INT32)</text>
+<line x1="405" y1="656.0" x2="455" y2="656.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="430.0" y="644.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="560" y1="656.0" x2="610" y2="656.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="585.0" y="644.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="715" y1="656.0" x2="770" y2="656.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="742.5" y="644.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<circle cx="790" cy="656.0" r="3.8" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="805" cy="656.0" r="3.8" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="820" cy="656.0" r="3.8" fill="#000000" stroke="none" stroke-width="0"/>
+<line x1="830" y1="656.0" x2="850" y2="656.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<line x1="955" y1="656.0" x2="1005" y2="656.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="980.0" y="644.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="1110" y1="656.0" x2="1160" y2="656.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="1135.0" y="644.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="1265" y1="656.0" x2="1375" y2="656.0" stroke="#000000" stroke-width="2.4" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="1392" y="649.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="start" font-style="italic">psum[13]</text>
+<text x="1392" y="674.0" font-family="Times New Roman, Times, serif" font-size="16" font-weight="normal" text-anchor="start" >(INT32)</text>
+<line x1="405" y1="746.0" x2="455" y2="746.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="430.0" y="734.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="560" y1="746.0" x2="610" y2="746.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="585.0" y="734.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="715" y1="746.0" x2="770" y2="746.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="742.5" y="734.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<circle cx="790" cy="746.0" r="3.8" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="805" cy="746.0" r="3.8" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="820" cy="746.0" r="3.8" fill="#000000" stroke="none" stroke-width="0"/>
+<line x1="830" y1="746.0" x2="850" y2="746.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<line x1="955" y1="746.0" x2="1005" y2="746.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="980.0" y="734.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="1110" y1="746.0" x2="1160" y2="746.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="1135.0" y="734.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="1265" y1="746.0" x2="1375" y2="746.0" stroke="#000000" stroke-width="2.4" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="1392" y="739.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="start" font-style="italic">psum[14]</text>
+<text x="1392" y="764.0" font-family="Times New Roman, Times, serif" font-size="16" font-weight="normal" text-anchor="start" >(INT32)</text>
+<line x1="405" y1="836.0" x2="455" y2="836.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="430.0" y="824.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="560" y1="836.0" x2="610" y2="836.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="585.0" y="824.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="715" y1="836.0" x2="770" y2="836.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="742.5" y="824.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<circle cx="790" cy="836.0" r="3.8" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="805" cy="836.0" r="3.8" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="820" cy="836.0" r="3.8" fill="#000000" stroke="none" stroke-width="0"/>
+<line x1="830" y1="836.0" x2="850" y2="836.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<line x1="955" y1="836.0" x2="1005" y2="836.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="980.0" y="824.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="1110" y1="836.0" x2="1160" y2="836.0" stroke="#000000" stroke-width="1.3" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="1135.0" y="824.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >+</text>
+<line x1="1265" y1="836.0" x2="1375" y2="836.0" stroke="#000000" stroke-width="2.4" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="1392" y="829.0" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="start" font-style="italic">psum[15]</text>
+<text x="1392" y="854.0" font-family="Times New Roman, Times, serif" font-size="16" font-weight="normal" text-anchor="start" >(INT32)</text>
+<circle cx="352.5" cy="552.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="352.5" cy="571.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="352.5" cy="590.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="507.5" cy="552.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="507.5" cy="571.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="507.5" cy="590.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="662.5" cy="552.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="662.5" cy="571.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="662.5" cy="590.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="902.5" cy="552.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="902.5" cy="571.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="902.5" cy="590.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="1057.5" cy="552.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="1057.5" cy="571.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="1057.5" cy="590.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="1212.5" cy="552.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="1212.5" cy="571.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="1212.5" cy="590.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="1365" cy="552.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="1365" cy="571.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<circle cx="1365" cy="590.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
+<text x="800.0" y="905" font-family="Times New Roman, Times, serif" font-size="22" font-weight="normal" text-anchor="middle" >256 MACs / cycle (when TILE_SPLIT_FACTOR=1)</text>
+<text x="800.0" y="982" font-family="Times New Roman, Times, serif" font-size="26" font-weight="bold" text-anchor="middle" >(b) Timing when TILE_SPLIT_FACTOR = 4</text>
+<line x1="80" y1="1097" x2="1510" y2="1097" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<text x="1530" y="1122" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="end" >Time</text>
+<rect x="120" y="1015" width="340" height="75" rx="0" ry="0" fill="#B5D99C" stroke="#4A7A2E" stroke-width="1.2" />
+<text x="290.0" y="1045" font-family="Times New Roman, Times, serif" font-size="24" font-weight="bold" text-anchor="middle" >Q0</text>
+<text x="290.0" y="1073" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >cols 0–3</text>
+<rect x="460" y="1015" width="340" height="75" rx="0" ry="0" fill="#B5D99C" stroke="#4A7A2E" stroke-width="1.2" />
+<text x="630.0" y="1045" font-family="Times New Roman, Times, serif" font-size="24" font-weight="bold" text-anchor="middle" >Q1</text>
+<text x="630.0" y="1073" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >cols 4–7</text>
+<line x1="460" y1="1015" x2="460" y2="1090" stroke="#000000" stroke-width="1.0" fill="none" stroke-dasharray="6,5" stroke-linecap="butt" />
+<rect x="800" y="1015" width="340" height="75" rx="0" ry="0" fill="#B5D99C" stroke="#4A7A2E" stroke-width="1.2" />
+<text x="970.0" y="1045" font-family="Times New Roman, Times, serif" font-size="24" font-weight="bold" text-anchor="middle" >Q2</text>
+<text x="970.0" y="1073" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >cols 8–11</text>
+<line x1="800" y1="1015" x2="800" y2="1090" stroke="#000000" stroke-width="1.0" fill="none" stroke-dasharray="6,5" stroke-linecap="butt" />
+<rect x="1140" y="1015" width="340" height="75" rx="0" ry="0" fill="#B5D99C" stroke="#4A7A2E" stroke-width="1.2" />
+<text x="1310.0" y="1045" font-family="Times New Roman, Times, serif" font-size="24" font-weight="bold" text-anchor="middle" >Q3</text>
+<text x="1310.0" y="1073" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="middle" >cols 12–15</text>
+<line x1="1140" y1="1015" x2="1140" y2="1090" stroke="#000000" stroke-width="1.0" fill="none" stroke-dasharray="6,5" stroke-linecap="butt" />
+<line x1="430" y1="1000" x2="490" y2="1000" stroke="#000000" stroke-width="1.2" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<line x1="770" y1="1000" x2="830" y2="1000" stroke="#000000" stroke-width="1.2" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+<line x1="1110" y1="1000" x2="1170" y2="1000" stroke="#000000" stroke-width="1.2" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
+</svg>

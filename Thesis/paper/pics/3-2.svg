@@ -1,0 +1,1491 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="100%"
+   viewBox="0 0 690 708"
+   role="img"
+   style=""
+   version="1.1"
+   id="svg117"
+   sodipodi:docname="3-2.svg"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview117"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="1.8731183"
+     inkscape:cx="322.99082"
+     inkscape:cy="119.05281"
+     inkscape:window-width="1908"
+     inkscape:window-height="1035"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg117" />
+  <title
+     style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="title1">PicoRV32 32-bit Address Space Memory Map</title>
+  <desc
+     style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="desc1">Vertical memory map diagram for PicoRV32 showing address regions: FW BRAM, CIM CSR, UART TX, Result BRAM, and unmapped regions in between.</desc>
+  <defs
+     id="defs59">
+    <marker
+       id="arrow"
+       viewBox="0 0 10 10"
+       refX="8"
+       refY="5"
+       markerWidth="6"
+       markerHeight="6"
+       orient="auto-start-reverse">
+      <path
+         d="M2 1L8 5L2 9"
+         fill="none"
+         stroke="context-stroke"
+         stroke-width="1.5"
+         stroke-linecap="round"
+         stroke-linejoin="round"
+         id="path1" />
+    </marker>
+    <pattern
+       id="hatch"
+       patternUnits="userSpaceOnUse"
+       width="8"
+       height="8"
+       patternTransform="rotate(45)">
+      <line
+         x1="0"
+         y1="0"
+         x2="0"
+         y2="8"
+         stroke="#A0A0A0"
+         stroke-width="0.75"
+         opacity="0.5"
+         id="line1" />
+    </pattern>
+    <mask
+       id="imagine-text-gaps-hyl3ky"
+       maskUnits="userSpaceOnUse">
+      <rect
+         x="0"
+         y="0"
+         width="690"
+         height="930"
+         fill="white"
+         id="rect1" />
+      <rect
+         x="221.2282257080078"
+         y="17.0672550201416"
+         width="237.54354858398438"
+         height="19.975744247436523"
+         fill="black"
+         rx="2"
+         id="rect2" />
+      <rect
+         x="231.54061889648438"
+         y="38.110252380371094"
+         width="216.91876220703125"
+         height="16.9327449798584"
+         fill="black"
+         rx="2"
+         id="rect3" />
+      <rect
+         x="115.69202423095703"
+         y="60.110252380371094"
+         width="46.30797576904297"
+         height="16.9327449798584"
+         fill="black"
+         rx="2"
+         id="rect4" />
+      <rect
+         x="319.4832763671875"
+         y="60.110252380371094"
+         width="41.033443450927734"
+         height="16.9327449798584"
+         fill="black"
+         rx="2"
+         id="rect5" />
+      <rect
+         x="556"
+         y="60.110252380371094"
+         width="39.15692710876465"
+         height="16.9327449798584"
+         fill="black"
+         rx="2"
+         id="rect6" />
+      <rect
+         x="87.98383331298828"
+         y="87.63175201416016"
+         width="74.01617431640625"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect7" />
+      <rect
+         x="87.98383331298828"
+         y="127.63175964355469"
+         width="74.01617431640625"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect8" />
+      <rect
+         x="248.45314025878906"
+         y="96.1102523803711"
+         width="103.09371185302734"
+         height="16.9327449798584"
+         fill="black"
+         rx="2"
+         id="rect9" />
+      <rect
+         x="252.0032958984375"
+         y="110.87100219726562"
+         width="95.9933853149414"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect10" />
+      <rect
+         x="283.34619140625"
+         y="123.87100219726562"
+         width="33.307607650756836"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect11" />
+      <rect
+         x="441"
+         y="96.87100219726562"
+         width="65.54648971557617"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect12" />
+      <rect
+         x="87.98383331298828"
+         y="147.6317596435547"
+         width="74.01617431640625"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect13" />
+      <rect
+         x="87.98383331298828"
+         y="167.6317596435547"
+         width="74.01617431640625"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect14" />
+      <rect
+         x="274.03125"
+         y="155.87100219726562"
+         width="51.937522888183594"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect15" />
+      <rect
+         x="444"
+         y="159.6317596435547"
+         width="78.91877746582031"
+         height="14.650495529174805"
+         fill="black"
+         rx="2"
+         id="rect16" />
+      <rect
+         x="87.98383331298828"
+         y="197.6317596435547"
+         width="74.01617431640625"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect17" />
+      <rect
+         x="87.98383331298828"
+         y="237.6317596435547"
+         width="74.01617431640625"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect18" />
+      <rect
+         x="228.81735229492188"
+         y="204.11026000976562"
+         width="142.36529541015625"
+         height="16.9327449798584"
+         fill="black"
+         rx="2"
+         id="rect19" />
+      <rect
+         x="253.4825439453125"
+         y="217.87100219726562"
+         width="93.034912109375"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect20" />
+      <rect
+         x="283.34619140625"
+         y="230.87100219726562"
+         width="33.307607650756836"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect21" />
+      <rect
+         x="441"
+         y="204.87100219726562"
+         width="64.41381454467773"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect22" />
+      <rect
+         x="441"
+         y="219.6317596435547"
+         width="45.95295715332031"
+         height="14.650495529174805"
+         fill="black"
+         rx="2"
+         id="rect23" />
+      <rect
+         x="87.98383331298828"
+         y="257.6317443847656"
+         width="74.01617431640625"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect24" />
+      <rect
+         x="87.98383331298828"
+         y="277.6317443847656"
+         width="74.01617431640625"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect25" />
+      <rect
+         x="274.03125"
+         y="265.8710021972656"
+         width="51.937522888183594"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect26" />
+      <rect
+         x="444"
+         y="266.6317443847656"
+         width="78.91877746582031"
+         height="14.650495529174805"
+         fill="black"
+         rx="2"
+         id="rect27" />
+      <rect
+         x="87.98383331298828"
+         y="307.6317443847656"
+         width="74.01617431640625"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect28" />
+      <rect
+         x="87.98383331298828"
+         y="347.6317443847656"
+         width="74.01617431640625"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect29" />
+      <rect
+         x="271.58837890625"
+         y="313.1102600097656"
+         width="56.82322692871094"
+         height="16.9327449798584"
+         fill="black"
+         rx="2"
+         id="rect30" />
+      <rect
+         x="252.76406860351562"
+         y="327.8710021972656"
+         width="94.47188568115234"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect31" />
+      <rect
+         x="289.18707275390625"
+         y="340.8710021972656"
+         width="21.62587261199951"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect32" />
+      <rect
+         x="441"
+         y="313.8710021972656"
+         width="44.66813659667969"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect33" />
+      <rect
+         x="441"
+         y="328.6317443847656"
+         width="72.1734619140625"
+         height="14.650495529174805"
+         fill="black"
+         rx="2"
+         id="rect34" />
+      <rect
+         x="87.98383331298828"
+         y="367.6317443847656"
+         width="74.01617431640625"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect35" />
+      <rect
+         x="87.98383331298828"
+         y="387.6317443847656"
+         width="74.01617431640625"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect36" />
+      <rect
+         x="274.03125"
+         y="375.8710021972656"
+         width="51.937522888183594"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect37" />
+      <rect
+         x="444"
+         y="376.6317443847656"
+         width="78.91877746582031"
+         height="14.650495529174805"
+         fill="black"
+         rx="2"
+         id="rect38" />
+      <rect
+         x="87.98383331298828"
+         y="417.6317443847656"
+         width="74.01617431640625"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect39" />
+      <rect
+         x="87.98383331298828"
+         y="457.6317443847656"
+         width="74.01617431640625"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect40" />
+      <rect
+         x="242.34178161621094"
+         y="423.1102600097656"
+         width="115.3164291381836"
+         height="16.9327449798584"
+         fill="black"
+         rx="2"
+         id="rect41" />
+      <rect
+         x="249.97463989257812"
+         y="437.8710021972656"
+         width="100.05071258544922"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect42" />
+      <rect
+         x="284.1830139160156"
+         y="450.8710021972656"
+         width="31.633956909179688"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect43" />
+      <rect
+         x="441"
+         y="423.8710021972656"
+         width="65.54648971557617"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect44" />
+      <rect
+         x="87.98383331298828"
+         y="477.6317443847656"
+         width="74.01617431640625"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect45" />
+      <rect
+         x="87.98383331298828"
+         y="497.6317443847656"
+         width="74.01617431640625"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect46" />
+      <rect
+         x="274.03125"
+         y="485.8710021972656"
+         width="51.937522888183594"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect47" />
+      <rect
+         x="316.9897155761719"
+         y="544.5887451171875"
+         width="46.02058029174805"
+         height="18.45424461364746"
+         fill="black"
+         rx="2"
+         id="rect48" />
+      <rect
+         x="84"
+         y="568.1102294921875"
+         width="109.23043060302734"
+         height="16.9327449798584"
+         fill="black"
+         rx="2"
+         id="rect49" />
+      <rect
+         x="84"
+         y="582.8710327148438"
+         width="159.4737091064453"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect50" />
+      <rect
+         x="304"
+         y="568.1102294921875"
+         width="177.71481323242188"
+         height="16.9327449798584"
+         fill="black"
+         rx="2"
+         id="rect51" />
+      <rect
+         x="304"
+         y="582.8710327148438"
+         width="141.1143035888672"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect52" />
+      <rect
+         x="84"
+         y="610.1102294921875"
+         width="150.5306854248047"
+         height="16.9327449798584"
+         fill="black"
+         rx="2"
+         id="rect53" />
+      <rect
+         x="84"
+         y="624.8710327148438"
+         width="134.62256622314453"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect54" />
+      <rect
+         x="304"
+         y="610.1102294921875"
+         width="151.1392822265625"
+         height="16.9327449798584"
+         fill="black"
+         rx="2"
+         id="rect55" />
+      <rect
+         x="304"
+         y="624.8710327148438"
+         width="190.1234893798828"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect56" />
+      <rect
+         x="56"
+         y="664.8710327148438"
+         width="66.91583633422852"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect57" />
+      <rect
+         x="146"
+         y="664.8710327148438"
+         width="474.1705322265625"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect58" />
+      <rect
+         x="112.42411804199219"
+         y="700.8710327148438"
+         width="455.15179443359375"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect59" />
+    </mask>
+  </defs>
+  <!-- Background -->
+  <rect
+     x="0"
+     y="0"
+     width="680"
+     height="708"
+     fill="white"
+     style="fill:rgb(255, 255, 255);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect60" />
+  <!-- Title -->
+  <text
+     x="340"
+     y="32"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="14"
+     font-weight="700"
+     fill="#111"
+     style="fill:rgb(17, 17, 17);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:14px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
+     id="text60">PicoRV32 Address Space Map (32-bit)</text>
+  <text
+     x="340"
+     y="50"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="11"
+     fill="#444"
+     style="fill:rgb(68, 68, 68);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:11px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text61">Word-addressed, 4 GB total; not drawn to scale</text>
+  <!-- Column headers -->
+  <text
+     x="158"
+     y="72"
+     text-anchor="end"
+     font-family="'Times New Roman', Times, serif"
+     font-size="11"
+     font-weight="700"
+     fill="#222"
+     style="fill:rgb(34, 34, 34);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:11px;font-weight:700;text-anchor:end;dominant-baseline:auto"
+     id="text62">Address</text>
+  <text
+     x="340"
+     y="72"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="11"
+     font-weight="700"
+     fill="#222"
+     style="fill:rgb(34, 34, 34);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:11px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
+     id="text63">Region</text>
+  <text
+     x="560"
+     y="72"
+     text-anchor="start"
+     font-family="'Times New Roman', Times, serif"
+     font-size="11"
+     font-weight="700"
+     fill="#222"
+     style="fill:rgb(34, 34, 34);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:11px;font-weight:700;text-anchor:start;dominant-baseline:auto"
+     id="text64">Access</text>
+  <!-- Divider line under headers -->
+  <line
+     x1="40"
+     y1="77"
+     x2="640"
+     y2="77"
+     stroke="#333"
+     stroke-width="0.75"
+     mask="url(#imagine-text-gaps-hyl3ky)"
+     style="fill:rgb(0, 0, 0);stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line64" />
+  <!-- ====== BAND 1: FW BRAM 0x0000_0000–0x0000_7FFF (32 KB) ====== -->
+  <!-- Band rect -->
+  <rect
+     x="165"
+     y="83"
+     width="270"
+     height="60"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     stroke-width="1"
+     style="fill:rgb(168, 213, 226);stroke:rgb(46, 92, 138);color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect64" />
+  <!-- Address labels left -->
+  <text
+     x="158"
+     y="98"
+     text-anchor="end"
+     font-family="'Courier New', Courier, monospace"
+     font-size="10"
+     fill="#222"
+     style="fill:rgb(34, 34, 34);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Courier New&quot;, Courier, monospace;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
+     id="text65">0x0000_0000</text>
+  <text
+     x="158"
+     y="138"
+     text-anchor="end"
+     font-family="'Courier New', Courier, monospace"
+     font-size="10"
+     fill="#222"
+     style="fill:rgb(34, 34, 34);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Courier New&quot;, Courier, monospace;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
+     id="text66">0x0000_7FFF</text>
+  <!-- Tick marks -->
+  <line
+     x1="160"
+     y1="83"
+     x2="165"
+     y2="83"
+     stroke="#333"
+     stroke-width="0.75"
+     style="fill:rgb(0, 0, 0);stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line66" />
+  <line
+     x1="160"
+     y1="143"
+     x2="165"
+     y2="143"
+     stroke="#333"
+     stroke-width="0.75"
+     style="fill:rgb(0, 0, 0);stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line67" />
+  <!-- Band label inside -->
+  <text
+     x="300"
+     y="108"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="11"
+     font-weight="700"
+     fill="#1A3D5C"
+     style="fill:rgb(26, 61, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:11px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
+     id="text67">FW BRAM (port A)</text>
+  <text
+     x="300"
+     y="122"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     fill="#1A3D5C"
+     style="fill:rgb(26, 61, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text68">code + weights + data</text>
+  <text
+     x="300"
+     y="135"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     font-style="italic"
+     fill="#1A3D5C"
+     style="fill:rgb(26, 61, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;font-style:italic;text-anchor:middle;dominant-baseline:auto"
+     id="text69">32 KB</text>
+  <!-- Access annotation -->
+  <text
+     x="445"
+     y="108"
+     text-anchor="start"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     fill="#333"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="text70">(R/W BRAM)</text>
+  <!-- ====== BAND 2: Unmapped 0x0000_8000–0x3FFF_FFFF ====== -->
+  <rect
+     x="165"
+     y="143"
+     width="270"
+     height="40"
+     fill="url(#hatch)"
+     stroke="#888"
+     stroke-width="0.75"
+     stroke-dasharray="4,3"
+     style="stroke:rgb(136, 136, 136);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-dasharray:4px, 3px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect70" />
+  <rect
+     x="165"
+     y="143"
+     width="270"
+     height="40"
+     fill="#D8D8D8"
+     opacity="0.45"
+     style="fill:rgb(216, 216, 216);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.45;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect71" />
+  <text
+     x="158"
+     y="158"
+     text-anchor="end"
+     font-family="'Courier New', Courier, monospace"
+     font-size="10"
+     fill="#555"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Courier New&quot;, Courier, monospace;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
+     id="text71">0x0000_8000</text>
+  <text
+     x="158"
+     y="178"
+     text-anchor="end"
+     font-family="'Courier New', Courier, monospace"
+     font-size="10"
+     fill="#555"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Courier New&quot;, Courier, monospace;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
+     id="text72">0x3FFF_FFFF</text>
+  <line
+     x1="160"
+     y1="143"
+     x2="165"
+     y2="143"
+     stroke="#777"
+     stroke-width="0.75"
+     style="fill:rgb(0, 0, 0);stroke:rgb(119, 119, 119);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line72" />
+  <line
+     x1="160"
+     y1="183"
+     x2="165"
+     y2="183"
+     stroke="#777"
+     stroke-width="0.75"
+     style="fill:rgb(0, 0, 0);stroke:rgb(119, 119, 119);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line73" />
+  <text
+     x="300"
+     y="167"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     fill="#555"
+     font-style="italic"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;font-style:italic;text-anchor:middle;dominant-baseline:auto"
+     id="text73">Unmapped</text>
+  <!-- Compression markers -->
+  <line
+     x1="165"
+     y1="183"
+     x2="435"
+     y2="183"
+     stroke="#888"
+     stroke-width="0.5"
+     stroke-dasharray="3,2"
+     style="fill:rgb(0, 0, 0);stroke:rgb(136, 136, 136);color:rgb(251, 251, 254);stroke-width:0.5px;stroke-dasharray:3px, 2px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line74" />
+  <text
+     x="448"
+     y="170"
+     text-anchor="start"
+     font-family="'Times New Roman', Times, serif"
+     font-size="9"
+     fill="#888"
+     style="fill:rgb(136, 136, 136);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:9px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="text74">— (compressed) —</text>
+  <!-- ====== BAND 3: CIM CSR 0x4000_0000–0x4000_3FFF (16 KB) ====== -->
+  <rect
+     x="165"
+     y="193"
+     width="270"
+     height="60"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="1"
+     style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect74" />
+  <text
+     x="158"
+     y="208"
+     text-anchor="end"
+     font-family="'Courier New', Courier, monospace"
+     font-size="10"
+     fill="#222"
+     style="fill:rgb(34, 34, 34);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Courier New&quot;, Courier, monospace;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
+     id="text75">0x4000_0000</text>
+  <text
+     x="158"
+     y="248"
+     text-anchor="end"
+     font-family="'Courier New', Courier, monospace"
+     font-size="10"
+     fill="#222"
+     style="fill:rgb(34, 34, 34);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Courier New&quot;, Courier, monospace;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
+     id="text76">0x4000_3FFF</text>
+  <line
+     x1="160"
+     y1="193"
+     x2="165"
+     y2="193"
+     stroke="#333"
+     stroke-width="0.75"
+     style="fill:rgb(0, 0, 0);stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line76" />
+  <line
+     x1="160"
+     y1="253"
+     x2="165"
+     y2="253"
+     stroke="#333"
+     stroke-width="0.75"
+     style="fill:rgb(0, 0, 0);stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line77" />
+  <text
+     x="300"
+     y="216"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="11"
+     font-weight="700"
+     fill="#6B3A00"
+     style="fill:rgb(107, 58, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:11px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
+     id="text77">CIM CSR / Storage Window</text>
+  <text
+     x="300"
+     y="229"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     fill="#6B3A00"
+     style="fill:rgb(107, 58, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text78">AXI4-Lite via bridge</text>
+  <text
+     x="300"
+     y="242"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     font-style="italic"
+     fill="#6B3A00"
+     style="fill:rgb(107, 58, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;font-style:italic;text-anchor:middle;dominant-baseline:auto"
+     id="text79">16 KB</text>
+  <text
+     x="445"
+     y="216"
+     text-anchor="start"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     fill="#333"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="text80">(R/W MMIO)</text>
+  <text
+     x="445"
+     y="230"
+     text-anchor="start"
+     font-family="'Times New Roman', Times, serif"
+     font-size="9"
+     fill="#555"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:9px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="text81">AXI4-Lite</text>
+  <!-- ====== BAND 4: Unmapped 0x4000_4000–0x7FFF_FFFF ====== -->
+  <rect
+     x="165"
+     y="253"
+     width="270"
+     height="40"
+     fill="url(#hatch)"
+     stroke="#888"
+     stroke-width="0.75"
+     stroke-dasharray="4,3"
+     style="stroke:rgb(136, 136, 136);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-dasharray:4px, 3px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect81" />
+  <rect
+     x="165"
+     y="253"
+     width="270"
+     height="40"
+     fill="#D8D8D8"
+     opacity="0.45"
+     style="fill:rgb(216, 216, 216);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.45;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect82" />
+  <text
+     x="158"
+     y="268"
+     text-anchor="end"
+     font-family="'Courier New', Courier, monospace"
+     font-size="10"
+     fill="#555"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Courier New&quot;, Courier, monospace;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
+     id="text82">0x4000_4000</text>
+  <text
+     x="158"
+     y="288"
+     text-anchor="end"
+     font-family="'Courier New', Courier, monospace"
+     font-size="10"
+     fill="#555"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Courier New&quot;, Courier, monospace;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
+     id="text83">0x7FFF_FFFF</text>
+  <line
+     x1="160"
+     y1="253"
+     x2="165"
+     y2="253"
+     stroke="#777"
+     stroke-width="0.75"
+     style="fill:rgb(0, 0, 0);stroke:rgb(119, 119, 119);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line83" />
+  <line
+     x1="160"
+     y1="293"
+     x2="165"
+     y2="293"
+     stroke="#777"
+     stroke-width="0.75"
+     style="fill:rgb(0, 0, 0);stroke:rgb(119, 119, 119);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line84" />
+  <text
+     x="300"
+     y="277"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     fill="#555"
+     font-style="italic"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;font-style:italic;text-anchor:middle;dominant-baseline:auto"
+     id="text84">Unmapped</text>
+  <text
+     x="448"
+     y="277"
+     text-anchor="start"
+     font-family="'Times New Roman', Times, serif"
+     font-size="9"
+     fill="#888"
+     style="fill:rgb(136, 136, 136);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:9px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="text85">— (compressed) —</text>
+  <!-- ====== BAND 5: UART TX 0x8000_0000–0x8000_0007 (8 B) ====== -->
+  <rect
+     x="165"
+     y="303"
+     width="270"
+     height="60"
+     fill="#B5D99C"
+     stroke="#4A7A2E"
+     stroke-width="1"
+     style="fill:rgb(181, 217, 156);stroke:rgb(74, 122, 46);color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect85" />
+  <text
+     x="158"
+     y="318"
+     text-anchor="end"
+     font-family="'Courier New', Courier, monospace"
+     font-size="10"
+     fill="#222"
+     style="fill:rgb(34, 34, 34);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Courier New&quot;, Courier, monospace;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
+     id="text86">0x8000_0000</text>
+  <text
+     x="158"
+     y="358"
+     text-anchor="end"
+     font-family="'Courier New', Courier, monospace"
+     font-size="10"
+     fill="#222"
+     style="fill:rgb(34, 34, 34);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Courier New&quot;, Courier, monospace;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
+     id="text87">0x8000_0007</text>
+  <line
+     x1="160"
+     y1="303"
+     x2="165"
+     y2="303"
+     stroke="#333"
+     stroke-width="0.75"
+     style="fill:rgb(0, 0, 0);stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line87" />
+  <line
+     x1="160"
+     y1="363"
+     x2="165"
+     y2="363"
+     stroke="#333"
+     stroke-width="0.75"
+     style="fill:rgb(0, 0, 0);stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line88" />
+  <text
+     x="300"
+     y="325"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="11"
+     font-weight="700"
+     fill="#2A4A18"
+     style="fill:rgb(42, 74, 24);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:11px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
+     id="text88">UART TX</text>
+  <text
+     x="300"
+     y="339"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     fill="#2A4A18"
+     style="fill:rgb(42, 74, 24);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text89">data + status registers</text>
+  <text
+     x="300"
+     y="352"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     font-style="italic"
+     fill="#2A4A18"
+     style="fill:rgb(42, 74, 24);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;font-style:italic;text-anchor:middle;dominant-baseline:auto"
+     id="text90">8 B</text>
+  <text
+     x="445"
+     y="325"
+     text-anchor="start"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     fill="#333"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="text91">(W-only)</text>
+  <text
+     x="445"
+     y="339"
+     text-anchor="start"
+     font-family="'Times New Roman', Times, serif"
+     font-size="9"
+     fill="#555"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:9px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="text92">MMIO peripheral</text>
+  <!-- ====== BAND 6: Unmapped 0x8000_0008–0xBFFF_FFFF ====== -->
+  <rect
+     x="165"
+     y="363"
+     width="270"
+     height="40"
+     fill="url(#hatch)"
+     stroke="#888"
+     stroke-width="0.75"
+     stroke-dasharray="4,3"
+     style="stroke:rgb(136, 136, 136);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-dasharray:4px, 3px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect92" />
+  <rect
+     x="165"
+     y="363"
+     width="270"
+     height="40"
+     fill="#D8D8D8"
+     opacity="0.45"
+     style="fill:rgb(216, 216, 216);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.45;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect93" />
+  <text
+     x="158"
+     y="378"
+     text-anchor="end"
+     font-family="'Courier New', Courier, monospace"
+     font-size="10"
+     fill="#555"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Courier New&quot;, Courier, monospace;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
+     id="text93">0x8000_0008</text>
+  <text
+     x="158"
+     y="398"
+     text-anchor="end"
+     font-family="'Courier New', Courier, monospace"
+     font-size="10"
+     fill="#555"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Courier New&quot;, Courier, monospace;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
+     id="text94">0xBFFF_FFFF</text>
+  <line
+     x1="160"
+     y1="363"
+     x2="165"
+     y2="363"
+     stroke="#777"
+     stroke-width="0.75"
+     style="fill:rgb(0, 0, 0);stroke:rgb(119, 119, 119);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line94" />
+  <line
+     x1="160"
+     y1="403"
+     x2="165"
+     y2="403"
+     stroke="#777"
+     stroke-width="0.75"
+     style="fill:rgb(0, 0, 0);stroke:rgb(119, 119, 119);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line95" />
+  <text
+     x="300"
+     y="387"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     fill="#555"
+     font-style="italic"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;font-style:italic;text-anchor:middle;dominant-baseline:auto"
+     id="text95">Unmapped</text>
+  <text
+     x="448"
+     y="387"
+     text-anchor="start"
+     font-family="'Times New Roman', Times, serif"
+     font-size="9"
+     fill="#888"
+     style="fill:rgb(136, 136, 136);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:9px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="text96">— (compressed) —</text>
+  <!-- ====== BAND 7: Result BRAM 0xC000_0000–0xC000_00FF (256 B) ====== -->
+  <rect
+     x="165"
+     y="413"
+     width="270"
+     height="60"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     stroke-width="1"
+     style="fill:rgb(168, 213, 226);stroke:rgb(46, 92, 138);color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect96" />
+  <text
+     x="158"
+     y="428"
+     text-anchor="end"
+     font-family="'Courier New', Courier, monospace"
+     font-size="10"
+     fill="#222"
+     style="fill:rgb(34, 34, 34);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Courier New&quot;, Courier, monospace;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
+     id="text97">0xC000_0000</text>
+  <text
+     x="158"
+     y="468"
+     text-anchor="end"
+     font-family="'Courier New', Courier, monospace"
+     font-size="10"
+     fill="#222"
+     style="fill:rgb(34, 34, 34);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Courier New&quot;, Courier, monospace;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
+     id="text98">0xC000_00FF</text>
+  <line
+     x1="160"
+     y1="413"
+     x2="165"
+     y2="413"
+     stroke="#333"
+     stroke-width="0.75"
+     style="fill:rgb(0, 0, 0);stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line98" />
+  <line
+     x1="160"
+     y1="473"
+     x2="165"
+     y2="473"
+     stroke="#333"
+     stroke-width="0.75"
+     style="fill:rgb(0, 0, 0);stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line99" />
+  <text
+     x="300"
+     y="435"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="11"
+     font-weight="700"
+     fill="#1A3D5C"
+     style="fill:rgb(26, 61, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:11px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
+     id="text99">Result BRAM (port A)</text>
+  <text
+     x="300"
+     y="449"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     fill="#1A3D5C"
+     style="fill:rgb(26, 61, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text100">inference output buffer</text>
+  <text
+     x="300"
+     y="462"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     font-style="italic"
+     fill="#1A3D5C"
+     style="fill:rgb(26, 61, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;font-style:italic;text-anchor:middle;dominant-baseline:auto"
+     id="text101">256 B</text>
+  <text
+     x="445"
+     y="435"
+     text-anchor="start"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     fill="#333"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="text102">(R/W BRAM)</text>
+  <!-- ====== BAND 8: Unmapped 0xC000_0100–0xFFFF_FFFF ====== -->
+  <rect
+     x="165"
+     y="473"
+     width="270"
+     height="40"
+     fill="url(#hatch)"
+     stroke="#888"
+     stroke-width="0.75"
+     stroke-dasharray="4,3"
+     style="stroke:rgb(136, 136, 136);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-dasharray:4px, 3px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect102" />
+  <rect
+     x="165"
+     y="473"
+     width="270"
+     height="40"
+     fill="#D8D8D8"
+     opacity="0.45"
+     style="fill:rgb(216, 216, 216);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.45;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect103" />
+  <text
+     x="158"
+     y="488"
+     text-anchor="end"
+     font-family="'Courier New', Courier, monospace"
+     font-size="10"
+     fill="#555"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Courier New&quot;, Courier, monospace;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
+     id="text103">0xC000_0100</text>
+  <text
+     x="158"
+     y="508"
+     text-anchor="end"
+     font-family="'Courier New', Courier, monospace"
+     font-size="10"
+     fill="#555"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Courier New&quot;, Courier, monospace;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
+     id="text104">0xFFFF_FFFF</text>
+  <line
+     x1="160"
+     y1="473"
+     x2="165"
+     y2="473"
+     stroke="#777"
+     stroke-width="0.75"
+     style="fill:rgb(0, 0, 0);stroke:rgb(119, 119, 119);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line104" />
+  <line
+     x1="160"
+     y1="513"
+     x2="165"
+     y2="513"
+     stroke="#777"
+     stroke-width="0.75"
+     style="fill:rgb(0, 0, 0);stroke:rgb(119, 119, 119);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line105" />
+  <text
+     x="300"
+     y="497"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     fill="#555"
+     font-style="italic"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;font-style:italic;text-anchor:middle;dominant-baseline:auto"
+     id="text105">Unmapped</text>
+  <!-- Outer border of entire map column -->
+  <rect
+     x="165"
+     y="83"
+     width="270"
+     height="430"
+     fill="none"
+     stroke="#333"
+     stroke-width="1.5"
+     style="fill:none;stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect105" />
+  <!-- ====== LEGEND ====== -->
+  <rect
+     x="40"
+     y="540"
+     width="600"
+     height="145"
+     rx="4"
+     fill="none"
+     stroke="#888"
+     stroke-width="0.75"
+     style="fill:none;stroke:rgb(136, 136, 136);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect106" />
+  <text
+     x="340"
+     y="558"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="12"
+     font-weight="700"
+     fill="#111"
+     style="fill:rgb(17, 17, 17);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:12px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
+     id="text106">Legend</text>
+  <!-- Legend row 1 -->
+  <rect
+     x="60"
+     y="568"
+     width="22"
+     height="14"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     stroke-width="0.75"
+     style="fill:rgb(168, 213, 226);stroke:rgb(46, 92, 138);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect107" />
+  <text
+     x="88"
+     y="580"
+     font-family="'Times New Roman', Times, serif"
+     font-size="11"
+     fill="#222"
+     style="fill:rgb(34, 34, 34);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:11px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="text107">BRAM — block RAM</text>
+  <text
+     x="88"
+     y="594"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     fill="#555"
+     font-style="italic"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;font-style:italic;text-anchor:start;dominant-baseline:auto"
+     id="text108">FW BRAM (code/data), Result BRAM</text>
+  <rect
+     x="280"
+     y="568"
+     width="22"
+     height="14"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect108" />
+  <text
+     x="308"
+     y="580"
+     font-family="'Times New Roman', Times, serif"
+     font-size="11"
+     fill="#222"
+     style="fill:rgb(34, 34, 34);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:11px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="text109">CSR / MMIO — memory-mapped I/O</text>
+  <text
+     x="308"
+     y="594"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     fill="#555"
+     font-style="italic"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;font-style:italic;text-anchor:start;dominant-baseline:auto"
+     id="text110">CIM storage window (AXI4-Lite)</text>
+  <!-- Legend row 2 -->
+  <rect
+     x="60"
+     y="610"
+     width="22"
+     height="14"
+     fill="#B5D99C"
+     stroke="#4A7A2E"
+     stroke-width="0.75"
+     style="fill:rgb(181, 217, 156);stroke:rgb(74, 122, 46);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect110" />
+  <text
+     x="88"
+     y="622"
+     font-family="'Times New Roman', Times, serif"
+     font-size="11"
+     fill="#222"
+     style="fill:rgb(34, 34, 34);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:11px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="text111">Peripheral — UART, GPIO, etc.</text>
+  <text
+     x="88"
+     y="636"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     fill="#555"
+     font-style="italic"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;font-style:italic;text-anchor:start;dominant-baseline:auto"
+     id="text112">UART TX (write-only registers)</text>
+  <!-- Hatched legend swatch -->
+  <defs
+     id="defs112">
+    <pattern
+       id="hatch2"
+       patternUnits="userSpaceOnUse"
+       width="8"
+       height="8"
+       patternTransform="rotate(45)">
+      <line
+         x1="0"
+         y1="0"
+         x2="0"
+         y2="8"
+         stroke="#A0A0A0"
+         stroke-width="0.75"
+         opacity="0.5"
+         id="line112" />
+    </pattern>
+  </defs>
+  <rect
+     x="280"
+     y="610"
+     width="22"
+     height="14"
+     fill="url(#hatch2)"
+     stroke="#888"
+     stroke-width="0.75"
+     stroke-dasharray="4,2"
+     style="stroke:rgb(136, 136, 136);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-dasharray:4px, 2px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect112" />
+  <rect
+     x="280"
+     y="610"
+     width="22"
+     height="14"
+     fill="#D8D8D8"
+     opacity="0.45"
+     style="fill:rgb(216, 216, 216);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.45;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect113" />
+  <text
+     x="308"
+     y="622"
+     font-family="'Times New Roman', Times, serif"
+     font-size="11"
+     fill="#222"
+     style="fill:rgb(34, 34, 34);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:11px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="text113">Unmapped — no slave responds</text>
+  <text
+     x="308"
+     y="636"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     fill="#555"
+     font-style="italic"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;font-style:italic;text-anchor:start;dominant-baseline:auto"
+     id="text114">Bus error on access (compressed in diagram)</text>
+  <!-- Access type key -->
+  <line
+     x1="60"
+     y1="662"
+     x2="620"
+     y2="662"
+     stroke="#bbb"
+     stroke-width="0.5"
+     style="fill:rgb(0, 0, 0);stroke:rgb(187, 187, 187);color:rgb(251, 251, 254);stroke-width:0.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line114" />
+  <text
+     x="60"
+     y="676"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     fill="#444"
+     font-weight="700"
+     style="fill:rgb(68, 68, 68);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:700;text-anchor:start;dominant-baseline:auto"
+     id="text115">Access types: </text>
+  <text
+     x="150"
+     y="676"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     fill="#444"
+     style="fill:rgb(68, 68, 68);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Times, serif;font-size:10px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="text116">(R/W BRAM) read/write block RAM  |  (R/W MMIO) read/write memory-mapped reg.  |  (W-only) write-only register</text>
+  <!-- Caption -->
+</svg>

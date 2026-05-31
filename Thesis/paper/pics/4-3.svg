@@ -1,0 +1,896 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="100%"
+   viewBox="0 0 690 550"
+   role="img"
+   style=""
+   version="1.1"
+   id="svg72"
+   sodipodi:docname="4-3.svg"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview72"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="1.5836364"
+     inkscape:cx="344.77612"
+     inkscape:cy="426.86567"
+     inkscape:window-width="1908"
+     inkscape:window-height="1035"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg72" />
+  <title
+     style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="title1">FPGA Resource Utilization: ARM vs PicoRV32 Control Modes on PYNQ-Z2</title>
+  <desc
+     style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="desc1">Grouped bar chart comparing LUT, FF, BRAM, and DSP48 utilization percentages between ARM Mode and PicoRV32 Mode on Zynq-7020 FPGA.</desc>
+  <defs
+     id="defs34">
+    <marker
+       id="arrow"
+       viewBox="0 0 10 10"
+       refX="8"
+       refY="5"
+       markerWidth="6"
+       markerHeight="6"
+       orient="auto-start-reverse">
+      <path
+         d="M2 1L8 5L2 9"
+         fill="none"
+         stroke="context-stroke"
+         stroke-width="1.5"
+         stroke-linecap="round"
+         stroke-linejoin="round"
+         id="path1" />
+    </marker>
+    <mask
+       id="imagine-text-gaps-p1e186"
+       maskUnits="userSpaceOnUse">
+      <rect
+         x="0"
+         y="0"
+         width="690"
+         height="550"
+         fill="white"
+         id="rect1" />
+      <rect
+         x="93.05035400390625"
+         y="13.067255020141602"
+         width="493.8992919921875"
+         height="19.975744247436523"
+         fill="black"
+         rx="2"
+         id="rect2" />
+      <rect
+         x="-37.17713928222656"
+         y="-11.88974666595459"
+         width="74.35427856445312"
+         height="16.9327449798584"
+         fill="black"
+         rx="2"
+         id="rect3" />
+      <rect
+         x="44.661521911621094"
+         y="382.8710021972656"
+         width="21.338478088378906"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect4" />
+      <rect
+         x="39.65747833251953"
+         y="314.8710021972656"
+         width="26.34252166748047"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect5" />
+      <rect
+         x="39.65747833251953"
+         y="246.87100219726562"
+         width="26.34252166748047"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect6" />
+      <rect
+         x="39.65747833251953"
+         y="178.87100219726562"
+         width="26.34252166748047"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect7" />
+      <rect
+         x="39.65747833251953"
+         y="110.87100219726562"
+         width="26.34252166748047"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect8" />
+      <rect
+         x="34.653438568115234"
+         y="42.871002197265625"
+         width="31.3465633392334"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect9" />
+      <rect
+         x="617.2000122070312"
+         y="42.871002197265625"
+         width="66.78059387207031"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect10" />
+      <rect
+         x="104.63359069824219"
+         y="263.6317443847656"
+         width="32.732818603515625"
+         height="14.650495529174805"
+         fill="black"
+         rx="2"
+         id="rect11" />
+      <rect
+         x="145.6335906982422"
+         y="293.6317443847656"
+         width="32.732818603515625"
+         height="14.650495529174805"
+         fill="black"
+         rx="2"
+         id="rect12" />
+      <rect
+         x="103.137451171875"
+         y="329.6317443847656"
+         width="35.725101470947266"
+         height="14.650495529174805"
+         fill="black"
+         rx="2"
+         id="rect13" />
+      <rect
+         x="144.137451171875"
+         y="342.6317443847656"
+         width="35.725101470947266"
+         height="14.650495529174805"
+         fill="black"
+         rx="2"
+         id="rect14" />
+      <rect
+         x="138.2987823486328"
+         y="395.1102600097656"
+         width="29.40242576599121"
+         height="16.9327449798584"
+         fill="black"
+         rx="2"
+         id="rect15" />
+      <rect
+         x="246.6335906982422"
+         y="339.6317443847656"
+         width="32.732818603515625"
+         height="14.650495529174805"
+         fill="black"
+         rx="2"
+         id="rect16" />
+      <rect
+         x="287.8026428222656"
+         y="354.6317443847656"
+         width="32.39470672607422"
+         height="14.650495529174805"
+         fill="black"
+         rx="2"
+         id="rect17" />
+      <rect
+         x="245.137451171875"
+         y="324.6317443847656"
+         width="35.725101470947266"
+         height="14.650495529174805"
+         fill="black"
+         rx="2"
+         id="rect18" />
+      <rect
+         x="288.3858947753906"
+         y="341.6317443847656"
+         width="31.22822380065918"
+         height="14.650495529174805"
+         fill="black"
+         rx="2"
+         id="rect19" />
+      <rect
+         x="284.88018798828125"
+         y="395.1102600097656"
+         width="20.239617347717285"
+         height="16.9327449798584"
+         fill="black"
+         rx="2"
+         id="rect20" />
+      <rect
+         x="379.5240783691406"
+         y="74.63175201416016"
+         width="52.95185470581055"
+         height="14.650495529174805"
+         fill="black"
+         rx="2"
+         id="rect21" />
+      <rect
+         x="426.3902893066406"
+         y="267.6317443847656"
+         width="41.21940231323242"
+         height="14.650495529174805"
+         fill="black"
+         rx="2"
+         id="rect22" />
+      <rect
+         x="388.137451171875"
+         y="134.6317596435547"
+         width="35.725101470947266"
+         height="14.650495529174805"
+         fill="black"
+         rx="2"
+         id="rect23" />
+      <rect
+         x="429.137451171875"
+         y="329.6317443847656"
+         width="35.725101470947266"
+         height="14.650495529174805"
+         fill="black"
+         rx="2"
+         id="rect24" />
+      <rect
+         x="416.7960205078125"
+         y="395.1102600097656"
+         width="40.40793991088867"
+         height="16.9327449798584"
+         fill="black"
+         rx="2"
+         id="rect25" />
+      <rect
+         x="537.2546997070312"
+         y="33.631752014160156"
+         width="21.490628242492676"
+         height="14.650495529174805"
+         fill="black"
+         rx="2"
+         id="rect26" />
+      <rect
+         x="578.2546997070312"
+         y="33.631752014160156"
+         width="21.490628242492676"
+         height="14.650495529174805"
+         fill="black"
+         rx="2"
+         id="rect27" />
+      <rect
+         x="533.5101318359375"
+         y="69.63175201416016"
+         width="28.979785919189453"
+         height="14.650495529174805"
+         fill="black"
+         rx="2"
+         id="rect28" />
+      <rect
+         x="574.5101318359375"
+         y="69.63175201416016"
+         width="28.979785919189453"
+         height="14.650495529174805"
+         fill="black"
+         rx="2"
+         id="rect29" />
+      <rect
+         x="559.3961791992188"
+         y="395.1102600097656"
+         width="39.20764350891113"
+         height="16.9327449798584"
+         fill="black"
+         rx="2"
+         id="rect30" />
+      <rect
+         x="486"
+         y="65.87100219726562"
+         width="56.654170989990234"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect31" />
+      <rect
+         x="486"
+         y="83.87100219726562"
+         width="74.74311065673828"
+         height="15.411245346069336"
+         fill="black"
+         rx="2"
+         id="rect32" />
+      <rect
+         x="178.88461303710938"
+         y="423.1102600097656"
+         width="352.2308044433594"
+         height="16.9327449798584"
+         fill="black"
+         rx="2"
+         id="rect33" />
+      <rect
+         x="308.9559020996094"
+         y="440.1102600097656"
+         width="92.08820343017578"
+         height="16.9327449798584"
+         fill="black"
+         rx="2"
+         id="rect34" />
+    </mask>
+  </defs>
+  <!-- White background -->
+  <rect
+     x="0"
+     y="0"
+     width="680"
+     height="540"
+     fill="white"
+     style="fill:rgb(255, 255, 255);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect35" />
+  <!-- Title -->
+  <text
+     x="340"
+     y="28"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="14"
+     font-weight="bold"
+     fill="#111111"
+     style="fill:rgb(17, 17, 17);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:14px;font-weight:700;text-anchor:middle;dominant-baseline:auto"
+     id="text35">FPGA Resource Utilization: ARM vs. PicoRV32 Control (PYNQ-Z2 / Zynq-7020)</text>
+  <!-- Chart area: x=70..640, y=50..390 -->
+  <!-- Y axis label -->
+  <text
+     transform="translate(14, 220) rotate(-90)"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="11"
+     fill="#222222"
+     style="fill:rgb(34, 34, 34);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:11px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text36">Utilization (%)</text>
+  <!-- Horizontal grid lines (light) at 20, 40, 60, 80, 100 -->
+  <!-- y: 390 = 0%, 390-68=322=20%, 390-136=254=40%, 390-204=186=60%, 390-272=118=80%, 390-340=50=100% -->
+  <!-- scale: 340px for 100%, so 1%=3.4px -->
+  <line
+     x1="70"
+     y1="390"
+     x2="640"
+     y2="390"
+     stroke="#CCCCCC"
+     stroke-width="0.75"
+     style="fill:rgb(0, 0, 0);stroke:rgb(204, 204, 204);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line36" />
+  <line
+     x1="70"
+     y1="322"
+     x2="640"
+     y2="322"
+     stroke="#DDDDDD"
+     stroke-width="0.5"
+     style="fill:rgb(0, 0, 0);stroke:rgb(221, 221, 221);color:rgb(251, 251, 254);stroke-width:0.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line37" />
+  <line
+     x1="70"
+     y1="254"
+     x2="640"
+     y2="254"
+     stroke="#DDDDDD"
+     stroke-width="0.5"
+     style="fill:rgb(0, 0, 0);stroke:rgb(221, 221, 221);color:rgb(251, 251, 254);stroke-width:0.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line38" />
+  <line
+     x1="70"
+     y1="186"
+     x2="640"
+     y2="186"
+     stroke="#DDDDDD"
+     stroke-width="0.5"
+     style="fill:rgb(0, 0, 0);stroke:rgb(221, 221, 221);color:rgb(251, 251, 254);stroke-width:0.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line39" />
+  <line
+     x1="70"
+     y1="118"
+     x2="640"
+     y2="118"
+     stroke="#DDDDDD"
+     stroke-width="0.5"
+     style="fill:rgb(0, 0, 0);stroke:rgb(221, 221, 221);color:rgb(251, 251, 254);stroke-width:0.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line40" />
+  <line
+     x1="70"
+     y1="50"
+     x2="640"
+     y2="50"
+     stroke="#DDDDDD"
+     stroke-width="0.5"
+     mask="url(#imagine-text-gaps-p1e186)"
+     style="fill:rgb(0, 0, 0);stroke:rgb(221, 221, 221);color:rgb(251, 251, 254);stroke-width:0.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line41" />
+  <!-- Y axis labels -->
+  <text
+     x="62"
+     y="394"
+     text-anchor="end"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="10"
+     fill="#333333"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
+     id="text41">0%</text>
+  <text
+     x="62"
+     y="326"
+     text-anchor="end"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="10"
+     fill="#333333"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
+     id="text42">20%</text>
+  <text
+     x="62"
+     y="258"
+     text-anchor="end"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="10"
+     fill="#333333"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
+     id="text43">40%</text>
+  <text
+     x="62"
+     y="190"
+     text-anchor="end"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="10"
+     fill="#333333"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
+     id="text44">60%</text>
+  <text
+     x="62"
+     y="122"
+     text-anchor="end"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="10"
+     fill="#333333"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
+     id="text45">80%</text>
+  <text
+     x="62"
+     y="54"
+     text-anchor="end"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="10"
+     fill="#333333"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:end;dominant-baseline:auto"
+     id="text46">100%</text>
+  <!-- Y axis line -->
+  <line
+     x1="70"
+     y1="50"
+     x2="70"
+     y2="390"
+     stroke="#444444"
+     stroke-width="1"
+     style="fill:rgb(0, 0, 0);stroke:rgb(68, 68, 68);color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line46" />
+  <!-- X axis line -->
+  <line
+     x1="70"
+     y1="390"
+     x2="640"
+     y2="390"
+     stroke="#444444"
+     stroke-width="1"
+     style="fill:rgb(0, 0, 0);stroke:rgb(68, 68, 68);color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line47" />
+  <!-- 100% dashed red line -->
+  <line
+     x1="70"
+     y1="50"
+     x2="640"
+     y2="50"
+     stroke="#C0392B"
+     stroke-width="1.5"
+     stroke-dasharray="6,4"
+     mask="url(#imagine-text-gaps-p1e186)"
+     style="fill:rgb(0, 0, 0);stroke:rgb(192, 57, 43);color:rgb(251, 251, 254);stroke-width:1.5px;stroke-dasharray:6px, 4px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line48" />
+  <text
+     x="621.2"
+     y="54"
+     text-anchor="start"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="9.5"
+     font-style="italic"
+     fill="#C0392B"
+     style="fill:rgb(192, 57, 43);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9.5px;font-weight:400;font-style:italic;text-anchor:start;dominant-baseline:auto"
+     id="text48">FPGA capacity</text>
+  <!-- === GROUP LAYOUT ===
+    4 groups: LUT, FF, BRAM, DSP48
+    Group width: (640-70)/4 = 142.5
+    Group centers: 70 + 71.25, +142.5, +142.5, +142.5 = 141.25, 283.75, 426.25, 568.75
+    Bar width: 34px each, gap between pair: 6px, gap outer: (142.5 - 2*34 - 6)/2 = 34.25
+    Bar A (ARM) left edge: center - 34 - 3 = center - 37
+    Bar B (PicoRV32) left edge: center + 3
+  -->
+  <!-- Scale factor: 3.4px per 1% -->
+  <!-- ===== GROUP 1: LUT ===== -->
+  <!-- ARM: 32.66% → height = 32.66*3.4 = 111.04, y = 390-111 = 279 -->
+  <!-- PicoRV32: 32.00% → height = 32.00*3.4 = 108.80, y = 390-109 = 281 -->
+  <!-- Center = 141.25 -->
+  <rect
+     x="104"
+     y="279"
+     width="34"
+     height="111"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     stroke-width="0.75"
+     style="fill:rgb(168, 213, 226);stroke:rgb(46, 92, 138);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect48" />
+  <rect
+     x="145"
+     y="281"
+     width="34"
+     height="109"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect49" />
+  <!-- Labels on top of bars -->
+  <text
+     x="121"
+     y="274"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="9"
+     fill="#111111"
+     style="fill:rgb(17, 17, 17);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text49">17,374</text>
+  <text
+     x="162"
+     y="276"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="9"
+     fill="#111111"
+     style="fill:rgb(17, 17, 17);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text50">17,023</text>
+  <!-- Percent labels inside bars (if tall enough) -->
+  <text
+     x="121"
+     y="340"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="9"
+     fill="#1A3A5C"
+     style="fill:rgb(26, 58, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text51">32.66%</text>
+  <text
+     x="162"
+     y="345"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="9"
+     fill="#6B3A0A"
+     style="fill:rgb(107, 58, 10);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text52">32.00%</text>
+  <!-- X label -->
+  <text
+     x="153"
+     y="407"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="11"
+     fill="#111111"
+     style="fill:rgb(17, 17, 17);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:11px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text53">LUT</text>
+  <!-- ===== GROUP 2: FF ===== -->
+  <!-- ARM: 10.25% → height=34.85→35, y=390-35=355 -->
+  <!-- PicoRV32: 8.08% → height=27.47→27, y=390-27=363 -->
+  <!-- Center = 283.75 -->
+  <rect
+     x="246"
+     y="355"
+     width="34"
+     height="35"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     stroke-width="0.75"
+     style="fill:rgb(168, 213, 226);stroke:rgb(46, 92, 138);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect53" />
+  <rect
+     x="287"
+     y="363"
+     width="34"
+     height="27"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect54" />
+  <!-- Labels above bars -->
+  <text
+     x="263"
+     y="350"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="9"
+     fill="#111111"
+     style="fill:rgb(17, 17, 17);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text54">10,911</text>
+  <text
+     x="304"
+     y="358"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="9"
+     fill="#111111"
+     style="fill:rgb(17, 17, 17);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text55">8,594</text>
+  <!-- Percent outside bars (too small for inside) -->
+  <text
+     x="263"
+     y="335"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="9"
+     fill="#1A3A5C"
+     style="fill:rgb(26, 58, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text56">10.25%</text>
+  <text
+     x="304"
+     y="345"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="9"
+     fill="#6B3A0A"
+     style="fill:rgb(107, 58, 10);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text57">8.08%</text>
+  <!-- X label -->
+  <text
+     x="295"
+     y="407"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="11"
+     fill="#111111"
+     style="fill:rgb(17, 17, 17);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:11px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text58">FF</text>
+  <!-- ===== GROUP 3: BRAM ===== -->
+  <!-- ARM: 88.21% → height=299.91→300, y=390-300=90 -->
+  <!-- PicoRV32: 92.50% → height=314.50→315, y=390-315=75 -->
+  <!-- Center = 426.25 -->
+  <rect
+     x="389"
+     y="90"
+     width="34"
+     height="300"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     stroke-width="0.75"
+     style="fill:rgb(168, 213, 226);stroke:rgb(46, 92, 138);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect58" />
+  <rect
+     x="430"
+     y="75"
+     width="34"
+     height="315"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect59" />
+  <!-- Labels above bars -->
+  <text
+     x="406"
+     y="85"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="9"
+     fill="#111111"
+     style="fill:rgb(17, 17, 17);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text59">123.5 (of 140)</text>
+  <text
+     x="447"
+     y="70"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="9"
+     fill="#111111"
+     style="fill:rgb(17, 17, 17);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text60">129.5</text>
+  <!-- Percent inside bars -->
+  <text
+     x="406"
+     y="145"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="9"
+     fill="#1A3A5C"
+     style="fill:rgb(26, 58, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text61">88.21%</text>
+  <text
+     x="447"
+     y="140"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="9"
+     fill="#6B3A0A"
+     style="fill:rgb(107, 58, 10);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text62">92.50%</text>
+  <!-- X label -->
+  <text
+     x="437"
+     y="407"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="11"
+     fill="#111111"
+     style="fill:rgb(17, 17, 17);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:11px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text63">BRAM</text>
+  <!-- ===== GROUP 4: DSP48 ===== -->
+  <!-- ARM: 100.00% → height=340, y=390-340=50 -->
+  <!-- PicoRV32: 100.00% → height=340, y=50 -->
+  <!-- Center = 568.75 -->
+  <rect
+     x="531"
+     y="50"
+     width="34"
+     height="340"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     stroke-width="0.75"
+     style="fill:rgb(168, 213, 226);stroke:rgb(46, 92, 138);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect63" />
+  <rect
+     x="572"
+     y="50"
+     width="34"
+     height="340"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect64" />
+  <!-- Labels above bars (at 100%, bars reach the top) -->
+  <text
+     x="548"
+     y="44"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="9"
+     fill="#111111"
+     style="fill:rgb(17, 17, 17);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text64">220</text>
+  <text
+     x="589"
+     y="44"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="9"
+     fill="#111111"
+     style="fill:rgb(17, 17, 17);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text65">220</text>
+  <!-- Percent inside bars -->
+  <text
+     x="548"
+     y="80"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="9"
+     fill="#1A3A5C"
+     style="fill:rgb(26, 58, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text66">100%</text>
+  <text
+     x="589"
+     y="80"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="9"
+     fill="#6B3A0A"
+     style="fill:rgb(107, 58, 10);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:9px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text67">100%</text>
+  <!-- X label -->
+  <text
+     x="579"
+     y="407"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="11"
+     fill="#111111"
+     style="fill:rgb(17, 17, 17);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:11px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text68">DSP48</text>
+  <!-- ===== LEGEND (top-right) ===== -->
+  <rect
+     x="503.67621"
+     y="459.87027"
+     width="166"
+     height="50"
+     fill="white"
+     stroke="#AAAAAA"
+     stroke-width="0.75"
+     rx="3"
+     style="color:#fbfbfe;font-weight:400;font-size:16px;font-family:'Anthropic Sans', '-apple-system', BlinkMacSystemFont, 'Segoe UI', sans-serif;dominant-baseline:auto;text-anchor:start;opacity:1;fill:#ffffff;stroke:#aaaaaa;stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter"
+     id="rect68" />
+  <!-- ARM Mode -->
+  <rect
+     x="516.46497"
+     y="470.76465"
+     width="14"
+     height="12"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     stroke-width="0.75"
+     style="color:#fbfbfe;font-weight:400;font-size:16px;font-family:'Anthropic Sans', '-apple-system', BlinkMacSystemFont, 'Segoe UI', sans-serif;dominant-baseline:auto;text-anchor:start;opacity:1;fill:#a8d5e2;stroke:#2e5c8a;stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter"
+     id="rect69" />
+  <text
+     x="541.14813"
+     y="479.2388"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="10"
+     fill="#111111"
+     style="color:#fbfbfe;font-weight:400;font-size:10px;font-family:'Times New Roman', 'Computer Modern', Georgia, serif;dominant-baseline:auto;text-anchor:start;opacity:1;fill:#111111;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter"
+     id="text69">ARM Mode</text>
+  <!-- PicoRV32 Mode -->
+  <rect
+     x="516.46497"
+     y="491.29047"
+     width="14"
+     height="12"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     style="color:#fbfbfe;font-weight:400;font-size:16px;font-family:'Anthropic Sans', '-apple-system', BlinkMacSystemFont, 'Segoe UI', sans-serif;dominant-baseline:auto;text-anchor:start;opacity:1;fill:#f5b461;stroke:#b86b1f;stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter"
+     id="rect70" />
+  <text
+     x="540.51666"
+     y="499.76465"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="10"
+     fill="#111111"
+     style="color:#fbfbfe;font-weight:400;font-size:10px;font-family:'Times New Roman', 'Computer Modern', Georgia, serif;dominant-baseline:auto;text-anchor:start;opacity:1;fill:#111111;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter"
+     id="text70">PicoRV32 Mode</text>
+  <!-- ===== ANNOTATION BELOW CHART ===== -->
+  <line
+     x1="70"
+     y1="418"
+     x2="640"
+     y2="418"
+     stroke="#CCCCCC"
+     stroke-width="0.5"
+     style="fill:rgb(0, 0, 0);stroke:rgb(204, 204, 204);color:rgb(251, 251, 254);stroke-width:0.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line70" />
+  <text
+     x="355"
+     y="435"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="10"
+     font-style="italic"
+     fill="#C0392B"
+     style="fill:rgb(192, 57, 43);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:10px;font-weight:400;font-style:italic;text-anchor:middle;dominant-baseline:auto"
+     id="text71">★ DSP48 at 100% in both modes — limits PAR_OB parallelism (see §5.2 future work)</text>
+  <!-- X axis category label -->
+  <text
+     x="355"
+     y="452"
+     text-anchor="middle"
+     font-family="'Times New Roman', 'Computer Modern', Georgia, serif"
+     font-size="11"
+     fill="#444444"
+     style="fill:rgb(68, 68, 68);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, &quot;Computer Modern&quot;, Georgia, serif;font-size:11px;font-weight:400;text-anchor:middle;dominant-baseline:auto"
+     id="text72">Resource Category</text>
+</svg>

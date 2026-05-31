@@ -1,0 +1,22 @@
+% =====================================================================
+% 外文翻译附录 —— 粘贴到你自己的 paper.tex 中（保留你已做的格式修改）
+%
+% 用法：
+%   1) 在导言区（preamble）加入一行：   \usepackage{pdfpages}
+%   2) 把下面整段粘到“附录C”的 \clearpage 之前；
+%   3) 把 appendix/ 文件夹（含两个 PDF）与 paper.tex 放在同一目录。
+% =====================================================================
+
+% ---------- 附录A：外文翻译（原文）----------
+\clearpage
+\chapter*{附录A\quad 外文翻译（原文）}
+\markboth{附录A\quad 外文翻译（原文）}{}
+\addcontentsline{toc}{chapter}{附录A\quad 外文翻译（原文）}
+\includepdf[pages=-,scale=0.92,pagecommand={\thispagestyle{plain}}]{appendix/appendix_A_original.pdf}
+
+% ---------- 附录B：外文翻译（译文）----------
+\clearpage
+\chapter*{附录B\quad 外文翻译（译文）}
+\markboth{附录B\quad 外文翻译（译文）}{}
+\addcontentsline{toc}{chapter}{附录B\quad 外文翻译（译文）}
+\includepdf[pages=-,scale=0.92,pagecommand={\thispagestyle{plain}}]{appendix/appendix_B_translation.pdf}

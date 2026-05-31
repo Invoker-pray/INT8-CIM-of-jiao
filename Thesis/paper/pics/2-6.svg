@@ -1,0 +1,786 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="1600"
+   height="360"
+   version="1.1"
+   id="svg34"
+   sodipodi:docname="2-6.svg"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview34"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="0.90625"
+     inkscape:cx="911.44828"
+     inkscape:cy="139.03448"
+     inkscape:window-width="1908"
+     inkscape:window-height="1035"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg34" />
+  <defs
+     id="defs2">
+    <marker
+       id="arrow-black"
+       markerWidth="8"
+       markerHeight="8"
+       refX="7"
+       refY="4"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L8,4 L0,8 z"
+         fill="#000000"
+         id="path1" />
+    </marker>
+    <marker
+       id="arrow-input"
+       markerWidth="8"
+       markerHeight="8"
+       refX="7"
+       refY="4"
+       orient="auto"
+       markerUnits="strokeWidth">
+      <path
+         d="M0,0 L8,4 L0,8 z"
+         fill="#555555"
+         id="path2" />
+    </marker>
+    <marker
+       id="arrow"
+       viewBox="0 0 10 10"
+       refX="8"
+       refY="5"
+       markerWidth="6"
+       markerHeight="6"
+       orient="auto-start-reverse">
+      <path
+         d="M 2,1 8,5 2,9"
+         fill="none"
+         stroke="context-stroke"
+         stroke-width="1.5"
+         stroke-linecap="round"
+         stroke-linejoin="round"
+         id="path1-3" />
+    </marker>
+    <mask
+       id="imagine-text-gaps-xs4cvu"
+       maskUnits="userSpaceOnUse">
+      <rect
+         x="0"
+         y="0"
+         width="1090"
+         height="400"
+         fill="#ffffff"
+         id="rect1" />
+      <rect
+         x="424.39584"
+         y="1.6875002"
+         width="231.20831"
+         height="17.40625"
+         fill="#000000"
+         rx="2"
+         id="rect2-6" />
+      <rect
+         x="563.23279"
+         y="27.15625"
+         width="153.53436"
+         height="16.796875"
+         fill="#000000"
+         rx="2"
+         id="rect3" />
+      <rect
+         x="37.728127"
+         y="136.00417"
+         width="72.543755"
+         height="18.015625"
+         fill="#000000"
+         rx="2"
+         id="rect4" />
+      <rect
+         x="45.291668"
+         y="154.91667"
+         width="57.416664"
+         height="16.1875"
+         fill="#000000"
+         rx="2"
+         id="rect5" />
+      <rect
+         x="181.44237"
+         y="135.20189"
+         width="41.115276"
+         height="19.622932"
+         fill="#000000"
+         rx="2"
+         id="rect6" />
+      <rect
+         x="186.89583"
+         y="154.91667"
+         width="30.208332"
+         height="16.1875"
+         fill="#000000"
+         rx="2"
+         id="rect7-7" />
+      <rect
+         x="288.66251"
+         y="133.7"
+         width="82.674995"
+         height="18.625"
+         fill="#000000"
+         rx="2"
+         id="rect8" />
+      <rect
+         x="298.65625"
+         y="152.91667"
+         width="62.6875"
+         height="16.1875"
+         fill="#000000"
+         rx="2"
+         id="rect9-5" />
+      <rect
+         x="428.85001"
+         y="133.7"
+         width="58.299999"
+         height="18.625"
+         fill="#000000"
+         rx="2"
+         id="rect10" />
+      <rect
+         x="429.14584"
+         y="152.91667"
+         width="57.708332"
+         height="16.1875"
+         fill="#000000"
+         rx="2"
+         id="rect11-3" />
+      <rect
+         x="554.69946"
+         y="134.00417"
+         width="62.60104"
+         height="18.015625"
+         fill="#000000"
+         rx="2"
+         id="rect12" />
+      <rect
+         x="559.61456"
+         y="152.91667"
+         width="52.770832"
+         height="16.1875"
+         fill="#000000"
+         rx="2"
+         id="rect13-5" />
+      <rect
+         x="690.3125"
+         y="133.7"
+         width="47.375"
+         height="18.625"
+         fill="#000000"
+         rx="2"
+         id="rect14" />
+      <rect
+         x="678.77081"
+         y="152.91667"
+         width="70.458328"
+         height="16.1875"
+         fill="#000000"
+         rx="2"
+         id="rect15-6" />
+      <rect
+         x="822.99011"
+         y="134.00417"
+         width="38.019791"
+         height="18.015625"
+         fill="#000000"
+         rx="2"
+         id="rect16" />
+      <rect
+         x="814.34375"
+         y="152.91667"
+         width="55.312496"
+         height="16.1875"
+         fill="#000000"
+         rx="2"
+         id="rect17" />
+      <rect
+         x="948.17407"
+         y="135.20189"
+         width="79.651848"
+         height="19.622932"
+         fill="#000000"
+         rx="2"
+         id="rect18-2" />
+      <rect
+         x="957.85419"
+         y="154.91667"
+         width="60.291664"
+         height="16.1875"
+         fill="#000000"
+         rx="2"
+         id="rect19" />
+      <rect
+         x="126.25"
+         y="135.5625"
+         width="21.5"
+         height="14.96875"
+         fill="#000000"
+         rx="2"
+         id="rect20" />
+      <rect
+         x="121.90573"
+         y="147.03125"
+         width="30.188541"
+         height="14.359375"
+         fill="#000000"
+         rx="2"
+         id="rect21-9" />
+      <rect
+         x="254.25"
+         y="135.5625"
+         width="21.5"
+         height="14.96875"
+         fill="#000000"
+         rx="2"
+         id="rect22" />
+      <rect
+         x="249.90573"
+         y="147.03125"
+         width="30.188541"
+         height="14.359375"
+         fill="#000000"
+         rx="2"
+         id="rect23-1" />
+      <rect
+         x="382.25"
+         y="135.5625"
+         width="21.5"
+         height="14.96875"
+         fill="#000000"
+         rx="2"
+         id="rect24" />
+      <rect
+         x="510.25"
+         y="135.5625"
+         width="21.5"
+         height="14.96875"
+         fill="#000000"
+         rx="2"
+         id="rect25" />
+      <rect
+         x="505.90573"
+         y="147.03125"
+         width="30.188541"
+         height="14.359375"
+         fill="#000000"
+         rx="2"
+         id="rect26" />
+      <rect
+         x="638.25"
+         y="135.5625"
+         width="21.5"
+         height="14.96875"
+         fill="#000000"
+         rx="2"
+         id="rect27" />
+      <rect
+         x="766.25"
+         y="135.5625"
+         width="21.5"
+         height="14.96875"
+         fill="#000000"
+         rx="2"
+         id="rect28" />
+      <rect
+         x="891.25"
+         y="135.5625"
+         width="27.5"
+         height="14.96875"
+         fill="#000000"
+         rx="2"
+         id="rect29" />
+      <rect
+         x="889.9057"
+         y="147.03125"
+         width="30.188541"
+         height="14.359375"
+         fill="#000000"
+         rx="2"
+         id="rect30" />
+      <rect
+         x="171.76042"
+         y="80.625"
+         width="60.479168"
+         height="16.1875"
+         fill="#000000"
+         rx="2"
+         id="rect31" />
+      <rect
+         x="306.5625"
+         y="84.625"
+         width="46.875"
+         height="16.1875"
+         fill="#000000"
+         rx="2"
+         id="rect32" />
+      <rect
+         x="431.64584"
+         y="80.625"
+         width="52.708332"
+         height="16.1875"
+         fill="#000000"
+         rx="2"
+         id="rect33" />
+      <rect
+         x="683.625"
+         y="84.625"
+         width="60.75"
+         height="16.1875"
+         fill="#000000"
+         rx="2"
+         id="rect34" />
+      <rect
+         x="45.982811"
+         y="185.09375"
+         width="56.034374"
+         height="15.578125"
+         fill="#000000"
+         rx="2"
+         id="rect35" />
+      <rect
+         x="168.70833"
+         y="185.09375"
+         width="66.583328"
+         height="15.578125"
+         fill="#000000"
+         rx="2"
+         id="rect36" />
+      <rect
+         x="297.49011"
+         y="185.09375"
+         width="65.019791"
+         height="15.578125"
+         fill="#000000"
+         rx="2"
+         id="rect37" />
+      <rect
+         x="424.36197"
+         y="185.09375"
+         width="67.276047"
+         height="15.578125"
+         fill="#000000"
+         rx="2"
+         id="rect38" />
+      <rect
+         x="558.24011"
+         y="185.09375"
+         width="55.519791"
+         height="15.578125"
+         fill="#000000"
+         rx="2"
+         id="rect39" />
+      <rect
+         x="689.67395"
+         y="185.09375"
+         width="48.652084"
+         height="15.578125"
+         fill="#000000"
+         rx="2"
+         id="rect40" />
+      <rect
+         x="815.04169"
+         y="185.09375"
+         width="53.916668"
+         height="15.578125"
+         fill="#000000"
+         rx="2"
+         id="rect41" />
+      <rect
+         x="947.58331"
+         y="185.09375"
+         width="80.833328"
+         height="15.578125"
+         fill="#000000"
+         rx="2"
+         id="rect42" />
+      <rect
+         x="456.29584"
+         y="213.5"
+         width="167.40833"
+         height="26.6875"
+         fill="#000000"
+         rx="2"
+         id="rect43" />
+      <rect
+         x="458.9198"
+         y="237.6875"
+         width="162.16042"
+         height="17.40625"
+         fill="#000000"
+         rx="2"
+         id="rect44" />
+      <rect
+         x="288.97916"
+         y="268.625"
+         width="502.04166"
+         height="16.1875"
+         fill="#000000"
+         rx="2"
+         id="rect45" />
+      <rect
+         x="351.25"
+         y="282.625"
+         width="377.5"
+         height="16.1875"
+         fill="#000000"
+         rx="2"
+         id="rect46" />
+    </mask>
+  </defs>
+  <style
+     id="style2">
+    .title-text { font-family: 'Times New Roman', serif; font-size: 14px; font-weight: bold; fill: #000000; text-anchor: middle; }
+    .box-text { font-family: 'Times New Roman', serif; font-size: 12px; fill: #000000; text-anchor: middle; }
+    .label-text { font-family: 'Times New Roman', serif; font-size: 10px; fill: #000000; text-anchor: middle; }
+    .fsm-text { font-family: 'Times New Roman', serif; font-size: 10px; fill: #555555; text-anchor: middle; font-style: italic; }
+    .eq-text { font-family: 'Times New Roman', serif; font-size: 12px; fill: #333333; text-anchor: middle; }
+    .box-orange { fill: #F5B461; stroke: #B86B1F; stroke-width: 1pt; rx: 2; ry: 2; }
+    .box-green { fill: #B5D99C; stroke: #4A7A2E; stroke-width: 1pt; rx: 2; ry: 2; }
+    .box-blue { fill: #A8D5E2; stroke: #2E5C8A; stroke-width: 1pt; rx: 2; ry: 2; }
+    .datapath { stroke: #000000; stroke-width: 1.5pt; fill: none; }
+    .ctrlpath { stroke: #555555; stroke-width: 1.5pt; stroke-dasharray: 4, 3; fill: none; }
+    .inputpath { stroke: #555555; stroke-width: 1.5pt; fill: none; }
+    .bracket { stroke: #000000; stroke-width: 1pt; fill: none; }
+  </style>
+  <rect
+     width="100%"
+     height="100%"
+     fill="#ffffff"
+     id="rect2" />
+  <line
+     x1="714"
+     y1="100"
+     x2="714"
+     y2="119"
+     stroke="#4A7A2E"
+     stroke-width="1.2"
+     stroke-dasharray="4,3"
+     marker-end="url(#arrow)"
+     mask="url(#imagine-text-gaps-xs4cvu)"
+     style="color:#fbfbfe;font-weight:400;font-size:16px;font-family:'Anthropic Sans', '-apple-system', BlinkMacSystemFont, 'Segoe UI', sans-serif;dominant-baseline:auto;text-anchor:start;fill:#000000;stroke:#4a7a2e;stroke-width:1.2px;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:4px, 3px"
+     id="line78"
+     transform="matrix(1,0,0,1.3194504,385.51724,10.884581)" />
+  <text
+     x="1102.0098"
+     y="136.75436"
+     text-anchor="middle"
+     font-family="'Times New Roman', Times, serif"
+     font-size="10"
+     fill="#4A7A2E"
+     style="color:#fbfbfe;font-weight:400;font-size:10px;font-family:'Times New Roman', Times, serif;dominant-baseline:auto;text-anchor:middle;fill:#4a7a2e;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter"
+     id="text79">requant_shift</text>
+  <path
+     d="M 40 60 L 40 45 L 1560 45 L 1560 60"
+     class="bracket"
+     id="path3" />
+  <text
+     x="800"
+     y="38"
+     class="title-text"
+     id="text3">Per-output-neuron pipeline (after all IB iterations)</text>
+  <path
+     d="M 840 110 L 840 95 L 1160 95 L 1160 110"
+     class="bracket"
+     id="path4" />
+  <text
+     x="1000"
+     y="88"
+     class="title-text"
+     font-size="12px"
+     id="text4">Banker's rounding (round-half-up)</text>
+  <text
+     x="300"
+     y="115"
+     class="label-text"
+     id="text5">bias[r] 32-bit</text>
+  <path
+     d="M 300 120 L 300 166"
+     class="inputpath"
+     marker-end="url(#arrow-input)"
+     id="path5" />
+  <text
+     x="500"
+     y="115"
+     class="label-text"
+     id="text6">act_mode</text>
+  <path
+     d="M 500 120 L 500 166"
+     class="ctrlpath"
+     marker-end="url(#arrow-input)"
+     id="path6" />
+  <text
+     x="700"
+     y="115"
+     class="label-text"
+     id="text7">mult 32-bit</text>
+  <path
+     d="M 700 120 L 700 166"
+     class="inputpath"
+     marker-end="url(#arrow-input)"
+     id="path7" />
+  <rect
+     x="40"
+     y="170"
+     width="120"
+     height="50"
+     class="box-orange"
+     id="rect7" />
+  <text
+     x="100"
+     y="199"
+     class="box-text"
+     id="text8">psum_accum</text>
+  <text
+     x="100"
+     y="235"
+     class="fsm-text"
+     id="text9">ST_ACCUM</text>
+  <rect
+     x="240"
+     y="170"
+     width="120"
+     height="50"
+     class="box-green"
+     id="rect9" />
+  <text
+     x="300"
+     y="199"
+     class="box-text"
+     id="text10">+ bias</text>
+  <text
+     x="300"
+     y="235"
+     class="fsm-text"
+     id="text11">ST_BIAS_ADD</text>
+  <rect
+     x="440"
+     y="170"
+     width="120"
+     height="50"
+     class="box-green"
+     id="rect11" />
+  <text
+     x="500"
+     y="199"
+     class="box-text"
+     id="text12">ReLU / Clamp</text>
+  <text
+     x="500"
+     y="235"
+     class="fsm-text"
+     id="text13">ST_ACTIVATE</text>
+  <rect
+     x="640"
+     y="170"
+     width="120"
+     height="50"
+     class="box-orange"
+     id="rect13" />
+  <text
+     x="700"
+     y="199"
+     class="box-text"
+     id="text14">× requant_mult</text>
+  <text
+     x="700"
+     y="235"
+     class="fsm-text"
+     id="text15">ST_MULT</text>
+  <rect
+     x="840"
+     y="170"
+     width="120"
+     height="50"
+     class="box-green"
+     id="rect15" />
+  <text
+     x="900"
+     y="192"
+     class="box-text"
+     id="text16">+ rounding</text>
+  <text
+     x="900"
+     y="208"
+     class="box-text"
+     id="text17">(2^(shift-1))</text>
+  <text
+     x="900"
+     y="235"
+     class="fsm-text"
+     id="text18">ST_ROUND</text>
+  <rect
+     x="1040"
+     y="170"
+     width="120"
+     height="50"
+     class="box-orange"
+     id="rect18" />
+  <text
+     x="1100"
+     y="192"
+     class="box-text"
+     id="text19">&gt;&gt; requant_shift</text>
+  <text
+     x="1100"
+     y="208"
+     class="box-text"
+     font-size="10px"
+     id="text20">(arithmetic)</text>
+  <text
+     x="1100"
+     y="235"
+     class="fsm-text"
+     id="text21">ST_SHIFT</text>
+  <rect
+     x="1240"
+     y="170"
+     width="120"
+     height="50"
+     class="box-green"
+     id="rect21" />
+  <text
+     x="1300"
+     y="199"
+     class="box-text"
+     id="text22">clamp [-128, 127]</text>
+  <text
+     x="1300"
+     y="235"
+     class="fsm-text"
+     id="text23">ST_CLAMP</text>
+  <rect
+     x="1440"
+     y="170"
+     width="120"
+     height="50"
+     class="box-blue"
+     id="rect23" />
+  <text
+     x="1500"
+     y="199"
+     class="box-text"
+     id="text24">OBUF Write</text>
+  <text
+     x="1500"
+     y="235"
+     class="fsm-text"
+     id="text25">ST_WRITE_OBUF</text>
+  <path
+     d="M 160 195 L 236 195"
+     class="datapath"
+     marker-end="url(#arrow-black)"
+     id="path25" />
+  <text
+     x="200"
+     y="188"
+     class="label-text"
+     id="text26">32-bit signed</text>
+  <path
+     d="M 360 195 L 436 195"
+     class="datapath"
+     marker-end="url(#arrow-black)"
+     id="path26" />
+  <text
+     x="400"
+     y="188"
+     class="label-text"
+     id="text27">32-bit signed</text>
+  <path
+     d="M 560 195 L 636 195"
+     class="datapath"
+     marker-end="url(#arrow-black)"
+     id="path27" />
+  <text
+     x="600"
+     y="188"
+     class="label-text"
+     id="text28">32-bit</text>
+  <path
+     d="M 760 195 L 836 195"
+     class="datapath"
+     marker-end="url(#arrow-black)"
+     id="path28" />
+  <text
+     x="800"
+     y="188"
+     class="label-text"
+     id="text29">64-bit signed</text>
+  <path
+     d="M 960 195 L 1036 195"
+     class="datapath"
+     marker-end="url(#arrow-black)"
+     id="path29" />
+  <text
+     x="1000"
+     y="188"
+     class="label-text"
+     id="text30">64-bit</text>
+  <path
+     d="M 1160 195 L 1236 195"
+     class="datapath"
+     marker-end="url(#arrow-black)"
+     id="path30" />
+  <text
+     x="1200"
+     y="188"
+     class="label-text"
+     id="text31">32-bit</text>
+  <path
+     d="M 1360 195 L 1436 195"
+     class="datapath"
+     marker-end="url(#arrow-black)"
+     id="path31" />
+  <text
+     x="1400"
+     y="188"
+     class="label-text"
+     id="text32">INT8 signed</text>
+  <text
+     x="800"
+     y="295"
+     class="eq-text"
+     id="text33">shifted = ⌊(psum × mult + 2^(s-1)) / 2^s⌋</text>
+  <text
+     x="800"
+     y="320"
+     class="eq-text"
+     id="text34">output = clamp(shifted, -128, 127)</text>
+  <text
+     xml:space="preserve"
+     style="writing-mode:lr-tb;direction:ltr;fill:none;stroke:#010418;stroke-width:0;stroke-linejoin:bevel;stroke-dasharray:none"
+     x="1075.9727"
+     y="132.64348"
+     id="text37"><tspan
+       sodipodi:role="line"
+       id="tspan37"
+       x="1075.9727"
+       y="132.64348" /></text>
+  <text
+     xml:space="preserve"
+     style="writing-mode:lr-tb;direction:ltr;fill:none;stroke:#000000;stroke-width:0;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+     x="1084.1654"
+     y="126.40143"
+     id="text38"><tspan
+       sodipodi:role="line"
+       id="tspan38"
+       x="1084.1654"
+       y="126.40143">re</tspan></text>
+</svg>
