@@ -488,7 +488,7 @@ MAX_IN_DIM/TILE_COLS
   );
 
   // ---- Bias SRAM: already whole-word (32-bit), no staging needed ----
-  wire bias_wr_hit = wr_fire && (aw_addr_r >= MEM_BIAS_BASE) && (aw_addr_r < MEM_BIAS_BASE + 14'h200);
+  wire bias_wr_hit = wr_fire && (aw_addr_r >= MEM_BIAS_BASE) && (aw_addr_r < MEM_BIAS_BASE + 14'h400);
   wire [clog2_safe(BSRAM_DEPTH)-1:0] legacy_bsram_wr_addr =
       (aw_addr_r - MEM_BIAS_BASE) >> 2;
 

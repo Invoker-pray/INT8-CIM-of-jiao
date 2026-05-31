@@ -147,7 +147,7 @@ WDMA_DATA     = 0x048
 WDMA_CTRL     = 0x04C
 LOGIT_BASE    = 0x100
 MEM_INPUT     = 0x1000
-MEM_BIAS      = 0x2000
+MEM_BIAS      = 0x2800
 
 # ====================================================================
 # 3. 内嵌 Golden Model (不依赖外部 hex 文件)

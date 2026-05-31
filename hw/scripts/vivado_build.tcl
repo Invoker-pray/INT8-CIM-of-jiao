@@ -361,7 +361,11 @@ puts "INFO: Bitstream generated."
 # ============================================================================
 set bit_file [glob ${OUT_DIR}/${PROJ_NAME}.runs/impl_1/system_wrapper.bit]
 set hwh_file [glob ${OUT_DIR}/${PROJ_NAME}.gen/sources_1/bd/system/hw_handoff/system.hwh]
-set hwdef_file [glob ${OUT_DIR}/${PROJ_NAME}.gen/sources_1/bd/system/hw_handoff/system.hwdef]
+set hwdef_file ""
+foreach _d {synth hw_handoff} {
+    set _g [glob -nocomplain ${OUT_DIR}/${PROJ_NAME}.gen/sources_1/bd/system/${_d}/system.hwdef]
+    if {$_g ne ""} { set hwdef_file [lindex $_g 0]; break }
+}
 
 file mkdir ${OUT_DIR}/pynq_deploy
 file copy -force ${bit_file} ${OUT_DIR}/pynq_deploy/cim_soc.bit

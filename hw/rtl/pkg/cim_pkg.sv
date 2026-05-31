@@ -148,7 +148,7 @@ package cim_pkg;
   // --- Memory Windows (for AXI writes) ---
   // 16KB address space (14-bit). Input needs 784 words = 3136 bytes.
   parameter logic [13:0] MEM_INPUT_BASE = 14'h1000;  // input buffer:  0x1000 + 4*i (up to 0x1C3F)
-  parameter logic [13:0] MEM_BIAS_BASE = 14'h2000;  // bias buffer:   0x2000 + 4*i (up to 0x21FF)
+  parameter logic [13:0] MEM_BIAS_BASE = 14'h2800;  // bias buffer:   0x2000 + 4*i (up to 0x21FF)
   // Weight SRAM uses a separate AXI-Full or burst interface (too wide for CSR)
   // For simplicity, we provide a DMA-style interface:
   parameter logic [13:0] CSR_WDMA_ADDR = 14'h044;  // weight SRAM write address (tile index)

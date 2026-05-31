@@ -63,11 +63,15 @@ def _make_run_id():
     import datetime
 
     try:
-        git_hash = subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"],
-            stderr=subprocess.DEVNULL,
-            cwd=os.path.dirname(os.path.abspath(__file__)),
-        ).decode().strip()
+        git_hash = (
+            subprocess.check_output(
+                ["git", "rev-parse", "--short", "HEAD"],
+                stderr=subprocess.DEVNULL,
+                cwd=os.path.dirname(os.path.abspath(__file__)),
+            )
+            .decode()
+            .strip()
+        )
     except Exception:
         git_hash = "no-git"
     return f"{git_hash}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -94,19 +98,23 @@ _WDMA_ADDR = 0x044
 _WDMA_DATA = 0x048
 _WDMA_CTRL = 0x04C
 # C3 (step 8): AXI4-Stream sink control (active when CTRL[3]=1)
-_CSR_STREAM_DEST = 0x050      # [1:0]=dest (0=weight, 1=input, 2=bias); [31:16]=base_addr
-_CSR_STREAM_LEN = 0x054       # [15:0]=beat count; write triggers cfg_start pulse
-_CSR_STREAM_STATUS = 0x058    # [0]=busy, [1]=done, [2]=overflow, [3]=underflow
-_CSR_STREAM_CONTINUE = 0x05C  # [0]=continue mode (0=reset addr ptrs, 1=continue from current position)
+_CSR_STREAM_DEST = 0x050  # [1:0]=dest (0=weight, 1=input, 2=bias); [31:16]=base_addr
+_CSR_STREAM_LEN = 0x054  # [15:0]=beat count; write triggers cfg_start pulse
+_CSR_STREAM_STATUS = 0x058  # [0]=busy, [1]=done, [2]=overflow, [3]=underflow
+_CSR_STREAM_CONTINUE = (
+    0x05C  # [0]=continue mode (0=reset addr ptrs, 1=continue from current position)
+)
 _LOGIT_BASE = 0x100
 _MEM_INPUT = 0x1000
-_MEM_BIAS = 0x2000
+_MEM_BIAS = 0x2800
 
 # CSR_CTRL bit masks
 _CTRL_START = 0x1
 _CTRL_CLEAR_DONE = 0x2
 _CTRL_SOFT_RST = 0x4
-_CTRL_STREAM_EN = 0x8         # C3: 1 → data writes come from stream sink, 0 → legacy MMIO staging
+_CTRL_STREAM_EN = (
+    0x8  # C3: 1 → data writes come from stream sink, 0 → legacy MMIO staging
+)
 
 # Stream destination codes (must match cim_pkg::stream_dest_t)
 _DEST_WEIGHT = 0
@@ -114,27 +122,27 @@ _DEST_INPUT = 1
 _DEST_BIAS = 2
 
 # P0: result stream CSRs
-_CSR_RESULT_LEN = 0x060    # [15:0]=n_elements (INT8 count)
-_CSR_RESULT_CTRL = 0x064   # [0]=start (write-1 triggers)
+_CSR_RESULT_LEN = 0x060  # [15:0]=n_elements (INT8 count)
+_CSR_RESULT_CTRL = 0x064  # [0]=start (write-1 triggers)
 _CSR_RESULT_STATUS = 0x068  # [0]=busy, [1]=done
 
 # Phase B: Ping-pong bank select (write 1 to toggle)
 _CSR_PING_CTRL = 0x06C
 
 # Phase C: Layer Fusion — OBUF→IBUF direct copy
-_CSR_FUSION_CTRL = 0x070   # [0]=start; write 1 triggers copy
-_CSR_FUSION_LEN = 0x074    # [15:0]=n_elements (INT8 count)
+_CSR_FUSION_CTRL = 0x070  # [0]=start; write 1 triggers copy
+_CSR_FUSION_LEN = 0x074  # [15:0]=n_elements (INT8 count)
 _CSR_FUSION_STATUS = 0x078  # [0]=busy, [1]=done
-_CSR_FUSION_DBG0   = 0x084  # [15:0]=fusion cycle counter
-_CSR_FUSION_DBG1   = 0x088  # [7:0]=fusion tile-write counter
+_CSR_FUSION_DBG0 = 0x084  # [15:0]=fusion cycle counter
+_CSR_FUSION_DBG1 = 0x088  # [7:0]=fusion tile-write counter
 
 # Phase C: Multi-layer base offsets for weight/bias SRAM coexistence
-_CSR_WEIGHT_BASE = 0x07C   # [10:0]=tile offset for weight reads
-_CSR_BIAS_BASE = 0x080     # [7:0]=word offset for bias reads
+_CSR_WEIGHT_BASE = 0x07C  # [10:0]=tile offset for weight reads
+_CSR_BIAS_BASE = 0x080  # [7:0]=word offset for bias reads
 
 # CMA buffer sizing upper bounds — cover any single-layer load for LeNet-5 / MNIST-MLP.
 # LeNet-5 Conv2 packed weight is the largest: col_len=150*16=2400 chunks; headroom 4×.
-_DMA_BUF_WEIGHTS = 20000      # 32-bit words (up to ~80 KB)
+_DMA_BUF_WEIGHTS = 20000  # 32-bit words (up to ~80 KB)
 _DMA_BUF_INPUT = (MAX_IN_DIM + 15) // 4  # packed UINT8 → uint32 words
 _DMA_BUF_BIAS = MAX_OUT_DIM
 _DMA_BUF_RESULT = (MAX_OUT_DIM + 3) // 4  # packed INT8 → uint32 words
@@ -211,10 +219,14 @@ def im2col(feature_map, kernel_h, kernel_w, stride=1, padding=0):
         padded.strides[1],
         padded.strides[2],
     )
-    windows = np.lib.stride_tricks.as_strided(padded, shape=win_shape, strides=win_strides)
+    windows = np.lib.stride_tricks.as_strided(
+        padded, shape=win_shape, strides=win_strides
+    )
     # Bring kernel dims next to channel, copy to make contiguous, then reshape
     # (C, out_h, out_w, K_h, K_w) → (out_h, out_w, C, K_h, K_w) → copy → (out_h*out_w, col_len) → T
-    col_matrix = windows.transpose(1, 2, 0, 3, 4).copy().reshape(out_h * out_w, col_len).T
+    col_matrix = (
+        windows.transpose(1, 2, 0, 3, 4).copy().reshape(out_h * out_w, col_len).T
+    )
     return col_matrix, out_h, out_w
 
 
@@ -231,7 +243,9 @@ def maxpool2d(feat, kernel=2, stride=2):
         feat.strides[1],
         feat.strides[2],
     )
-    windows = np.lib.stride_tricks.as_strided(feat, shape=win_shape, strides=win_strides)
+    windows = np.lib.stride_tricks.as_strided(
+        feat, shape=win_shape, strides=win_strides
+    )
     return windows.max(axis=(3, 4))
 
 
@@ -280,18 +294,17 @@ class CIMDriver:
 
         # Determine actual .bit path regardless of what the user passed
         _ext = _os.path.splitext(bitstream_path)[1].lower()
-        if _ext == '.hwh':
-            _candidate = bitstream_path[:-4] + '.bit'
+        if _ext == ".hwh":
+            _candidate = bitstream_path[:-4] + ".bit"
             if _os.path.exists(_candidate):
                 _bit_path = _candidate
             else:
                 raise RuntimeError(
-                    f"No .bit found for .hwh: {bitstream_path}. "
-                    f"Expected {_candidate}"
+                    f"No .bit found for .hwh: {bitstream_path}. Expected {_candidate}"
                 )
-        elif _ext == '.xsa':
+        elif _ext == ".xsa":
             # Extract .bit name from XSA — same basename but .bit
-            _bit_path = bitstream_path[:-4] + '.bit'
+            _bit_path = bitstream_path[:-4] + ".bit"
         else:
             _bit_path = bitstream_path
 
@@ -302,24 +315,30 @@ class CIMDriver:
             return
         except Exception as _e:
             _msg = str(_e)
-            if "not a valid input" not in _msg and \
-               "Unknown file format" not in _msg and \
-               "sysdef.xml" not in _msg:
+            if (
+                "not a valid input" not in _msg
+                and "Unknown file format" not in _msg
+                and "sysdef.xml" not in _msg
+            ):
                 raise
 
         # --- PYNQ v3.0.1 fallback: Bitstream.download() + MMIO-only ---
-        print(f"[CIMDriver] Overlay() failed (PYNQ v3.0.x metadata bug), "
-              f"falling back to Bitstream.download('{_bit_path}') ...")
+        print(
+            f"[CIMDriver] Overlay() failed (PYNQ v3.0.x metadata bug), "
+            f"falling back to Bitstream.download('{_bit_path}') ..."
+        )
         Bitstream(_bit_path).download()
         print(f"[CIMDriver] Bitstream downloaded OK")
 
         # DMA requires overlay IP metadata which we can't get without a working
         # Overlay(). Force MMIO-only mode.
         if self.use_dma:
-            print(f"[CIMDriver] WARNING: DMA requested but Overlay() failed. "
-                  f"Forcing use_dma=False.")
+            print(
+                f"[CIMDriver] WARNING: DMA requested but Overlay() failed. "
+                f"Forcing use_dma=False."
+            )
             self.use_dma = False
-        self.overlay = type('_DummyOL', (), {'ip_dict': {}})()
+        self.overlay = type("_DummyOL", (), {"ip_dict": {}})()
 
     def _init_dma(self):
         """Prepare DMA channel + pinned CMA buffers. Called once from __init__
@@ -334,6 +353,7 @@ class CIMDriver:
             ) from e
 
         from pynq import allocate
+
         self._buf_w = allocate(shape=(_DMA_BUF_WEIGHTS,), dtype=np.uint32)
         self._buf_x = allocate(shape=(_DMA_BUF_INPUT,), dtype=np.uint32)
         self._buf_b = allocate(shape=(_DMA_BUF_BIAS,), dtype=np.uint32)
@@ -342,45 +362,61 @@ class CIMDriver:
         self._buf_r_toggle = False  # flip between _buf_r and _buf_r_alt
 
         # P0 S2MM diagnostic
-        has_s2mm = getattr(self.dma, 'recvchannel', None) is not None
-        dma_desc = self.overlay.ip_dict.get('axi_dma_0', {})
-        dma_params = dma_desc.get('parameters', {})
-        dma_streams = dma_desc.get('streams', {})
-        print(f"[CIMDriver] DMA initialized: sendchannel={'OK' if self.dma.sendchannel else 'MISSING'}, "
-              f"recvchannel={'OK' if has_s2mm else 'MISSING (P0 via direct reg mode)'}")
+        has_s2mm = getattr(self.dma, "recvchannel", None) is not None
+        dma_desc = self.overlay.ip_dict.get("axi_dma_0", {})
+        dma_params = dma_desc.get("parameters", {})
+        dma_streams = dma_desc.get("streams", {})
+        print(
+            f"[CIMDriver] DMA initialized: sendchannel={'OK' if self.dma.sendchannel else 'MISSING'}, "
+            f"recvchannel={'OK' if has_s2mm else 'MISSING (P0 via direct reg mode)'}"
+        )
         # PYNQ stores IP under full name; check both keys
-        matching_keys = [k for k in self.overlay.ip_dict if 'dma' in k.lower()]
+        matching_keys = [k for k in self.overlay.ip_dict if "dma" in k.lower()]
         print(f"[CIMDriver] DMA keys in ip_dict: {matching_keys}")
         if matching_keys:
             key0 = matching_keys[0]
             desc0 = self.overlay.ip_dict[key0]
-            print(f"[CIMDriver] '{key0}' has_parameters: {'parameters' in desc0}, has_streams: {'streams' in desc0}")
-            if 'parameters' in desc0:
-                s2mm = desc0['parameters'].get('c_include_s2mm', 'MISSING')
+            print(
+                f"[CIMDriver] '{key0}' has_parameters: {'parameters' in desc0}, has_streams: {'streams' in desc0}"
+            )
+            if "parameters" in desc0:
+                s2mm = desc0["parameters"].get("c_include_s2mm", "MISSING")
                 print(f"[CIMDriver] '{key0}' c_include_s2mm: {s2mm}")
-            if 'streams' in desc0:
+            if "streams" in desc0:
                 print(f"[CIMDriver] '{key0}' streams: {desc0['streams']}")
         # Also check overlay's IP list
         print(f"[CIMDriver] Total IPs in overlay: {len(self.overlay.ip_dict)}")
-        print(f"[CIMDriver] DMA attributes: {[a for a in dir(self.dma) if not a.startswith('_')]}")
+        print(
+            f"[CIMDriver] DMA attributes: {[a for a in dir(self.dma) if not a.startswith('_')]}"
+        )
         # Probe register_map structure for S2MM register layout
         try:
             _rm = self.dma.register_map
-            print(f"[CIMDriver] register_map keys: {[k for k in dir(_rm) if not k.startswith('_')]}")
-            if hasattr(_rm, 'S2MM'):
+            print(
+                f"[CIMDriver] register_map keys: {[k for k in dir(_rm) if not k.startswith('_')]}"
+            )
+            if hasattr(_rm, "S2MM"):
                 _s2mm = _rm.S2MM
-                print(f"[CIMDriver] S2MM keys: {[k for k in dir(_s2mm) if not k.startswith('_')]}")
-                for _reg_name in ('DMACR', 'DMASR', 'DA', 'LENGTH'):
+                print(
+                    f"[CIMDriver] S2MM keys: {[k for k in dir(_s2mm) if not k.startswith('_')]}"
+                )
+                for _reg_name in ("DMACR", "DMASR", "DA", "LENGTH"):
                     if hasattr(_s2mm, _reg_name):
                         _reg = getattr(_s2mm, _reg_name)
-                        print(f"[CIMDriver] S2MM.{_reg_name}: addr=0x{_reg.address:04X}")
-            if hasattr(_rm, 'MM2S'):
+                        print(
+                            f"[CIMDriver] S2MM.{_reg_name}: addr=0x{_reg.address:04X}"
+                        )
+            if hasattr(_rm, "MM2S"):
                 _mm2s = _rm.MM2S
-                print(f"[CIMDriver] MM2S keys: {[k for k in dir(_mm2s) if not k.startswith('_')]}")
-                for _reg_name in ('DMACR', 'DMASR', 'SA', 'LENGTH'):
+                print(
+                    f"[CIMDriver] MM2S keys: {[k for k in dir(_mm2s) if not k.startswith('_')]}"
+                )
+                for _reg_name in ("DMACR", "DMASR", "SA", "LENGTH"):
                     if hasattr(_mm2s, _reg_name):
                         _reg = getattr(_mm2s, _reg_name)
-                        print(f"[CIMDriver] MM2S.{_reg_name}: addr=0x{_reg.address:04X}")
+                        print(
+                            f"[CIMDriver] MM2S.{_reg_name}: addr=0x{_reg.address:04X}"
+                        )
         except Exception as _e:
             print(f"[CIMDriver] register_map probe failed: {_e}")
 
@@ -406,13 +442,18 @@ class CIMDriver:
         construction into a board-level reset event.
         """
         # Preserve CTRL[3] stream-mode bit while pulsing soft-reset.
-        self.mmio.write(_CTRL, _CTRL_SOFT_RST | (_CTRL_STREAM_EN if self.use_dma else 0))
+        self.mmio.write(
+            _CTRL, _CTRL_SOFT_RST | (_CTRL_STREAM_EN if self.use_dma else 0)
+        )
 
     def _clear_done(self):
-        self.mmio.write(_CTRL, _CTRL_CLEAR_DONE | (_CTRL_STREAM_EN if self.use_dma else 0))
+        self.mmio.write(
+            _CTRL, _CTRL_CLEAR_DONE | (_CTRL_STREAM_EN if self.use_dma else 0)
+        )
 
-    def configure(self, in_dim, out_dim, zp, mult, shift, relu,
-                  weight_base=0, bias_base=0):
+    def configure(
+        self, in_dim, out_dim, zp, mult, shift, relu, weight_base=0, bias_base=0
+    ):
         """Configure CSR registers for one layer.
 
         weight_base: tile offset in weight SRAM (0 = start of SRAM).
@@ -475,16 +516,14 @@ class CIMDriver:
             n_padded = n_words * 4
             phys = int(data_buf.physical_address) & 0xFFFFFFFF
             dma_mmio.write(_MM2S_SA, phys)
-            dma_mmio.write(_MM2S_DMACR, 0x1001)    # RS=1, IOC_IrqEn
-            dma_mmio.write(_MM2S_LENGTH, n_padded)   # write last → commits
+            dma_mmio.write(_MM2S_DMACR, 0x1001)  # RS=1, IOC_IrqEn
+            dma_mmio.write(_MM2S_LENGTH, n_padded)  # write last → commits
             for _ in range(100000):
                 dm_asr = dma_mmio.read(_MM2S_DMASR)
-                if dm_asr & 0x2:   # Idle
+                if dm_asr & 0x2:  # Idle
                     break
-                if dm_asr & 0x1:   # Halted
-                    raise RuntimeError(
-                        f"MM2S DMA halted (DMASR=0x{dm_asr:08X})"
-                    )
+                if dm_asr & 0x1:  # Halted
+                    raise RuntimeError(f"MM2S DMA halted (DMASR=0x{dm_asr:08X})")
             else:
                 raise RuntimeError(
                     f"MM2S DMA timeout (DMASR=0x{dma_mmio.read(_MM2S_DMASR):08X})"
@@ -535,7 +574,7 @@ class CIMDriver:
             offset = 0
             while offset < n:
                 chunk_size = min(MAX_DMA_WORDS, n - offset)
-                buf[:chunk_size] = words_arr[offset:offset + chunk_size]
+                buf[:chunk_size] = words_arr[offset : offset + chunk_size]
                 if _dma_timings is not None:
                     t_setup = time.perf_counter()
                 cur_base = base_addr if offset == 0 else 0
@@ -544,17 +583,25 @@ class CIMDriver:
                 self.mmio.write(_CSR_STREAM_LEN, chunk_size)  # triggers cfg_start
                 if _dma_timings is not None:
                     t_xfer = time.perf_counter()
-                    _dma_timings["setup_ms"] = _dma_timings.get("setup_ms", 0) + (t_xfer - t_setup) * 1000
+                    _dma_timings["setup_ms"] = (
+                        _dma_timings.get("setup_ms", 0) + (t_xfer - t_setup) * 1000
+                    )
                 _do_mm2s_xfer(buf, chunk_size)
                 if _dma_timings is not None:
                     t_done = time.perf_counter()
-                    _dma_timings["transfer_ms"] = _dma_timings.get("transfer_ms", 0) + (t_done - t_xfer) * 1000
+                    _dma_timings["transfer_ms"] = (
+                        _dma_timings.get("transfer_ms", 0) + (t_done - t_xfer) * 1000
+                    )
                     _dma_timings["n_chunks"] = _dma_timings.get("n_chunks", 0) + 1
                 status = self.mmio.read(_CSR_STREAM_STATUS)
                 if status & 0x4:
-                    raise RuntimeError(f"stream sink overflow at offset {offset} (status=0x{status:08x})")
+                    raise RuntimeError(
+                        f"stream sink overflow at offset {offset} (status=0x{status:08x})"
+                    )
                 if status & 0x8:
-                    raise RuntimeError(f"stream sink underflow at offset {offset} (status=0x{status:08x})")
+                    raise RuntimeError(
+                        f"stream sink underflow at offset {offset} (status=0x{status:08x})"
+                    )
                 self.mmio.write(_CSR_STREAM_STATUS, 0)
                 offset += chunk_size
 
@@ -564,8 +611,13 @@ class CIMDriver:
         base_tile: starting tile index in weight SRAM (for multi-layer coexistence).
         """
         if self.use_dma:
-            self._stream_load(chunks, _DEST_WEIGHT, self._buf_w,
-                              base_addr=base_tile, _dma_timings=_dma_timings)
+            self._stream_load(
+                chunks,
+                _DEST_WEIGHT,
+                self._buf_w,
+                base_addr=base_tile,
+                _dma_timings=_dma_timings,
+            )
         else:
             self._load_weights_legacy(chunks)
 
@@ -581,7 +633,9 @@ class CIMDriver:
             if pad:
                 arr = np.concatenate([arr, np.zeros(pad, dtype=np.uint8)])
             words = arr.view(np.uint32)
-            self._stream_load(words, _DEST_INPUT, self._buf_x, _dma_timings=_dma_timings)
+            self._stream_load(
+                words, _DEST_INPUT, self._buf_x, _dma_timings=_dma_timings
+            )
         else:
             self._load_input_legacy(data_u8)
 
@@ -592,8 +646,13 @@ class CIMDriver:
         """
         if self.use_dma:
             words = np.asarray(bias_u32, dtype=np.uint32)
-            self._stream_load(words, _DEST_BIAS, self._buf_b,
-                              base_addr=base_addr, _dma_timings=_dma_timings)
+            self._stream_load(
+                words,
+                _DEST_BIAS,
+                self._buf_b,
+                base_addr=base_addr,
+                _dma_timings=_dma_timings,
+            )
         else:
             self._load_bias_legacy(bias_u32)
 
@@ -678,8 +737,7 @@ class CIMDriver:
         for FC→FC transitions where n_elements ≤ MAX_OUT_DIM (256).
         """
         assert n_elements <= MAX_OUT_DIM, (
-            f"Fusion copy limited to OBUF depth ({MAX_OUT_DIM}), "
-            f"got {n_elements}"
+            f"Fusion copy limited to OBUF depth ({MAX_OUT_DIM}), got {n_elements}"
         )
         self.mmio.write(_CSR_FUSION_LEN, n_elements)
         self.mmio.write(_CSR_FUSION_CTRL, 1)  # trigger copy
@@ -707,7 +765,7 @@ class CIMDriver:
         if out_dim <= 0:
             return []
         n_words = (out_dim + 3) // 4  # buffer capacity check
-        n_padded = n_words * 4          # round to 4-byte boundary
+        n_padded = n_words * 4  # round to 4-byte boundary
         # DMA LENGTH and source cfg_len must agree on byte count.
         # The source has no tkeep — every beat counts as 4 bytes in the DMA.
         # Using out_dim directly when out_dim % 4 ≠ 0 would cause DMAIntErr.
@@ -725,14 +783,14 @@ class CIMDriver:
 
         # Reset S2MM, then re-arm.  Reset is self-clearing (~4 cycles at
         # 60 MHz = ~67 ns); a short delay covers it with generous margin.
-        dma.write(0x30, 0x4)                 # DMACR Reset=1
-        if dma.read(0x30) & 0x4:             # spin until Reset auto-clears
+        dma.write(0x30, 0x4)  # DMACR Reset=1
+        if dma.read(0x30) & 0x4:  # spin until Reset auto-clears
             pass
 
         # Arm: RS=1 + IOC_IrqEn, then DA, then LENGTH last.
-        dma.write(0x30, 0x1003)                  # RS=1, IOC_IrqEn
+        dma.write(0x30, 0x1003)  # RS=1, IOC_IrqEn
         dma.write(0x48, phys)
-        dma.write(0x58, n_padded)                 # LENGTH last → commits, starts xfer
+        dma.write(0x58, n_padded)  # LENGTH last → commits, starts xfer
 
         # Trigger RTL source: write LEN, then pulse CTRL[0] (0→1 clean edge).
         self.mmio.write(_CSR_RESULT_LEN, n_padded)
@@ -752,16 +810,15 @@ class CIMDriver:
         # Poll DMA idle
         for _ in range(100000):
             status = dma.read(0x34)
-            if status & 0x2:                 # Idle
+            if status & 0x2:  # Idle
                 break
-            if status & 0x1:                 # Halted = error
+            if status & 0x1:  # Halted = error
                 raise RuntimeError(
                     f"DMA S2MM halted (DMASR=0x{status:08X}, out_dim={out_dim})"
                 )
         else:
             raise RuntimeError(
-                f"DMA S2MM timeout (out_dim={out_dim}). "
-                f"DMASR=0x{dma.read(0x34):08X}"
+                f"DMA S2MM timeout (out_dim={out_dim}). DMASR=0x{dma.read(0x34):08X}"
             )
 
         # Invalidate cache and return.
@@ -775,8 +832,9 @@ class CIMDriver:
         """Read hardware argmax result."""
         return self.mmio.read(_PRED_CLASS)
 
-    def infer_fc(self, input_u8, w_chunks, bias_u32, zp, mult, shift, relu=True,
-                 _timings=None):
+    def infer_fc(
+        self, input_u8, w_chunks, bias_u32, zp, mult, shift, relu=True, _timings=None
+    ):
         """
         Run one FC layer end-to-end.
 
@@ -797,20 +855,26 @@ class CIMDriver:
         out_dim = len(bias_u32)
         do_t = _timings is not None
 
-        if do_t: t0 = time.perf_counter()
+        if do_t:
+            t0 = time.perf_counter()
         self.configure(in_dim, out_dim, zp, mult, shift, relu)
-        if do_t: t1 = time.perf_counter()
+        if do_t:
+            t1 = time.perf_counter()
         dma_w = {} if self.use_dma and do_t else None
         self.load_weights(w_chunks, 0, dma_w)
-        if do_t: t2 = time.perf_counter()
+        if do_t:
+            t2 = time.perf_counter()
         dma_b = {} if self.use_dma and do_t else None
         self.load_bias(bias_u32, 0, dma_b)
-        if do_t: t3 = time.perf_counter()
+        if do_t:
+            t3 = time.perf_counter()
         dma_x = {} if self.use_dma and do_t else None
         self.load_input(input_u8, dma_x)
-        if do_t: t4 = time.perf_counter()
+        if do_t:
+            t4 = time.perf_counter()
         cycles, macs = self.start_and_wait()
-        if do_t: t5 = time.perf_counter()
+        if do_t:
+            t5 = time.perf_counter()
         output = self.read_output(out_dim)
         if do_t:
             t6 = time.perf_counter()
@@ -852,11 +916,14 @@ class CIMDriver:
         """
         do_t = _timings is not None
         dma_x = {} if self.use_dma and do_t else None
-        if do_t: t0 = time.perf_counter()
+        if do_t:
+            t0 = time.perf_counter()
         self.load_input(input_u8, dma_x)
-        if do_t: t1 = time.perf_counter()
+        if do_t:
+            t1 = time.perf_counter()
         cycles, macs = self.start_and_wait()
-        if do_t: t2 = time.perf_counter()
+        if do_t:
+            t2 = time.perf_counter()
         output = self.read_output(out_dim)
         if do_t:
             t3 = time.perf_counter()
@@ -955,8 +1022,9 @@ class CIMDriver:
         fc2_in, fc2_od, fc2_m, fc2_s = self._fc2_cfg
 
         # Configure FC1, load input, run
-        self.configure(fc1_in, fc1_od, fc1_zp, fc1_m, fc1_s, 1,
-                       weight_base=0, bias_base=0)
+        self.configure(
+            fc1_in, fc1_od, fc1_zp, fc1_m, fc1_s, 1, weight_base=0, bias_base=0
+        )
         self.load_input(input_u8)
         cycles1, _ = self.start_and_wait()
 
@@ -964,17 +1032,35 @@ class CIMDriver:
         self.copy_output_to_input(fc1_out_dim)
 
         # Configure FC2 (uses multi-layer weight/bias base)
-        self.configure(fc2_in, fc2_od, 0, fc2_m, fc2_s, 0,
-                       weight_base=self._fc2_weight_base,
-                       bias_base=self._fc2_bias_base)
+        self.configure(
+            fc2_in,
+            fc2_od,
+            0,
+            fc2_m,
+            fc2_s,
+            0,
+            weight_base=self._fc2_weight_base,
+            bias_base=self._fc2_bias_base,
+        )
         cycles2, _ = self.start_and_wait()
         output = self.read_output(fc2_out_dim)
         return output, cycles1, cycles2
 
-    def setup_fc_fused_pair(self, fc1_in_dim, fc1_out_dim, fc1_w_chunks,
-                             fc1_bias_u32, fc1_zp, fc1_mult, fc1_shift,
-                             fc2_out_dim, fc2_w_chunks, fc2_bias_u32,
-                             fc2_mult, fc2_shift):
+    def setup_fc_fused_pair(
+        self,
+        fc1_in_dim,
+        fc1_out_dim,
+        fc1_w_chunks,
+        fc1_bias_u32,
+        fc1_zp,
+        fc1_mult,
+        fc1_shift,
+        fc2_out_dim,
+        fc2_w_chunks,
+        fc2_bias_u32,
+        fc2_mult,
+        fc2_shift,
+    ):
         """Pre-load FC1+FC2 weights/bias at different SRAM offsets for fusion.
 
         FC1 gets weight_base=0, bias_base=0.
@@ -1001,15 +1087,30 @@ class CIMDriver:
         self._fc2_cfg = (fc2_in_dim, fc2_out_dim, fc2_mult, fc2_shift)
 
         # Load FC1 weights/bias at offset 0
-        self.configure(fc1_in_dim, fc1_out_dim, fc1_zp, fc1_mult, fc1_shift, 1,
-                       weight_base=0, bias_base=0)
+        self.configure(
+            fc1_in_dim,
+            fc1_out_dim,
+            fc1_zp,
+            fc1_mult,
+            fc1_shift,
+            1,
+            weight_base=0,
+            bias_base=0,
+        )
         self.load_weights(fc1_w_chunks, base_tile=0)
         self.load_bias(fc1_bias_u32, base_addr=0)
 
         # Load FC2 weights/bias at offset
-        self.configure(fc2_in_dim, fc2_out_dim, 0, fc2_mult, fc2_shift, 0,
-                       weight_base=self._fc2_weight_base,
-                       bias_base=self._fc2_bias_base)
+        self.configure(
+            fc2_in_dim,
+            fc2_out_dim,
+            0,
+            fc2_mult,
+            fc2_shift,
+            0,
+            weight_base=self._fc2_weight_base,
+            bias_base=self._fc2_bias_base,
+        )
         self.load_weights(fc2_w_chunks, base_tile=fc1_n_tiles)
         self.load_bias(fc2_bias_u32, base_addr=fc1_bias_align)
 
@@ -1035,8 +1136,9 @@ class CIMDriver:
 
         for img in inputs_u8:
             # FC1
-            self.configure(fc1_in, fc1_od, fc1_zp, fc1_m, fc1_s, 1,
-                           weight_base=0, bias_base=0)
+            self.configure(
+                fc1_in, fc1_od, fc1_zp, fc1_m, fc1_s, 1, weight_base=0, bias_base=0
+            )
             self.load_input(img)
             c1, _ = self.start_and_wait()
             total_c1 += c1
@@ -1045,9 +1147,16 @@ class CIMDriver:
             self.copy_output_to_input(fc1_out_dim)
 
             # FC2 (multi-layer base)
-            self.configure(fc2_in, fc2_od, 0, fc2_m, fc2_s, 0,
-                           weight_base=self._fc2_weight_base,
-                           bias_base=self._fc2_bias_base)
+            self.configure(
+                fc2_in,
+                fc2_od,
+                0,
+                fc2_m,
+                fc2_s,
+                0,
+                weight_base=self._fc2_weight_base,
+                bias_base=self._fc2_bias_base,
+            )
             c2, _ = self.start_and_wait()
             total_c2 += c2
 
@@ -1113,8 +1222,19 @@ class CIMModel:
             w_base += n_ob * n_ib
             b_base += (layer["out_dim"] + 15) & ~15
 
-    def add_fc(self, in_dim, out_dim, w_chunks, bias_u32, zp, mult, shift, relu=True,
-               weight_int8=None, bias_int32=None):
+    def add_fc(
+        self,
+        in_dim,
+        out_dim,
+        w_chunks,
+        bias_u32,
+        zp,
+        mult,
+        shift,
+        relu=True,
+        weight_int8=None,
+        bias_int32=None,
+    ):
         """Add a fully-connected layer.
 
         Optional weight_int8/bias_int32: original int arrays for per-layer
@@ -1209,8 +1329,9 @@ class CIMModel:
         packed_in = k_pack * col_len
         W_packed = np.zeros((packed_out, packed_in), dtype=np.int8)
         for b in range(k_pack):
-            W_packed[b * C_out : (b + 1) * C_out,
-                     b * col_len : (b + 1) * col_len] = W_2d
+            W_packed[b * C_out : (b + 1) * C_out, b * col_len : (b + 1) * col_len] = (
+                W_2d
+            )
 
         # Tiled bias
         bias_packed = np.tile(layer["bias_int32"], k_pack)
@@ -1223,8 +1344,15 @@ class CIMModel:
             "packed_out_dim": packed_out,
         }
 
-    def predict(self, input_data, verbose=False, verify=False, run_id=None,
-                dump_dir="sw/logs", profile=False):
+    def predict(
+        self,
+        input_data,
+        verbose=False,
+        verify=False,
+        run_id=None,
+        dump_dir="sw/logs",
+        profile=False,
+    ):
         """
         Run all layers sequentially.
 
@@ -1263,7 +1391,8 @@ class CIMModel:
                     x = x.view(np.uint8)
 
                 mvm_timings = [] if profile else None
-                if profile: t_layer = time.perf_counter()
+                if profile:
+                    t_layer = time.perf_counter()
 
                 out, cycles = self.drv.infer_fc(
                     x,
@@ -1283,26 +1412,30 @@ class CIMModel:
                     )
                 if profile:
                     mt = mvm_timings[0] if mvm_timings else {}
-                    prof["layers"].append({
-                        "name": f"fc_{layer['in_dim']}x{layer['out_dim']}",
-                        "type": "fc",
-                        "n_mvm": 1,
-                        "k_pack": 1,
-                        "im2col_ms": 0.0,
-                        "setup_ms": mt.get("configure_ms", 0) + mt.get("load_w_ms", 0) + mt.get("load_b_ms", 0),
-                        "load_x_ms": mt.get("load_x_ms", 0),
-                        "compute_ms": mt.get("compute_ms", 0),
-                        "read_out_ms": mt.get("read_out_ms", 0),
-                        "hw_cycles": cycles,
-                        "total_ms": (time.perf_counter() - t_layer) * 1000,
-                        "dma_w_setup_ms": mt.get("dma_w_setup_ms", 0),
-                        "dma_w_transfer_ms": mt.get("dma_w_transfer_ms", 0),
-                        "dma_b_setup_ms": mt.get("dma_b_setup_ms", 0),
-                        "dma_b_transfer_ms": mt.get("dma_b_transfer_ms", 0),
-                        "dma_x_setup_ms": mt.get("dma_x_setup_ms", 0),
-                        "dma_x_transfer_ms": mt.get("dma_x_transfer_ms", 0),
-                        "dma_w_chunks": mt.get("dma_w_chunks", 0),
-                    })
+                    prof["layers"].append(
+                        {
+                            "name": f"fc_{layer['in_dim']}x{layer['out_dim']}",
+                            "type": "fc",
+                            "n_mvm": 1,
+                            "k_pack": 1,
+                            "im2col_ms": 0.0,
+                            "setup_ms": mt.get("configure_ms", 0)
+                            + mt.get("load_w_ms", 0)
+                            + mt.get("load_b_ms", 0),
+                            "load_x_ms": mt.get("load_x_ms", 0),
+                            "compute_ms": mt.get("compute_ms", 0),
+                            "read_out_ms": mt.get("read_out_ms", 0),
+                            "hw_cycles": cycles,
+                            "total_ms": (time.perf_counter() - t_layer) * 1000,
+                            "dma_w_setup_ms": mt.get("dma_w_setup_ms", 0),
+                            "dma_w_transfer_ms": mt.get("dma_w_transfer_ms", 0),
+                            "dma_b_setup_ms": mt.get("dma_b_setup_ms", 0),
+                            "dma_b_transfer_ms": mt.get("dma_b_transfer_ms", 0),
+                            "dma_x_setup_ms": mt.get("dma_x_setup_ms", 0),
+                            "dma_x_transfer_ms": mt.get("dma_x_transfer_ms", 0),
+                            "dma_w_chunks": mt.get("dma_w_chunks", 0),
+                        }
+                    )
                 if verify:
                     self._verify_layer(i, layer, x, out, run_id, dump_dir)
                 x = out
@@ -1316,14 +1449,17 @@ class CIMModel:
                         f"Conv layer expects [C,H,W] input, got shape {x.shape}"
                     )
 
-                if profile: t_layer = time.perf_counter()
+                if profile:
+                    t_layer = time.perf_counter()
 
                 # im2col on PS
-                if profile: t_im2col = time.perf_counter()
+                if profile:
+                    t_im2col = time.perf_counter()
                 col_matrix, out_h, out_w = im2col(
                     x, layer["K_h"], layer["K_w"], layer["stride"], layer["padding"]
                 )
-                if profile: im2col_ms = (time.perf_counter() - t_im2col) * 1000
+                if profile:
+                    im2col_ms = (time.perf_counter() - t_im2col) * 1000
                 n_pixels = out_h * out_w
                 C_out = layer["C_out"]
                 col_len = layer["col_len"]
@@ -1338,14 +1474,20 @@ class CIMModel:
                     k_pack = packed["k_pack"]
 
                     # One-time setup: configure + load weights + bias
-                    if profile: t_setup = time.perf_counter()
+                    if profile:
+                        t_setup = time.perf_counter()
                     self.drv.configure(
-                        packed["packed_in_dim"], packed["packed_out_dim"],
-                        layer["zp"], layer["mult"], layer["shift"], layer["relu"],
+                        packed["packed_in_dim"],
+                        packed["packed_out_dim"],
+                        layer["zp"],
+                        layer["mult"],
+                        layer["shift"],
+                        layer["relu"],
                     )
                     self.drv.load_weights(packed["w_chunks"])
                     self.drv.load_bias(packed["bias_u32"])
-                    if profile: setup_ms = (time.perf_counter() - t_setup) * 1000
+                    if profile:
+                        setup_ms = (time.perf_counter() - t_setup) * 1000
 
                     n_mvm = 0
                     for start in range(0, n_pixels, k_pack):
@@ -1355,15 +1497,20 @@ class CIMModel:
                         # Build packed input vector
                         packed_input = np.zeros(k_pack * col_len, dtype=np.uint8)
                         for b in range(batch_size):
-                            packed_input[b * col_len : (b + 1) * col_len] = col_matrix[:, start + b]
+                            packed_input[b * col_len : (b + 1) * col_len] = col_matrix[
+                                :, start + b
+                            ]
 
                         out_packed, cyc = self.drv.infer_fc_input_only(
-                            packed_input, packed["packed_out_dim"],
+                            packed_input,
+                            packed["packed_out_dim"],
                             _timings=mvm_timings,
                         )
 
                         for b in range(batch_size):
-                            output_flat[:, start + b] = out_packed[b * C_out : (b + 1) * C_out]
+                            output_flat[:, start + b] = out_packed[
+                                b * C_out : (b + 1) * C_out
+                            ]
                         layer_cycles += cyc
                         n_mvm += 1
 
@@ -1376,19 +1523,27 @@ class CIMModel:
                         )
                 else:
                     # === Unpacked path with weight reuse ===
-                    if profile: t_setup = time.perf_counter()
+                    if profile:
+                        t_setup = time.perf_counter()
                     self.drv.configure(
-                        col_len, C_out,
-                        layer["zp"], layer["mult"], layer["shift"], layer["relu"],
+                        col_len,
+                        C_out,
+                        layer["zp"],
+                        layer["mult"],
+                        layer["shift"],
+                        layer["relu"],
                     )
                     self.drv.load_weights(layer["w_chunks"])
                     self.drv.load_bias(layer["bias_u32"])
-                    if profile: setup_ms = (time.perf_counter() - t_setup) * 1000
+                    if profile:
+                        setup_ms = (time.perf_counter() - t_setup) * 1000
 
                     for p in range(n_pixels):
                         col_vec = col_matrix[:, p].tolist()
                         out_p, cyc = self.drv.infer_fc_input_only(
-                            col_vec, C_out, _timings=mvm_timings,
+                            col_vec,
+                            C_out,
+                            _timings=mvm_timings,
                         )
                         output_flat[:, p] = out_p
                         layer_cycles += cyc
@@ -1405,25 +1560,36 @@ class CIMModel:
 
                 if profile:
                     agg = {}
-                    for key in ("load_x_ms", "compute_ms", "read_out_ms",
-                                "dma_x_setup_ms", "dma_x_transfer_ms"):
-                        agg[key] = sum(mt.get(key, 0) for mt in mvm_timings) if mvm_timings else 0
+                    for key in (
+                        "load_x_ms",
+                        "compute_ms",
+                        "read_out_ms",
+                        "dma_x_setup_ms",
+                        "dma_x_transfer_ms",
+                    ):
+                        agg[key] = (
+                            sum(mt.get(key, 0) for mt in mvm_timings)
+                            if mvm_timings
+                            else 0
+                        )
                     k_p = packed["k_pack"] if packed else 1
-                    prof["layers"].append({
-                        "name": f"conv_{layer['C_in']}x{layer['K_h']}x{layer['K_w']}_to_{C_out}",
-                        "type": "conv",
-                        "n_mvm": n_mvm,
-                        "k_pack": k_p,
-                        "im2col_ms": im2col_ms,
-                        "setup_ms": setup_ms,
-                        "load_x_ms": agg["load_x_ms"],
-                        "compute_ms": agg["compute_ms"],
-                        "read_out_ms": agg["read_out_ms"],
-                        "hw_cycles": layer_cycles,
-                        "total_ms": (time.perf_counter() - t_layer) * 1000,
-                        "dma_x_setup_ms": agg["dma_x_setup_ms"],
-                        "dma_x_transfer_ms": agg["dma_x_transfer_ms"],
-                    })
+                    prof["layers"].append(
+                        {
+                            "name": f"conv_{layer['C_in']}x{layer['K_h']}x{layer['K_w']}_to_{C_out}",
+                            "type": "conv",
+                            "n_mvm": n_mvm,
+                            "k_pack": k_p,
+                            "im2col_ms": im2col_ms,
+                            "setup_ms": setup_ms,
+                            "load_x_ms": agg["load_x_ms"],
+                            "compute_ms": agg["compute_ms"],
+                            "read_out_ms": agg["read_out_ms"],
+                            "hw_cycles": layer_cycles,
+                            "total_ms": (time.perf_counter() - t_layer) * 1000,
+                            "dma_x_setup_ms": agg["dma_x_setup_ms"],
+                            "dma_x_transfer_ms": agg["dma_x_transfer_ms"],
+                        }
+                    )
 
                 # Reshape to [C_out, out_h, out_w]
                 if verify:
@@ -1437,7 +1603,8 @@ class CIMModel:
                     x = np.array(x, dtype=np.int8)
                 if isinstance(x, np.ndarray) and x.dtype == np.uint8:
                     x = x.view(np.int8)
-                if profile: t_layer = time.perf_counter()
+                if profile:
+                    t_layer = time.perf_counter()
                 x = maxpool2d(x, layer["kernel"], layer["stride"])
                 x = x.view(np.uint8)
                 if verbose:
@@ -1446,11 +1613,13 @@ class CIMModel:
                         f"-> {x.shape}"
                     )
                 if profile:
-                    prof["layers"].append({
-                        "name": f"pool_{layer['kernel']}x{layer['kernel']}",
-                        "type": "pool",
-                        "total_ms": (time.perf_counter() - t_layer) * 1000,
-                    })
+                    prof["layers"].append(
+                        {
+                            "name": f"pool_{layer['kernel']}x{layer['kernel']}",
+                            "type": "pool",
+                            "total_ms": (time.perf_counter() - t_layer) * 1000,
+                        }
+                    )
 
             else:
                 raise ValueError(f"Unknown layer type: {layer['type']}")
@@ -1494,7 +1663,9 @@ class CIMModel:
             t_total_start = time.perf_counter()
 
         # Phase C: detect consecutive FC groups for fusion (DMA mode only)
-        fc_groups = self._find_fc_groups() if (self.drv.use_dma and self.use_fusion) else {}
+        fc_groups = (
+            self._find_fc_groups() if (self.drv.use_dma and self.use_fusion) else {}
+        )
         skip_layers = set()
         for start, end in fc_groups.items():
             for j in range(start + 1, end):
@@ -1536,8 +1707,11 @@ class CIMModel:
                         img_cycles = 0
                         for li, gl in enumerate(group_layers):
                             self.drv.configure(
-                                gl["in_dim"], gl["out_dim"],
-                                gl["zp"], gl["mult"], gl["shift"],
+                                gl["in_dim"],
+                                gl["out_dim"],
+                                gl["zp"],
+                                gl["mult"],
+                                gl["shift"],
                                 1 if gl["relu"] else 0,
                                 weight_base=gl["_w_base"],
                                 bias_base=gl["_b_base"],
@@ -1557,33 +1731,41 @@ class CIMModel:
                     total_cycles += layer_cycles
 
                     if verbose:
-                        names = "→".join(f"{gl['in_dim']}x{gl['out_dim']}" for gl in group_layers)
+                        names = "→".join(
+                            f"{gl['in_dim']}x{gl['out_dim']}" for gl in group_layers
+                        )
                         print(
-                            f"  Layers {i}..{fc_end-1} (FC chain [{names}]): "
+                            f"  Layers {i}..{fc_end - 1} (FC chain [{names}]): "
                             f"{len(curr)} images, {layer_cycles} cycles"
                         )
 
                     if profile:
                         layer_total_ms = (time.perf_counter() - t_layer) * 1000
                         for gi, gl in enumerate(group_layers):
-                            prof["layers"].append({
-                                "name": f"fc_{gl['in_dim']}x{gl['out_dim']}",
-                                "type": "fc",
-                                "n_mvm": n_img,
-                                "k_pack": 1,
-                                "im2col_ms": 0.0,
-                                "pack_ms": 0.0,
-                                "setup_ms": setup_ms / n_img,
-                                "load_x_ms": 0.0,
-                                "compute_ms": 0.0,
-                                "read_out_ms": 0.0,
-                                "dma_x_setup_ms": 0.0,
-                                "dma_x_transfer_ms": 0.0,
-                                "pool_ms": 0.0,
-                                "hw_cycles": group_cycles,
-                                "total_ms": layer_total_ms / n_img / len(group_layers),
-                                "fusion": True if gi < len(group_layers) - 1 else False,
-                            })
+                            prof["layers"].append(
+                                {
+                                    "name": f"fc_{gl['in_dim']}x{gl['out_dim']}",
+                                    "type": "fc",
+                                    "n_mvm": n_img,
+                                    "k_pack": 1,
+                                    "im2col_ms": 0.0,
+                                    "pack_ms": 0.0,
+                                    "setup_ms": setup_ms / n_img,
+                                    "load_x_ms": 0.0,
+                                    "compute_ms": 0.0,
+                                    "read_out_ms": 0.0,
+                                    "dma_x_setup_ms": 0.0,
+                                    "dma_x_transfer_ms": 0.0,
+                                    "pool_ms": 0.0,
+                                    "hw_cycles": group_cycles,
+                                    "total_ms": layer_total_ms
+                                    / n_img
+                                    / len(group_layers),
+                                    "fusion": True
+                                    if gi < len(group_layers) - 1
+                                    else False,
+                                }
+                            )
 
                     curr = next_act
                     continue
@@ -1593,10 +1775,15 @@ class CIMModel:
                     t_layer = time.perf_counter()
 
                 # Setup once for all images
-                if profile: t_setup = time.perf_counter()
+                if profile:
+                    t_setup = time.perf_counter()
                 self.drv.configure(
-                    layer["in_dim"], layer["out_dim"],
-                    layer["zp"], layer["mult"], layer["shift"], layer["relu"],
+                    layer["in_dim"],
+                    layer["out_dim"],
+                    layer["zp"],
+                    layer["mult"],
+                    layer["shift"],
+                    layer["relu"],
                 )
                 self.drv.load_weights(layer["w_chunks"])
                 self.drv.load_bias(layer["bias_u32"])
@@ -1622,7 +1809,8 @@ class CIMModel:
                     if profile:
                         t_pp_start = time.perf_counter()
                     outputs, cyc = self.drv.infer_batch_pingpong(
-                        inputs_list, layer["out_dim"],
+                        inputs_list,
+                        layer["out_dim"],
                     )
                     layer_cycles += cyc
                     next_act.extend(outputs)
@@ -1633,7 +1821,9 @@ class CIMModel:
                     mvm_timings = [] if profile else None
                     for x in inputs_list:
                         out, cyc = self.drv.infer_fc_input_only(
-                            x, layer["out_dim"], _timings=mvm_timings,
+                            x,
+                            layer["out_dim"],
+                            _timings=mvm_timings,
                         )
                         layer_cycles += cyc
                         next_act.append(out)
@@ -1649,46 +1839,59 @@ class CIMModel:
                     layer_total_ms = (time.perf_counter() - t_layer) * 1000
                     if self.drv.use_dma:
                         # Ping-pong: phases overlap — report total wall time
-                        prof["layers"].append({
-                            "name": f"fc_{layer['in_dim']}x{layer['out_dim']}",
-                            "type": "fc",
-                            "n_mvm": n_img,
-                            "k_pack": 1,
-                            "im2col_ms": 0.0,
-                            "pack_ms": 0.0,
-                            "setup_ms": setup_ms / n_img,
-                            "load_x_ms": 0.0,   # hidden behind compute
-                            "compute_ms": 0.0,   # hidden in total
-                            "read_out_ms": 0.0,   # hidden behind compute
-                            "dma_x_setup_ms": 0.0,
-                            "dma_x_transfer_ms": 0.0,
-                            "pool_ms": 0.0,
-                            "hw_cycles": layer_cycles,
-                            "total_ms": layer_total_ms / n_img,
-                            "pingpong": True,
-                        })
+                        prof["layers"].append(
+                            {
+                                "name": f"fc_{layer['in_dim']}x{layer['out_dim']}",
+                                "type": "fc",
+                                "n_mvm": n_img,
+                                "k_pack": 1,
+                                "im2col_ms": 0.0,
+                                "pack_ms": 0.0,
+                                "setup_ms": setup_ms / n_img,
+                                "load_x_ms": 0.0,  # hidden behind compute
+                                "compute_ms": 0.0,  # hidden in total
+                                "read_out_ms": 0.0,  # hidden behind compute
+                                "dma_x_setup_ms": 0.0,
+                                "dma_x_transfer_ms": 0.0,
+                                "pool_ms": 0.0,
+                                "hw_cycles": layer_cycles,
+                                "total_ms": layer_total_ms / n_img,
+                                "pingpong": True,
+                            }
+                        )
                     else:
                         agg = {}
-                        for key in ("load_x_ms", "compute_ms", "read_out_ms",
-                                    "dma_x_setup_ms", "dma_x_transfer_ms"):
-                            agg[key] = sum(mt.get(key, 0) for mt in mvm_timings) if mvm_timings else 0
-                        prof["layers"].append({
-                            "name": f"fc_{layer['in_dim']}x{layer['out_dim']}",
-                            "type": "fc",
-                            "n_mvm": 1,
-                            "k_pack": 1,
-                            "im2col_ms": 0.0,
-                            "pack_ms": 0.0,
-                            "setup_ms": setup_ms / n_img,
-                            "load_x_ms": agg["load_x_ms"] / n_img,
-                            "compute_ms": agg["compute_ms"] / n_img,
-                            "read_out_ms": agg["read_out_ms"] / n_img,
-                            "dma_x_setup_ms": agg["dma_x_setup_ms"] / n_img,
-                            "dma_x_transfer_ms": agg["dma_x_transfer_ms"] / n_img,
-                            "pool_ms": 0.0,
-                            "hw_cycles": layer_cycles,
-                            "total_ms": layer_total_ms / n_img,
-                        })
+                        for key in (
+                            "load_x_ms",
+                            "compute_ms",
+                            "read_out_ms",
+                            "dma_x_setup_ms",
+                            "dma_x_transfer_ms",
+                        ):
+                            agg[key] = (
+                                sum(mt.get(key, 0) for mt in mvm_timings)
+                                if mvm_timings
+                                else 0
+                            )
+                        prof["layers"].append(
+                            {
+                                "name": f"fc_{layer['in_dim']}x{layer['out_dim']}",
+                                "type": "fc",
+                                "n_mvm": 1,
+                                "k_pack": 1,
+                                "im2col_ms": 0.0,
+                                "pack_ms": 0.0,
+                                "setup_ms": setup_ms / n_img,
+                                "load_x_ms": agg["load_x_ms"] / n_img,
+                                "compute_ms": agg["compute_ms"] / n_img,
+                                "read_out_ms": agg["read_out_ms"] / n_img,
+                                "dma_x_setup_ms": agg["dma_x_setup_ms"] / n_img,
+                                "dma_x_transfer_ms": agg["dma_x_transfer_ms"] / n_img,
+                                "pool_ms": 0.0,
+                                "hw_cycles": layer_cycles,
+                                "total_ms": layer_total_ms / n_img,
+                            }
+                        )
 
                 curr = next_act
 
@@ -1706,10 +1909,15 @@ class CIMModel:
                     k_pack = packed["k_pack"]
 
                     # Setup once for all images
-                    if profile: t_setup = time.perf_counter()
+                    if profile:
+                        t_setup = time.perf_counter()
                     self.drv.configure(
-                        packed["packed_in_dim"], packed["packed_out_dim"],
-                        layer["zp"], layer["mult"], layer["shift"], layer["relu"],
+                        packed["packed_in_dim"],
+                        packed["packed_out_dim"],
+                        layer["zp"],
+                        layer["mult"],
+                        layer["shift"],
+                        layer["relu"],
                     )
                     self.drv.load_weights(packed["w_chunks"])
                     self.drv.load_bias(packed["bias_u32"])
@@ -1720,9 +1928,14 @@ class CIMModel:
                     all_batches = []
                     img_meta = []  # (out_h, out_w, n_pixels, n_batches)
                     for x in curr:
-                        if profile: t_im2col = time.perf_counter()
+                        if profile:
+                            t_im2col = time.perf_counter()
                         col_matrix, out_h, out_w = im2col(
-                            x, layer["K_h"], layer["K_w"], layer["stride"], layer["padding"]
+                            x,
+                            layer["K_h"],
+                            layer["K_w"],
+                            layer["stride"],
+                            layer["padding"],
                         )
                         if profile:
                             im2col_total += (time.perf_counter() - t_im2col) * 1000
@@ -1730,12 +1943,14 @@ class CIMModel:
                         n_pixels = out_h * out_w
                         n_batches = (n_pixels + k_pack - 1) // k_pack
 
-                        if profile: t_pack = time.perf_counter()
-                        padded_cols = np.zeros((col_len, n_batches * k_pack), dtype=np.uint8)
+                        if profile:
+                            t_pack = time.perf_counter()
+                        padded_cols = np.zeros(
+                            (col_len, n_batches * k_pack), dtype=np.uint8
+                        )
                         padded_cols[:, :n_pixels] = col_matrix
                         all_packed = (
-                            padded_cols
-                            .reshape(col_len, n_batches, k_pack)
+                            padded_cols.reshape(col_len, n_batches, k_pack)
                             .transpose(1, 2, 0)
                             .reshape(n_batches, k_pack * col_len)
                             .copy()
@@ -1751,7 +1966,8 @@ class CIMModel:
                         if profile:
                             t_pp = time.perf_counter()
                         all_outputs, pp_cycles = self.drv.infer_batch_pingpong(
-                            all_batches, packed["packed_out_dim"],
+                            all_batches,
+                            packed["packed_out_dim"],
                         )
                         layer_cycles += pp_cycles
                         if profile:
@@ -1761,7 +1977,8 @@ class CIMModel:
                         mvm_timings = [] if profile else None
                         for batch in all_batches:
                             out, cyc = self.drv.infer_fc_input_only(
-                                batch, packed["packed_out_dim"],
+                                batch,
+                                packed["packed_out_dim"],
                                 _timings=mvm_timings,
                             )
                             layer_cycles += cyc
@@ -1777,7 +1994,9 @@ class CIMModel:
                             out_packed = all_outputs[out_idx]
                             out_idx += 1
                             out_2d = out_packed.reshape(k_pack, C_out)[:batch_size, :]
-                            output_flat[:, b * k_pack : b * k_pack + batch_size] = out_2d.T
+                            output_flat[:, b * k_pack : b * k_pack + batch_size] = (
+                                out_2d.T
+                            )
                         next_act.append(output_flat.reshape(C_out, out_h, out_w))
 
                     total_cycles += layer_cycles
@@ -1793,10 +2012,15 @@ class CIMModel:
                 else:
                     # Unpacked path — no pre-packing (one MVM per pixel)
                     pack_total = 0.0
-                    if profile: t_setup = time.perf_counter()
+                    if profile:
+                        t_setup = time.perf_counter()
                     self.drv.configure(
-                        col_len, C_out,
-                        layer["zp"], layer["mult"], layer["shift"], layer["relu"],
+                        col_len,
+                        C_out,
+                        layer["zp"],
+                        layer["mult"],
+                        layer["shift"],
+                        layer["relu"],
                     )
                     self.drv.load_weights(layer["w_chunks"])
                     self.drv.load_bias(layer["bias_u32"])
@@ -1807,9 +2031,14 @@ class CIMModel:
                     next_act = []
                     mvm_timings = [] if profile else None
                     for x in curr:
-                        if profile: t_im2col = time.perf_counter()
+                        if profile:
+                            t_im2col = time.perf_counter()
                         col_matrix, out_h, out_w = im2col(
-                            x, layer["K_h"], layer["K_w"], layer["stride"], layer["padding"]
+                            x,
+                            layer["K_h"],
+                            layer["K_w"],
+                            layer["stride"],
+                            layer["padding"],
                         )
                         if profile:
                             im2col_total += (time.perf_counter() - t_im2col) * 1000
@@ -1818,7 +2047,8 @@ class CIMModel:
                         output_flat = np.zeros((C_out, n_pixels), dtype=np.int8)
                         for p in range(n_pixels):
                             out_p, cyc = self.drv.infer_fc_input_only(
-                                col_matrix[:, p], C_out,
+                                col_matrix[:, p],
+                                C_out,
                                 _timings=mvm_timings,
                             )
                             layer_cycles += cyc
@@ -1833,85 +2063,103 @@ class CIMModel:
                     layer_total_ms = (time.perf_counter() - t_layer) * 1000
                     if self.drv.use_dma and packed is not None and packed["k_pack"] > 1:
                         # Ping-pong: phases overlap → report total wall time
-                        prof["layers"].append({
-                            "name": f"conv_{layer['C_in']}x{layer['K_h']}x{layer['K_w']}_to_{C_out}",
-                            "type": "conv",
-                            "n_mvm": n_mvm_total,
-                            "k_pack": packed["k_pack"],
-                            "im2col_ms": im2col_total / n_img,
-                            "pack_ms": pack_total / n_img,
-                            "setup_ms": setup_ms / n_img,
-                            "load_x_ms": 0.0,   # hidden behind compute
-                            "compute_ms": 0.0,   # hidden in total
-                            "read_out_ms": 0.0,   # hidden behind compute
-                            "dma_x_setup_ms": 0.0,
-                            "dma_x_transfer_ms": 0.0,
-                            "pool_ms": 0.0,
-                            "hw_cycles": layer_cycles,
-                            "total_ms": layer_total_ms / n_img,
-                            "pingpong": True,
-                        })
+                        prof["layers"].append(
+                            {
+                                "name": f"conv_{layer['C_in']}x{layer['K_h']}x{layer['K_w']}_to_{C_out}",
+                                "type": "conv",
+                                "n_mvm": n_mvm_total,
+                                "k_pack": packed["k_pack"],
+                                "im2col_ms": im2col_total / n_img,
+                                "pack_ms": pack_total / n_img,
+                                "setup_ms": setup_ms / n_img,
+                                "load_x_ms": 0.0,  # hidden behind compute
+                                "compute_ms": 0.0,  # hidden in total
+                                "read_out_ms": 0.0,  # hidden behind compute
+                                "dma_x_setup_ms": 0.0,
+                                "dma_x_transfer_ms": 0.0,
+                                "pool_ms": 0.0,
+                                "hw_cycles": layer_cycles,
+                                "total_ms": layer_total_ms / n_img,
+                                "pingpong": True,
+                            }
+                        )
                     else:
                         agg = {}
-                        for key in ("load_x_ms", "compute_ms", "read_out_ms",
-                                    "dma_x_setup_ms", "dma_x_transfer_ms"):
-                            agg[key] = sum(mt.get(key, 0) for mt in mvm_timings) if mvm_timings else 0
-                        prof["layers"].append({
-                            "name": f"conv_{layer['C_in']}x{layer['K_h']}x{layer['K_w']}_to_{C_out}",
-                            "type": "conv",
-                            "n_mvm": n_mvm_total,
-                            "k_pack": packed["k_pack"] if packed else 1,
-                            "im2col_ms": im2col_total / n_img,
-                            "pack_ms": pack_total / n_img,
-                            "setup_ms": setup_ms / n_img,
-                            "load_x_ms": agg["load_x_ms"] / n_img,
-                            "compute_ms": agg["compute_ms"] / n_img,
-                            "read_out_ms": agg["read_out_ms"] / n_img,
-                            "dma_x_setup_ms": agg["dma_x_setup_ms"] / n_img,
-                            "dma_x_transfer_ms": agg["dma_x_transfer_ms"] / n_img,
-                            "pool_ms": 0.0,
-                            "hw_cycles": layer_cycles,
-                            "total_ms": layer_total_ms / n_img,
-                        })
+                        for key in (
+                            "load_x_ms",
+                            "compute_ms",
+                            "read_out_ms",
+                            "dma_x_setup_ms",
+                            "dma_x_transfer_ms",
+                        ):
+                            agg[key] = (
+                                sum(mt.get(key, 0) for mt in mvm_timings)
+                                if mvm_timings
+                                else 0
+                            )
+                        prof["layers"].append(
+                            {
+                                "name": f"conv_{layer['C_in']}x{layer['K_h']}x{layer['K_w']}_to_{C_out}",
+                                "type": "conv",
+                                "n_mvm": n_mvm_total,
+                                "k_pack": packed["k_pack"] if packed else 1,
+                                "im2col_ms": im2col_total / n_img,
+                                "pack_ms": pack_total / n_img,
+                                "setup_ms": setup_ms / n_img,
+                                "load_x_ms": agg["load_x_ms"] / n_img,
+                                "compute_ms": agg["compute_ms"] / n_img,
+                                "read_out_ms": agg["read_out_ms"] / n_img,
+                                "dma_x_setup_ms": agg["dma_x_setup_ms"] / n_img,
+                                "dma_x_transfer_ms": agg["dma_x_transfer_ms"] / n_img,
+                                "pool_ms": 0.0,
+                                "hw_cycles": layer_cycles,
+                                "total_ms": layer_total_ms / n_img,
+                            }
+                        )
 
                 curr = next_act
 
             elif layer["type"] == "pool":
-                if profile: t_layer = time.perf_counter()
+                if profile:
+                    t_layer = time.perf_counter()
                 # Max pooling: int8 input → int8 output → view as uint8 for next layer
                 pool_ms_total = 0.0
                 next_act = []
                 for x in curr:
                     x_i8 = x.view(np.int8) if x.dtype == np.uint8 else x
-                    if profile: t_pool = time.perf_counter()
+                    if profile:
+                        t_pool = time.perf_counter()
                     pooled = maxpool2d(x_i8, layer["kernel"], layer["stride"])
                     if profile:
                         pool_ms_total += (time.perf_counter() - t_pool) * 1000
                     next_act.append(pooled.view(np.uint8))
                 curr = next_act
                 if profile:
-                    prof["layers"].append({
-                        "name": f"pool_{layer['kernel']}x{layer['kernel']}",
-                        "type": "pool",
-                        "n_mvm": 0,
-                        "k_pack": 1,
-                        "im2col_ms": 0.0,
-                        "pack_ms": 0.0,
-                        "setup_ms": 0.0,
-                        "load_x_ms": 0.0,
-                        "compute_ms": 0.0,
-                        "read_out_ms": 0.0,
-                        "dma_x_setup_ms": 0.0,
-                        "dma_x_transfer_ms": 0.0,
-                        "pool_ms": pool_ms_total / n_img,
-                        "total_ms": (time.perf_counter() - t_layer) * 1000 / n_img,
-                    })
+                    prof["layers"].append(
+                        {
+                            "name": f"pool_{layer['kernel']}x{layer['kernel']}",
+                            "type": "pool",
+                            "n_mvm": 0,
+                            "k_pack": 1,
+                            "im2col_ms": 0.0,
+                            "pack_ms": 0.0,
+                            "setup_ms": 0.0,
+                            "load_x_ms": 0.0,
+                            "compute_ms": 0.0,
+                            "read_out_ms": 0.0,
+                            "dma_x_setup_ms": 0.0,
+                            "dma_x_transfer_ms": 0.0,
+                            "pool_ms": pool_ms_total / n_img,
+                            "total_ms": (time.perf_counter() - t_layer) * 1000 / n_img,
+                        }
+                    )
 
             else:
                 raise ValueError(f"Unknown layer type: {layer['type']}")
 
         # Final predictions
-        if profile: t_final = time.perf_counter()
+        if profile:
+            t_final = time.perf_counter()
         results = []
         for logits in curr:
             pred = int(np.argmax(np.asarray(logits).flatten()))
@@ -1934,12 +2182,15 @@ class CIMModel:
     def _verify_layer(self, layer_idx, layer, x_in, y_hw, run_id, dump_dir):
         """Compare HW layer output against golden_model.py; dump on mismatch."""
         if layer.get("weight_int8") is None or layer.get("bias_int32") is None:
-            print(f"  [SKIP] layer_{layer_idx}: raw weight/bias not stored "
-                  f"(pass weight_int8=/bias_int32= to add_fc/add_conv)")
+            print(
+                f"  [SKIP] layer_{layer_idx}: raw weight/bias not stored "
+                f"(pass weight_int8=/bias_int32= to add_fc/add_conv)"
+            )
             return
 
         # Lazy import so cim_driver still works without golden_model in path
         import sys
+
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
         import golden_model as gm
 
@@ -1989,30 +2240,33 @@ class CIMModel:
         def _to_hex_bytes(arr):
             return (np.asarray(arr).flatten().astype(np.int64) & 0xFF).astype(np.uint8)
 
-        np.savetxt(os.path.join(layer_dir, "x.hex"),
-                   _to_hex_bytes(x_in), fmt="%02x")
-        np.savetxt(os.path.join(layer_dir, "y_hw.hex"),
-                   _to_hex_bytes(y_hw_arr), fmt="%02x")
-        np.savetxt(os.path.join(layer_dir, "y_golden.hex"),
-                   _to_hex_bytes(y_golden), fmt="%02x")
+        np.savetxt(os.path.join(layer_dir, "x.hex"), _to_hex_bytes(x_in), fmt="%02x")
+        np.savetxt(
+            os.path.join(layer_dir, "y_hw.hex"), _to_hex_bytes(y_hw_arr), fmt="%02x"
+        )
+        np.savetxt(
+            os.path.join(layer_dir, "y_golden.hex"), _to_hex_bytes(y_golden), fmt="%02x"
+        )
 
         # Compare
         match = np.array_equal(y_hw_arr, y_golden)
         if match:
-            print(f"  [MATCH]   layer_{layer_idx} ({tag})  "
-                  f"{y_hw_arr.size} elements")
+            print(f"  [MATCH]   layer_{layer_idx} ({tag})  {y_hw_arr.size} elements")
         else:
-            diff_mask = (y_hw_arr != y_golden)
+            diff_mask = y_hw_arr != y_golden
             n_diff = int(np.sum(diff_mask))
             diff_idx = np.where(diff_mask)[0]
             with open(os.path.join(layer_dir, "diff.txt"), "w") as f:
-                f.write(f"layer_{layer_idx} {tag}: "
-                        f"{n_diff} / {y_hw_arr.size} mismatches\n")
+                f.write(
+                    f"layer_{layer_idx} {tag}: {n_diff} / {y_hw_arr.size} mismatches\n"
+                )
                 for idx in diff_idx[:50]:
                     f.write(
                         f"  idx={int(idx):6d}  hw={int(y_hw_arr[idx]):4d}  "
                         f"golden={int(y_golden[idx]):4d}  "
                         f"diff={int(y_hw_arr[idx]) - int(y_golden[idx]):+5d}\n"
                     )
-            print(f"  [UNMATCH] layer_{layer_idx} ({tag})  "
-                  f"{n_diff}/{y_hw_arr.size} diffs  ->  {layer_dir}/diff.txt")
+            print(
+                f"  [UNMATCH] layer_{layer_idx} ({tag})  "
+                f"{n_diff}/{y_hw_arr.size} diffs  ->  {layer_dir}/diff.txt"
+            )
