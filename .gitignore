@@ -150,3 +150,5 @@ Thesis/*/paper/paper.pdf
 
 # Misc
 .codex
+!Thesis/data/
+!Thesis/data/**
