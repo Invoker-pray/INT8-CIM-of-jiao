@@ -566,6 +566,21 @@ def autodiscover_hw_csv(model, data_dir, hw_csv_path):
     return None
 
 
+def csv_tag(hw_csv_path):
+    """Turn a HW CSV path into a clean filename suffix.
+
+    e.g. '../Thesis/data/arm_100mhz_dma_batch_lenet5.csv' -> 'arm_100mhz_dma_batch_lenet5'
+    Returns 'nohwcsv' when no CSV was matched, so output filenames stay
+    deterministic instead of ending in a dangling underscore.
+    """
+    if not hw_csv_path:
+        return "nohwcsv"
+    base = os.path.basename(hw_csv_path)
+    if base.lower().endswith(".csv"):
+        base = base[:-4]
+    return base
+
+
 def main():
     ap = argparse.ArgumentParser(
         description="ARM pure-software INT8 inference baseline"
@@ -614,8 +629,9 @@ def main():
     models = ["mlp", "small_mlp", "lenet5"] if args.model == "all" else [args.model]
 
     os.makedirs(args.out_dir, exist_ok=True)
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # batch marker for appends
     all_results = []
+    csv_tags = []  # csv_tag for each model, in order (for the aggregate filename)
 
     for m in models:
         dd = args.data_dir or default_dirs[m]
@@ -648,40 +664,76 @@ def main():
         hw_csv = read_hw_csv(hw_csv_path) if hw_csv_path else None
         compute_speedups(r, hw_endtoend_csv=hw_csv)
 
+        # Stamp provenance so appended records stay traceable across runs.
+        ctag = csv_tag(hw_csv_path)
+        r["run_time"] = run_time
+        r["hw_csv"] = ctag  # csv basename (no .csv), or "nohwcsv"
+
         print_report(r)
         all_results.append(r)
 
-        out = os.path.join(args.out_dir, f"sw_baseline_{m}_{ts}.json")
+        # Per-model file: meaningful prefix kept, numeric/timestamp suffix
+        # replaced with {model}_{csv_file_name} as requested.
+        csv_tags.append(ctag)
+        out = os.path.join(args.out_dir, f"sw_baseline_{m}_{ctag}.json")
         with open(out, "w", encoding="utf-8") as f:
             json.dump(r, f, indent=2, ensure_ascii=False)
         print(f"  saved: {out}")
 
-    # ---- combined JSON ----
-    combined = os.path.join(args.out_dir, f"sw_baseline_ALL_{ts}.json")
+    # ---- combined JSON (fixed name, APPEND) ----
+    # Always sw_baseline_ALL.json. If it exists, read the existing array, append
+    # this run's per-model results, and rewrite as one valid JSON array. A
+    # corrupt/non-list existing file is backed up and started fresh.
+    combined = os.path.join(args.out_dir, "sw_baseline_ALL.json")
+    existing = []
+    if os.path.exists(combined):
+        try:
+            with open(combined, "r", encoding="utf-8") as f:
+                loaded = json.load(f)
+            if isinstance(loaded, list):
+                existing = loaded
+            else:
+                raise ValueError("existing JSON is not a list")
+        except Exception as e:
+            bak = combined + ".bak"
+            os.replace(combined, bak)
+            print(
+                f"  WARNING: {combined} was unreadable as a JSON array ({e}); "
+                f"moved it to {bak} and started fresh."
+            )
+            existing = []
+    existing.extend(all_results)
     with open(combined, "w", encoding="utf-8") as f:
-        json.dump(all_results, f, indent=2, ensure_ascii=False)
+        json.dump(existing, f, indent=2, ensure_ascii=False)
 
-    # ---- summary CSV (one row per model x regime) ----
-    summary_csv = os.path.join(args.out_dir, f"sw_baseline_summary_{ts}.csv")
+    # ---- summary CSV (fixed name, APPEND) ----
+    # Always sw_baseline_summary.csv. Header written only when the file is new
+    # or empty; otherwise this run's rows are appended to the end.
+    summary_csv = os.path.join(args.out_dir, "sw_baseline_summary.csv")
     import csv as _csv
 
-    with open(summary_csv, "w", newline="") as f:
+    write_header = (not os.path.exists(summary_csv)) or os.path.getsize(
+        summary_csv
+    ) == 0
+    with open(summary_csv, "a", newline="") as f:
         w = _csv.writer(f)
-        w.writerow(
-            [
-                "model",
-                "regime",
-                "n_images",
-                "sw_compute_us",
-                "hw_compute_us",
-                "compute_speedup_hw_over_sw",
-                "hw_endtoend_ms",
-                "endtoend_ratio_sw_over_hw",
-                "endtoend_ratio_hw_over_sw",
-                "hw_csv",
-                "sw_accuracy_pct",
-            ]
-        )
+        if write_header:
+            w.writerow(
+                [
+                    "run_time",
+                    "model",
+                    "regime",
+                    "n_images",
+                    "sw_compute_us",
+                    "hw_compute_us",
+                    "compute_speedup_hw_over_sw",
+                    "hw_endtoend_ms",
+                    "endtoend_ratio_sw_over_hw",
+                    "endtoend_ratio_hw_over_sw",
+                    "hw_csv",
+                    "sw_accuracy_pct",
+                ]
+            )
         for r in all_results:
             sp = r.get("speedups", {})
             for regime in r["sw_per_image_us"].keys():
@@ -689,6 +741,7 @@ def main():
                 ee = sp.get("end_to_end", {}).get(regime, {})
                 w.writerow(
                     [
+                        r.get("run_time", ""),
                         r["model"],
                         regime,
                         r["n_images"],

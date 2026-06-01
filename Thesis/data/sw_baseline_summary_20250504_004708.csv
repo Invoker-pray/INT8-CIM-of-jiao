@@ -1,2 +1,0 @@
-model,regime,n_images,sw_compute_us,hw_compute_us,compute_speedup_hw_over_sw,hw_endtoend_ms,endtoend_ratio_sw_over_hw,endtoend_ratio_hw_over_sw,hw_csv,sw_accuracy_pct
-mlp,sequential,200,4459.0,32.8,135.86,1.94,2.298,0.435,arm_dma_batch_mlp_data_41.csv,99.50

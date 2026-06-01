@@ -1,2 +1,2 @@
 model,n_img,total_s,ms_per_img,fps,correct,accuracy_pct,min_ms,p50_ms,avg_ms,max_ms
-rv32_mlp,200,2.399,11.99,83.382,193,96.50,5.8,6.0,6.1,15.5
+rv32_mlp,200,2.783,13.92,71.859,193,96.50,5.8,6.0,6.1,15.6

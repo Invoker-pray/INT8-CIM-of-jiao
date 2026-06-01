@@ -1,0 +1,9 @@
+run_time,model,regime,n_images,sw_compute_us,hw_compute_us,compute_speedup_hw_over_sw,hw_endtoend_ms,endtoend_ratio_sw_over_hw,endtoend_ratio_hw_over_sw,hw_csv,sw_accuracy_pct
+2025-05-04 00:59:00,mlp,sequential,200,4538.4,32.8,138.28,1.94,2.339,0.427,arm_dma_batch_mlp_data_41.csv,99.50
+2025-05-04 00:59:40,mlp,sequential,200,4323.3,32.8,131.73,2.00,2.162,0.463,arm_dma_batch_mlp_data_42.csv,99.50
+2025-05-04 01:00:23,small_mlp,sequential,200,4529.6,4.2,1073.36,1.94,2.335,0.428,arm_dma_batch_mlp_data_41.csv,99.50
+2025-05-04 01:01:10,small_mlp,sequential,200,4368.1,4.2,1035.09,2.00,2.184,0.458,arm_dma_batch_mlp_data_42.csv,99.50
+2025-05-04 01:02:11,lenet5,sequential,200,618000.3,760.3,812.79,30.05,20.566,0.049,arm_dma_batch_lenet5_data_41.csv,100.00
+2025-05-04 01:02:11,lenet5,batched,200,41638.3,760.3,54.76,30.05,1.386,0.722,arm_dma_batch_lenet5_data_41.csv,100.00
+2025-05-04 02:17:59,lenet5,sequential,200,625264.9,760.3,822.35,30.22,20.690,0.048,arm_dma_batch_lenet5_data_42.csv,99.00
+2025-05-04 02:17:59,lenet5,batched,200,40332.5,760.3,53.05,30.22,1.335,0.749,arm_dma_batch_lenet5_data_42.csv,99.00

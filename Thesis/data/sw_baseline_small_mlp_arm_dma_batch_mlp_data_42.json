@@ -1,0 +1,44 @@
+{
+  "model": "small_mlp",
+  "n_images": 200,
+  "n_runs": 30,
+  "accuracy_pct": 99.5,
+  "correct": 199,
+  "hw_freq_mhz": 100,
+  "hw_compute_cycles": 422,
+  "hw_compute_us": 4.220000000000001,
+  "sw_per_image_us": {
+    "sequential": {
+      "mean_us": 4368.0769100137695,
+      "median_us": 4307.2135000556955,
+      "min_us": 4294.10799983998,
+      "max_us": 5540.910999798143
+    }
+  },
+  "speedups": {
+    "pure_compute": {
+      "sequential": {
+        "sw_compute_us": 4368.0769100137695,
+        "hw_compute_us": 4.220000000000001,
+        "speedup_hw_over_sw": 1035.0893151691396
+      }
+    },
+    "end_to_end": {
+      "sequential": {
+        "sw_compute_us": 4368.0769100137695,
+        "hw_endtoend_us": 2000.0,
+        "hw_endtoend_ms": 2.0,
+        "hw_csv": "results/arm_dma_batch_mlp_data_42.csv",
+        "ratio_sw_over_hw": 2.1840384550068848,
+        "ratio_hw_over_sw": 0.4578673959277185
+      }
+    },
+    "accuracy_match": {
+      "sw_accuracy_pct": 99.5,
+      "hw_csv_accuracy_pct": 99.5,
+      "match": true
+    }
+  },
+  "run_time": "2025-05-04 01:01:10",
+  "hw_csv": "arm_dma_batch_mlp_data_42"
+}

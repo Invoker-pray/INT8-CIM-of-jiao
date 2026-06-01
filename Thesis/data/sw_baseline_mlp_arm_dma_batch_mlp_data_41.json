@@ -9,28 +9,28 @@
   "hw_compute_us": 32.82,
   "sw_per_image_us": {
     "sequential": {
-      "mean_us": 4459.047757472945,
-      "median_us": 4544.538249774632,
-      "min_us": 4240.005499923427,
-      "max_us": 5635.45799923304
+      "mean_us": 4538.387702503996,
+      "median_us": 4527.850749923346,
+      "min_us": 4511.633499760137,
+      "max_us": 5195.768999783468
     }
   },
   "speedups": {
     "pure_compute": {
       "sequential": {
-        "sw_compute_us": 4459.047757472945,
+        "sw_compute_us": 4538.387702503996,
         "hw_compute_us": 32.82,
-        "speedup_hw_over_sw": 135.86373423135115
+        "speedup_hw_over_sw": 138.28116095380852
       }
     },
     "end_to_end": {
       "sequential": {
-        "sw_compute_us": 4459.047757472945,
+        "sw_compute_us": 4538.387702503996,
         "hw_endtoend_us": 1940.0,
         "hw_endtoend_ms": 1.94,
         "hw_csv": "results/arm_dma_batch_mlp_data_41.csv",
-        "ratio_sw_over_hw": 2.298478225501518,
-        "ratio_hw_over_sw": 0.4350704691935049
+        "ratio_sw_over_hw": 2.3393751043835027,
+        "ratio_hw_over_sw": 0.4274645815141863
       }
     },
     "accuracy_match": {
@@ -38,5 +38,7 @@
       "hw_csv_accuracy_pct": 99.5,
       "match": true
     }
-  }
+  },
+  "run_time": "2025-05-04 00:59:00",
+  "hw_csv": "arm_dma_batch_mlp_data_41"
 }

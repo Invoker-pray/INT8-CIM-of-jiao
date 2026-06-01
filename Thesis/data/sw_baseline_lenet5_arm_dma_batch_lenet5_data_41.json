@@ -1,0 +1,63 @@
+{
+  "model": "lenet5",
+  "n_images": 200,
+  "n_runs": 30,
+  "accuracy_pct": 100.0,
+  "correct": 200,
+  "hw_freq_mhz": 100,
+  "hw_compute_cycles": 76034,
+  "hw_compute_us": 760.3399999999999,
+  "sw_per_image_us": {
+    "sequential": {
+      "mean_us": 618000.3053224937,
+      "median_us": 604367.2945002073,
+      "min_us": 603698.5624996305,
+      "max_us": 643692.5435000375
+    },
+    "batched": {
+      "mean_us": 41638.30618749216,
+      "median_us": 41926.36175002917,
+      "min_us": 39961.41199968406,
+      "max_us": 42185.208999853785
+    }
+  },
+  "speedups": {
+    "pure_compute": {
+      "sequential": {
+        "sw_compute_us": 618000.3053224937,
+        "hw_compute_us": 760.3399999999999,
+        "speedup_hw_over_sw": 812.7946778053157
+      },
+      "batched": {
+        "sw_compute_us": 41638.30618749216,
+        "hw_compute_us": 760.3399999999999,
+        "speedup_hw_over_sw": 54.762745860394254
+      }
+    },
+    "end_to_end": {
+      "sequential": {
+        "sw_compute_us": 618000.3053224937,
+        "hw_endtoend_us": 30050.0,
+        "hw_endtoend_ms": 30.05,
+        "hw_csv": "results/arm_dma_batch_lenet5_data_41.csv",
+        "ratio_sw_over_hw": 20.565733954159523,
+        "ratio_hw_over_sw": 0.04862457144631811
+      },
+      "batched": {
+        "sw_compute_us": 41638.30618749216,
+        "hw_endtoend_us": 30050.0,
+        "hw_endtoend_ms": 30.05,
+        "hw_csv": "results/arm_dma_batch_lenet5_data_41.csv",
+        "ratio_sw_over_hw": 1.3856341493341817,
+        "ratio_hw_over_sw": 0.7216912202117097
+      }
+    },
+    "accuracy_match": {
+      "sw_accuracy_pct": 100.0,
+      "hw_csv_accuracy_pct": 100.0,
+      "match": true
+    }
+  },
+  "run_time": "2025-05-04 01:02:11",
+  "hw_csv": "arm_dma_batch_lenet5_data_41"
+}
