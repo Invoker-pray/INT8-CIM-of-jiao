@@ -199,6 +199,7 @@ module cim_axi_lite_slave
   logic        [31:0] reg_wdma_data;
   // FIX: chunk index needs clog2(TILE_ROWS * TILE_COLS / (32/WEIGHT_W)) = clog2(64) = 6 bits
   localparam int CHUNK_IDX_W = clog2_safe(TILE_ROWS * TILE_COLS / (32 / WEIGHT_W));  // 6
+  localparam int IBUF_TILE_W = TILE_COLS * INPUT_W;  // 128
   logic [CHUNK_IDX_W-1:0] reg_wdma_chunk;
   logic                   reg_wdma_wr;
   // FIX3: burst mode — auto-increment chunk/tile
@@ -405,7 +406,6 @@ module cim_axi_lite_slave
   // Each tile = TILE_COLS * INPUT_W = 128 bits = 16 bytes.
   // AXI writes one byte at a time to flat address (MEM_INPUT_BASE + 4*i).
   // Staging register accumulates 16 bytes, commits when byte 15 is written.
-  localparam int IBUF_TILE_W = TILE_COLS * INPUT_W;  // 128
   localparam int IBUF_DEPTH = (MAX_IN_DIM + TILE_COLS - 1) / TILE_COLS;
   localparam int IBUF_COL_BITS = $clog2(TILE_COLS);  // 4
 

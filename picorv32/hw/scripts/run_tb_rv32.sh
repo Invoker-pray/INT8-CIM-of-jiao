@@ -18,15 +18,41 @@ TB_DIR="${PICORV32_ROOT}/hw/tb"
 
 cd "${TB_DIR}"
 
-# Check
-[ -f firmware.hex ] || {
-	echo "ERROR: firmware.hex not found in ${TB_DIR}"
+# Check — prefer patched firmware (with embedded test image)
+FW_DIR="${PICORV32_ROOT}/fw"
+if [ -f firmware.hex.patched ]; then
+	echo "Using patched firmware.hex (with embedded test image)"
+	cp firmware.hex.patched firmware.hex
+elif [ -f firmware.hex ]; then
+	echo "Using existing firmware.hex"
+elif [ -f "${FW_DIR}/firmware.hex" ]; then
+	echo "Using firmware.hex from ${FW_DIR}"
+	cp "${FW_DIR}/firmware.hex" .
+else
+	echo "ERROR: firmware.hex not found. Build firmware first: cd ${FW_DIR} && make DATA_DIR=small_mlp_data IMAGE_IDX=0"
+	echo "  Then patch with image: python3 patch_firmware.py firmware.hex small_mlp_data/test_images/img_0000.hex <label>"
 	exit 1
-}
+fi
 [ -f "${RV_RTL}/picorv32.v" ] || {
 	echo "ERROR: picorv32.v missing"
 	exit 1
 }
+
+# ------------------------------------------------------------
+# gcc 15+ treats implicit function declarations as a hard error;
+# VCS W-2024.09's generated rmapats.c relies on them. Inject a
+# wrapper earlier on PATH that re-enables the old warning-only
+# behavior. (Local to this script — does not leak to other tools.)
+# ------------------------------------------------------------
+WRAPPER_DIR="${TB_DIR}/.gcc_wrapper"
+mkdir -p "${WRAPPER_DIR}"
+REAL_GCC="$(command -v gcc)"
+cat > "${WRAPPER_DIR}/gcc" <<EOF
+#!/bin/bash
+exec ${REAL_GCC} -Wno-error=implicit-function-declaration "\$@"
+EOF
+chmod +x "${WRAPPER_DIR}/gcc"
+export PATH="${WRAPPER_DIR}:${PATH}"
 
 echo "=== Compiling ==="
 SRCS=(
@@ -40,6 +66,8 @@ SRCS=(
 	"${CIM_RTL}/core/cim_accel_core.sv"
 	"${CIM_RTL}/axi/cim_axi_lite_slave.sv"
 	"${CIM_RTL}/axi/cim_axi_lite_slave_wrapper.v"
+	"${CIM_RTL}/axi/cim_axi_stream_sink.sv"
+	"${CIM_RTL}/axi/cim_axi_stream_source.sv"
 	"${RV_RTL}/picorv32.v"
 	"${RV_RTL}/uart_tx.sv"
 	"${RV_RTL}/picorv32_cim_bridge.sv"

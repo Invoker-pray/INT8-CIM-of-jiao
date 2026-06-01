@@ -125,6 +125,8 @@ module tb_cim_stream_sink;
       .wr_en       (ibuf_wr_en),
       .wr_tile_idx (ibuf_wr_tile_idx),
       .wr_tile_data(ibuf_wr_tile_data),
+      .wr_bank_sel (1'b0),
+      .rd_bank_sel (1'b0),
       .rd_tile_idx (i_rd_idx),
       .input_zp    (i_zp),
       .x_tile      (x_tile),

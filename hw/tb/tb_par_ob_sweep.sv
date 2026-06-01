@@ -213,9 +213,7 @@ module tb_par_ob_sweep;
     if ((N_OB % PAR_OB) != 0) begin
       $display("SWEEP_RESULT PAR_OB=%0d IN=%0d OUT=%0d CYCLES=0 MACS=0 ERRORS=999",
                PAR_OB, IN_DIM, OUT_DIM);
-      $display(">>> FATAL: PAR_OB=%0d does NOT divide N_OB=%0d. "
-               "Pick OUT_DIM so N_OB %% PAR_OB == 0 (and widen counters/MAX_OUT_DIM "
-               "if PAR_OB>16). Aborting. <<<", PAR_OB, N_OB);
+      $display(">>> FATAL: PAR_OB=%0d does NOT divide N_OB=%0d. Pick OUT_DIM so N_OB is divisible by PAR_OB (and widen counters/MAX_OUT_DIM if PAR_OB>16). Aborting. <<<", PAR_OB, N_OB);
       $finish;
     end
 
