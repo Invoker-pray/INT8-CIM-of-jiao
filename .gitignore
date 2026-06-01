@@ -146,7 +146,8 @@ picorv32/hw/proj/
 *.log
 
 # ---- Thesis paper build outputs (PDFs in paper dirs, keep fig/ PDFs tracked) ----
-Thesis/*/paper/paper.pdf
+Thesis/paper/paper.pdf
+Thesis/paper/pics/*.png
 
 # Misc
 .codex
