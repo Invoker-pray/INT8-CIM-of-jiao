@@ -2,58 +2,51 @@
 # ============================================================================
 # run_par_ob_sweep.sh — recompile + run tb_par_ob_sweep for PAR_OB = 1,2,4,8,16
 # ============================================================================
+# This version mirrors the PROVEN run_tb_cim_accel_core.sh compile flow exactly
+# (same gcc wrapper, same `tee` + `[ ! -f simv ]` success check) so that if that
+# script compiles your RTL, so does this one. It does NOT use `set -e` (which
+# silently aborts loops on any non-zero step) and it does NOT rely on VCS's exit
+# code to detect success — it checks for the produced simv binary, just like the
+# working script.
+#
 # For each PAR_OB value:
-#   1. rewrite the "parameter int PAR_OB = N;" line in rtl/pkg/cim_pkg.sv
-#   2. compile the core + memories + tb_par_ob_sweep.sv with VCS
+#   1. rewrite "parameter int PAR_OB = N;" in rtl/pkg/cim_pkg.sv
+#   2. compile core + memories + tb_par_ob_sweep.sv with VCS
 #   3. run, capture the SWEEP_RESULT line (cycles / macs / bit-exact errors)
-# Finally print a table and the speedup-vs-PAR_OB=1 ratios, and restore the
-# original PAR_OB value in cim_pkg.sv.
+# Finally print a table + speedup-vs-PAR_OB=1, and restore the original PAR_OB.
 #
 # Usage (from project root):   cd hw && bash scripts/run_par_ob_sweep.sh
-# Output:                      hw/sim/par_ob_sweep/  +  par_ob_sweep_results.csv
+# Output:                      hw/sim/par_ob_sweep/par_<P>/  + par_ob_sweep_results.csv
 #
 # -------------------------------------------------------------------------
-# WHY NOT PAR_OB=32?
-#   The current RTL caps PAR_OB at 16, for two independent reasons:
-#     (a) fetch_cnt and tile_idx in cim_accel_core.sv are logic[3:0] (max 15),
-#         and the FSM compares against PAR_OB[3:0]-1. PAR_OB=32 wraps -> wrong.
-#     (b) MAX_OUT_DIM=256 => MAX_N_OB=16, so the weight/bias/output SRAMs cannot
-#         hold a layer with N_OB>16, and PAR_OB cannot exceed N_OB.
-#   To genuinely simulate PAR_OB=32 you must, in cim_pkg.sv + cim_accel_core.sv:
-#     - widen fetch_cnt/tile_idx to logic[5:0] and the PAR_OB[3:0] slices to [5:0]
-#     - raise MAX_OUT_DIM to >=512 (re-sizes the SRAMs)
-#     - set this script's PAR_LIST to include 32 and OUT_DIM=512 in the TB
-#   That is a real RTL change, not a parameter flip. This sweep deliberately
-#   stays within the architecture's current envelope (1..16) so the numbers are
-#   honest. The thesis can state PAR_OB=16 as the verified scalability point and
-#   note 32 needs counter/SRAM widening as future work.
+# WHY PAR_OB stops at 16 (not 32): the current RTL caps it — fetch_cnt/tile_idx
+# are logic[3:0] and MAX_OUT_DIM=256 (=> MAX_N_OB=16). PAR_OB=32 needs counter +
+# SRAM widening; see notes at bottom. {1,2,4,8,16} is the honest, supported range.
 # -------------------------------------------------------------------------
-
-set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HW_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 PKG="${HW_DIR}/rtl/pkg/cim_pkg.sv"
-SIM_DIR="${HW_DIR}/sim/par_ob_sweep"
+SIM_ROOT="${HW_DIR}/sim/par_ob_sweep"
 CSV="${HW_DIR}/par_ob_sweep_results.csv"
 
 PAR_LIST=(1 2 4 8 16)
 
-mkdir -p "${SIM_DIR}"
+mkdir -p "${SIM_ROOT}"
 
 # --- remember original PAR_OB to restore later ---
-ORIG_PAR_LINE="$(grep -nE 'parameter int PAR_OB = [0-9]+;' "${PKG}" | head -1)"
-ORIG_PAR_VAL="$(echo "${ORIG_PAR_LINE}" | grep -oE '= [0-9]+;' | grep -oE '[0-9]+')"
+ORIG_PAR_VAL="$(grep -oE 'parameter int PAR_OB = [0-9]+;' "${PKG}" | grep -oE '[0-9]+' | head -1)"
 echo "Original PAR_OB in cim_pkg.sv = ${ORIG_PAR_VAL}  (will restore at end)"
 
 restore_pkg() {
 	sed -i -E "s/parameter int PAR_OB = [0-9]+;/parameter int PAR_OB = ${ORIG_PAR_VAL};/" "${PKG}"
+	echo ""
 	echo "Restored PAR_OB = ${ORIG_PAR_VAL} in cim_pkg.sv"
 }
 trap restore_pkg EXIT
 
-# --- gcc wrapper (VCS-generated C relies on implicit decls; gcc15 errors) ---
-WRAPPER_DIR="${SIM_DIR}/.gcc_wrapper"
+# --- gcc wrapper (byte-identical to run_tb_cim_accel_core.sh) ---
+WRAPPER_DIR="${SIM_ROOT}/.gcc_wrapper"
 mkdir -p "${WRAPPER_DIR}"
 REAL_GCC="$(command -v gcc)"
 cat >"${WRAPPER_DIR}/gcc" <<EOF
@@ -76,8 +69,8 @@ RTL_FILES=(
 )
 
 echo "model,PAR_OB,IN,OUT,cycles,macs,errors" >"${CSV}"
-
 declare -A CYC
+
 for P in "${PAR_LIST[@]}"; do
 	echo ""
 	echo "############################################################"
@@ -86,13 +79,19 @@ for P in "${PAR_LIST[@]}"; do
 
 	# 1. set PAR_OB
 	sed -i -E "s/parameter int PAR_OB = [0-9]+;/parameter int PAR_OB = ${P};/" "${PKG}"
-	grep -E 'parameter int PAR_OB = [0-9]+;' "${PKG}"
+	grep -E 'parameter int PAR_OB = [0-9]+;' "${PKG}" | sed 's/^[[:space:]]*//'
 
-	RUN_DIR="${SIM_DIR}/par_${P}"
+	RUN_DIR="${SIM_ROOT}/par_${P}"
 	mkdir -p "${RUN_DIR}"
-	cd "${RUN_DIR}"
+	cd "${RUN_DIR}" || {
+		echo "cannot cd ${RUN_DIR}"
+		continue
+	}
 
-	# 2. compile  (flags mirror the proven run_tb_cim_accel_core.sh)
+	rm -f simv # clean any stale binary so the check is meaningful
+
+	# 2. compile — SAME pattern as the proven script: tee, then check for simv
+	echo "  compiling (VCS)..."
 	vcs -full64 -sverilog \
 		-debug_access+all \
 		-timescale=1ns/1ps \
@@ -101,19 +100,24 @@ for P in "${PAR_LIST[@]}"; do
 		+lint=TFIPC-L \
 		-l compile_${P}.log \
 		"${RTL_FILES[@]}" \
-		-o simv_${P} >compile_stdout_${P}.log 2>&1 || {
+		-o simv 2>&1 | tee compile_stdout_${P}.log
+
+	if [ ! -f simv ]; then
 		echo "  COMPILE FAILED for PAR_OB=${P}. See ${RUN_DIR}/compile_${P}.log"
 		echo "ALL,${P},256,256,COMPILE_FAIL,," >>"${CSV}"
+		cd "${HW_DIR}"
 		continue
-	}
+	fi
 
-	# 3. run
-	./simv_${P} -l sim_${P}.log >sim_stdout_${P}.log 2>&1 || true
+	# 3. run — SAME pattern as the proven script
+	echo "  running..."
+	./simv -l sim_${P}.log +fsdbfile+"${RUN_DIR}/tb_par_ob_sweep.fsdb" 2>&1 | tee sim_stdout_${P}.log
 
 	LINE="$(grep -h 'SWEEP_RESULT' sim_${P}.log 2>/dev/null | tail -1)"
 	if [ -z "${LINE}" ]; then
 		echo "  NO RESULT for PAR_OB=${P}. See ${RUN_DIR}/sim_${P}.log"
 		echo "ALL,${P},256,256,NO_RESULT,," >>"${CSV}"
+		cd "${HW_DIR}"
 		continue
 	fi
 	echo "  ${LINE}"
@@ -130,22 +134,29 @@ done
 # --- summary table ---
 echo ""
 echo "============================================================"
-echo " PAR_OB scalability sweep — layer 256x256 (N_OB=16) @ inline golden"
+echo " PAR_OB scalability sweep — layer 256x256 (N_OB=16)"
 echo "============================================================"
-printf "  %-8s %-12s %-12s %-12s %-8s\n" "PAR_OB" "cycles" "speedup" "ideal(=PAR)" "bitexact"
-printf "  %-8s %-12s %-12s %-12s %-8s\n" "------" "------" "-------" "-----------" "--------"
+printf "  %-8s %-12s %-12s %-12s %-10s\n" "PAR_OB" "cycles" "speedup" "ideal(=PAR)" "bitexact"
+printf "  %-8s %-12s %-12s %-12s %-10s\n" "------" "------" "-------" "-----------" "--------"
 BASE=${CYC[1]:-0}
 while IFS=, read -r model P IN OUT C M E; do
-	[ "$model" = "model" ] && continue
 	[ "$model" = "sweep" ] || continue
 	if [ "$BASE" -gt 0 ] 2>/dev/null && [ "$C" -gt 0 ] 2>/dev/null; then
-		SP=$(python3 -c "print(f'{$BASE/$C:.2f}x')")
+		SP=$(awk "BEGIN{printf \"%.2fx\", $BASE/$C}")
 	else
 		SP="-"
 	fi
 	BE=$([ "$E" = "0" ] && echo "PASS" || echo "FAIL($E)")
-	printf "  %-8s %-12s %-12s %-12s %-8s\n" "$P" "$C" "$SP" "${P}x" "$BE"
+	printf "  %-8s %-12s %-12s %-12s %-10s\n" "$P" "$C" "$SP" "${P}x" "$BE"
 done <"${CSV}"
 echo "============================================================"
 echo "CSV: ${CSV}"
-echo "(speedup is cycles(PAR_OB=1)/cycles(PAR_OB=P); ideal would be P x)"
+echo "(speedup = cycles(PAR_OB=1)/cycles(PAR_OB=P); ideal would be P x)"
+
+# -------------------------------------------------------------------------
+# To genuinely run PAR_OB=32 you must edit the RTL (not just this script):
+#   - cim_accel_core.sv: widen fetch_cnt/tile_idx to logic[5:0]; change the
+#     PAR_OB[3:0] slices to [5:0].
+#   - cim_pkg.sv: raise MAX_OUT_DIM to >=512 (re-sizes weight/bias/out SRAMs).
+#   - tb_par_ob_sweep.sv: set OUT_DIM=512 (N_OB=32); add 32 to PAR_LIST above.
+# -------------------------------------------------------------------------
