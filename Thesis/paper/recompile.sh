@@ -21,4 +21,4 @@ cd ..
 
 python convert_images.py
 
-xelatex paper.tex && biber paper && xelatex paper.tex && xelatex paper.tex
+xelatex paper.tex && bibtex paper && xelatex paper.tex && xelatex paper.tex && xelatex paper.tex
