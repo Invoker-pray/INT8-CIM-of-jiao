@@ -281,7 +281,7 @@ module cim_axi_lite_slave
   logic        [         clog2_safe(BSRAM_DEPTH)-1:0] b_rd_addr;
   logic signed [                          BIAS_W-1:0] b_rd_data;
   logic        [clog2_safe(MAX_IN_DIM/TILE_COLS)-1:0] ibuf_rd_tile_idx;
-  logic        [                         X_EFF_W-1:0] ibuf_x_eff       [TILE_COLS];
+  logic signed [                         X_EFF_W-1:0] ibuf_x_eff       [TILE_COLS];
   logic                                               obuf_wr_en;
   logic        [         clog2_safe(MAX_OUT_DIM)-1:0] obuf_wr_addr;
   logic signed [                        OUTPUT_W-1:0] obuf_wr_data;

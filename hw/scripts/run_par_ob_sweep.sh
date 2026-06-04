@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# run_par_ob_sweep.sh — recompile + run tb_par_ob_sweep for PAR_OB = 1,2,4,8,16
+# run_par_ob_sweep.sh — recompile + run tb_par_ob_sweep for PAR_OB = 1,2,3,4,8,16
 # ============================================================================
 # This version mirrors the PROVEN run_tb_cim_accel_core.sh compile flow exactly
 # (same gcc wrapper, same `tee` + `[ ! -f simv ]` success check) so that if that
@@ -30,7 +30,7 @@ PKG="${HW_DIR}/rtl/pkg/cim_pkg.sv"
 SIM_ROOT="${HW_DIR}/sim/par_ob_sweep"
 CSV="${HW_DIR}/par_ob_sweep_results.csv"
 
-PAR_LIST=(1 2 4 8 16)
+PAR_LIST=(1 2 3 4 8 16)
 
 mkdir -p "${SIM_ROOT}"
 

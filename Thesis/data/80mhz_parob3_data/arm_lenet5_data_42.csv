@@ -1,0 +1,2 @@
+model,n_img,total_s,ms_per_img,fps,correct,accuracy_pct
+lenet5,200,637.835,3189.17,0.314,198,99.00

@@ -65,7 +65,54 @@ import numpy as np
 # These are the SAME numbers reported in the thesis cycle tables. The SW/HW
 # speedup is SW_time / (cycles / FREQ). FREQ MUST match the thesis (100 MHz).
 # ============================================================================
-HW_FREQ_MHZ = 100  # <-- thesis reporting frequency. (Was 60 in the old notebook.)
+HW_FREQ_MHZ = None  # <-- Determined dynamically: --freq flag > auto-detect from bitstream > 100 default
+FREQ_SOURCE = "default"
+
+def detect_freq_from_files(script_dir):
+    """Auto-detect frequency from bitstream/hwh filenames or build scripts.
+    Scans for patterns like cim_soc_80mhz.bit, vivado_proj_85mhz/, etc.
+    Returns (freq_mhz, source_description) or (None, None).
+    """
+    import re as _re
+    _here = os.path.dirname(os.path.abspath(__file__))
+    scan_dirs = [_here, os.getcwd()]
+    parent = os.path.dirname(os.path.dirname(_here))
+    if parent != _here:
+        scan_dirs.append(parent)
+
+    patterns = [
+        (_re.compile(r'cim_soc[_\.]?(\d+)mhz[\._](bit|hwh)', _re.I), 1),
+        (_re.compile(r'vivado_proj[_\.]?(\d+)mhz', _re.I), 1),
+        (_re.compile(r'vivado_build[_\.]?(\d+)mhz[\._](tcl|sh)', _re.I), 1),
+    ]
+
+    for d in scan_dirs:
+        if not os.path.isdir(d):
+            continue
+        try:
+            entries = os.listdir(d)
+        except PermissionError:
+            continue
+        for entry in entries:
+            for pat, grp in patterns:
+                m = pat.search(entry)
+                if m:
+                    return int(m.group(grp)), f"auto-detected ({os.path.basename(d)}/{entry})"
+        for sub in entries:
+            subpath = os.path.join(d, sub)
+            if not os.path.isdir(subpath):
+                continue
+            try:
+                sub_entries = os.listdir(subpath)
+            except PermissionError:
+                continue
+            for entry in sub_entries:
+                for pat, grp in patterns:
+                    m = pat.search(entry)
+                    if m:
+                        return int(m.group(grp)), f"auto-detected ({os.path.basename(d)}/{sub}/{entry})"
+    return None, None
+
 
 HW_CYCLES = {
     "mlp": {"total": 3282, "layers": {"fc1": 3136, "fc2": 146}},
@@ -342,6 +389,118 @@ def read_hw_csv(path):
     }
 
 
+# ---- live HW cycle measurement (with --bitstream) ----
+_LIVE_HW_CYCLES = None  # cached result from first measurement
+_LIVE_BITSTREAM_PATH = None
+
+def _measure_hw_cycles_live(bitstream_path, model, data_dir):
+    """Run one inference through actual CIM hardware and read perf-counter cycles.
+
+    Returns dict with per-layer and total cycle counts (same shape as HW_CYCLES).
+    Only works on PYNQ board with cim_driver.py accessible.
+    """
+    global _LIVE_HW_CYCLES, _LIVE_BITSTREAM_PATH
+
+    # Return cached result if same bitstream
+    if _LIVE_HW_CYCLES is not None and _LIVE_BITSTREAM_PATH == bitstream_path:
+        return _LIVE_HW_CYCLES
+
+    try:
+        from cim_driver import CIMDriver, CIMModel, weight_to_chunks, bias_to_u32
+    except ImportError:
+        print("  WARNING: cim_driver not importable (not on PYNQ or no pynq lib)")
+        print("  Falling back to hardcoded HW_CYCLES")
+        return None
+
+    import numpy as np
+
+    drv = CIMDriver(bitstream_path, use_dma=True)
+    model_obj = CIMModel(drv)
+
+    if model == "mlp":
+        d = np.load(os.path.join(data_dir, "mlp_qparams.npz"))
+        model_obj.add_fc(784, 128, weight_to_chunks(d["fc1_weight"]), bias_to_u32(d["fc1_bias"]),
+                         zp=int(d["fc1_zp"]), mult=int(d["fc1_mult"]), shift=int(d["fc1_shift"]), relu=True)
+        model_obj.add_fc(128, 10, weight_to_chunks(d["fc2_weight"]), bias_to_u32(d["fc2_bias"]),
+                         zp=int(d["fc2_zp"]), mult=int(d["fc2_mult"]), shift=int(d["fc2_shift"]), relu=False)
+        input_shape = (784,)
+    elif model == "small_mlp":
+        d = np.load(os.path.join(data_dir, "mlp_qparams.npz"))
+        model_obj.add_fc(784, 16, weight_to_chunks(d["fc1_weight"]), bias_to_u32(d["fc1_bias"]),
+                         zp=int(d["fc1_zp"]), mult=int(d["fc1_mult"]), shift=int(d["fc1_shift"]), relu=True)
+        model_obj.add_fc(16, 10, weight_to_chunks(d["fc2_weight"]), bias_to_u32(d["fc2_bias"]),
+                         zp=int(d["fc2_zp"]), mult=int(d["fc2_mult"]), shift=int(d["fc2_shift"]), relu=False)
+        input_shape = (784,)
+    elif model == "lenet5":
+        d = np.load(os.path.join(data_dir, "lenet5_qparams.npz"))
+        model_obj.add_conv(d["conv1_weight"], d["conv1_bias"],
+                           zp=int(d["conv1_zp"]), mult=int(d["conv1_mult"]),
+                           shift=int(d["conv1_shift"]), stride=1, padding=0, relu=True)
+        model_obj.add_pool(2, 2)
+        model_obj.add_conv(d["conv2_weight"], d["conv2_bias"],
+                           zp=int(d["conv2_zp"]), mult=int(d["conv2_mult"]),
+                           shift=int(d["conv2_shift"]), stride=1, padding=0, relu=True)
+        model_obj.add_pool(2, 2)
+        model_obj.add_fc(256, 120, weight_to_chunks(d["fc3_weight"]), bias_to_u32(d["fc3_bias"]),
+                         zp=int(d["fc3_zp"]), mult=int(d["fc3_mult"]), shift=int(d["fc3_shift"]), relu=True)
+        model_obj.add_fc(120, 84, weight_to_chunks(d["fc4_weight"]), bias_to_u32(d["fc4_bias"]),
+                         zp=int(d["fc4_zp"]), mult=int(d["fc4_mult"]), shift=int(d["fc4_shift"]), relu=True)
+        model_obj.add_fc(84, 10, weight_to_chunks(d["fc5_weight"]), bias_to_u32(d["fc5_bias"]),
+                         zp=int(d["fc5_zp"]), mult=int(d["fc5_mult"]), shift=int(d["fc5_shift"]), relu=False)
+        input_shape = (1, 28, 28)
+    else:
+        return None
+
+    # Load one image
+    img_dir = os.path.join(data_dir, "test_images")
+    import glob as _glob
+    files = sorted(_glob.glob(os.path.join(img_dir, "img_????.hex")))[:1]
+    if not files:
+        print("  WARNING: no test images found")
+        return None
+
+    with open(files[0]) as f:
+        px = [int(l.strip(), 16) & 0xFF for l in f if l.strip()]
+    img = np.array(px, dtype=np.uint8).reshape(input_shape)
+
+    # Run with profile to get per-layer cycles
+    pred, logits, prof = model_obj.predict(img, profile=True)
+    
+    total_cycles = 0
+    layer_cycles = {}
+    layer_names = {
+        "lenet5": ["conv1", "conv2", "fc3", "fc4", "fc5"],
+        "mlp": ["fc1", "fc2"],
+        "small_mlp": ["fc1", "fc2"],
+    }
+    names = layer_names.get(model, [])
+    for i, layer_timing in enumerate(prof["layers"]):
+        hw_cyc = layer_timing.get("hw_cycles", 0)
+        total_cycles += hw_cyc
+        if i < len(names):
+            layer_cycles[names[i]] = hw_cyc
+
+    result = {"total": total_cycles, "layers": layer_cycles}
+    _LIVE_HW_CYCLES = result
+    _LIVE_BITSTREAM_PATH = bitstream_path
+    print(f"  Live HW cycles @ {HW_FREQ_MHZ}MHz: total={total_cycles}, per-layer={layer_cycles}")
+    return result
+
+
+def _resolve_hw_cycles(model, data_dir):
+    """Return (hw_cycles_dict, source_description) for the given model."""
+    global HW_BITSTREAM_PATH
+    if HW_BITSTREAM_PATH:
+        live = _measure_hw_cycles_live(HW_BITSTREAM_PATH, model, data_dir)
+        if live is not None:
+            return live.get("total", 0), f"live measurement ({os.path.basename(HW_BITSTREAM_PATH)})"
+    hw = HW_CYCLES.get(model, {})
+    return hw.get("total", 0), "hardcoded HW_CYCLES (--bitstream not used)"
+
+
+HW_BITSTREAM_PATH = None  # Set via --bitstream argument
+
+
 def run_model(model, data_dir, n_images, n_runs):
     imgs, labels = load_images(data_dir, n_images)
     n = len(imgs)
@@ -380,7 +539,9 @@ def run_model(model, data_dir, n_images, n_runs):
         }
 
     # ---- HW compute-core latency @ HW_FREQ_MHZ (from perf-counter cycles) ----
-    hw_cyc = HW_CYCLES.get(model, {}).get("total", 0)
+    # Use live hardware measurement when --bitstream is given,
+    # otherwise fall back to hardcoded HW_CYCLES dictionary.
+    hw_cyc, hw_cyc_source = _resolve_hw_cycles(model, data_dir)
     hw_compute_us = hw_cyc / (HW_FREQ_MHZ * 1e6) * 1e6 if hw_cyc else 0.0
 
     return {
@@ -390,6 +551,9 @@ def run_model(model, data_dir, n_images, n_runs):
         "accuracy_pct": round(acc, 2),
         "correct": correct,
         "hw_freq_mhz": HW_FREQ_MHZ,
+        "hw_freq_source": FREQ_SOURCE,
+        "hw_cycles": hw_cyc,
+        "hw_cycles_source": hw_cyc_source,
         "hw_compute_cycles": hw_cyc,
         "hw_compute_us": hw_compute_us,
         "sw_per_image_us": per_image_us,
@@ -484,8 +648,12 @@ def print_report(r):
 
     print(
         f"  HW compute core @ {r['hw_freq_mhz']}MHz     : "
-        f"{r['hw_compute_cycles']} cyc = {r['hw_compute_us']:.1f} us/img (MAC only, no DMA)"
+        f"{r.get('hw_cycles', 0)} cyc = {r['hw_compute_us']:.1f} us/img (MAC only, no DMA)"
     )
+    for key, label in [("hw_freq_source", "Frequency source"), ("hw_cycles_source", "Cycle source")]:
+        src = r.get(key, "")
+        if src:
+            print(f"  {label:<31s}: {src}")
 
     print("\n  --- SW compute time (ARM Cortex-A9, NumPy/BLAS) ---")
     for rname, v in r["sw_per_image_us"].items():
@@ -619,6 +787,20 @@ def main():
         "single CSV file (used directly). Passing a file here is "
         "equivalent to --hw-csv.",
     )
+    ap.add_argument(
+        "--freq",
+        type=int,
+        default=None,
+        help="HW clock frequency in MHz (e.g. 75). If not set, auto-detect from "
+        "bitstream/hwh filenames. Fallback: 100 MHz.",
+    )
+    ap.add_argument(
+        "--bitstream",
+        default=None,
+        help="Path to CIM bitstream (.bit). When provided, HW cycle counts are "
+        "measured live from the actual hardware (via cim_driver on PYNQ) "
+        "instead of using hardcoded values. Only works on PYNQ-Z2.",
+    )
     args = ap.parse_args()
 
     default_dirs = {
@@ -626,6 +808,29 @@ def main():
         "small_mlp": "small_mlp_data",
         "lenet5": "lenet5_data",
     }
+    # ---- resolve frequency ----
+    global HW_FREQ_MHZ, FREQ_SOURCE, HW_BITSTREAM_PATH
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    if args.freq:
+        HW_FREQ_MHZ = args.freq
+        FREQ_SOURCE = f"user-specified ({args.freq} MHz)"
+    else:
+        freq, src = detect_freq_from_files(script_dir)
+        if freq:
+            HW_FREQ_MHZ = freq
+            FREQ_SOURCE = src
+        else:
+            HW_FREQ_MHZ = 100
+            FREQ_SOURCE = "fallback (100 MHz, no bitstream detected)"
+    print(f"  HW frequency: {HW_FREQ_MHZ} MHz ({FREQ_SOURCE})")
+
+    if args.bitstream:
+        HW_BITSTREAM_PATH = args.bitstream
+        print(f"  HW cycles source: live measurement ({os.path.basename(args.bitstream)})")
+    else:
+        print(f"  HW cycles source: hardcoded (use --bitstream for live measurement)")
+    print()
+
     models = ["mlp", "small_mlp", "lenet5"] if args.model == "all" else [args.model]
 
     os.makedirs(args.out_dir, exist_ok=True)

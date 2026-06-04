@@ -1,0 +1,2 @@
+model,n_img,total_s,ms_per_img,fps,correct,accuracy_pct
+mlp,200,5.588,27.94,35.789,199,99.50

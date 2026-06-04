@@ -1,0 +1,47 @@
+{
+  "model": "mlp",
+  "n_images": 200,
+  "n_runs": 30,
+  "accuracy_pct": 99.5,
+  "correct": 199,
+  "hw_freq_mhz": 75,
+  "hw_freq_source": "user-specified (75 MHz)",
+  "hw_cycles": 4266,
+  "hw_cycles_source": "live measurement (cim_soc_75mhz.xsa)",
+  "hw_compute_cycles": 4266,
+  "hw_compute_us": 56.879999999999995,
+  "sw_per_image_us": {
+    "sequential": {
+      "mean_us": 4337.568962473597,
+      "median_us": 4308.332499931566,
+      "min_us": 4273.873501006165,
+      "max_us": 5574.033999437233
+    }
+  },
+  "speedups": {
+    "pure_compute": {
+      "sequential": {
+        "sw_compute_us": 4337.568962473597,
+        "hw_compute_us": 56.879999999999995,
+        "speedup_hw_over_sw": 76.2582447692264
+      }
+    },
+    "end_to_end": {
+      "sequential": {
+        "sw_compute_us": 4337.568962473597,
+        "hw_endtoend_us": 1880.0,
+        "hw_endtoend_ms": 1.88,
+        "hw_csv": "results/arm_dma_batch_mlp_data_42.csv",
+        "ratio_sw_over_hw": 2.3072175332306366,
+        "ratio_hw_over_sw": 0.4334225037722253
+      }
+    },
+    "accuracy_match": {
+      "sw_accuracy_pct": 99.5,
+      "hw_csv_accuracy_pct": 99.5,
+      "match": true
+    }
+  },
+  "run_time": "2025-05-04 10:58:37",
+  "hw_csv": "arm_dma_batch_mlp_data_42"
+}

@@ -142,7 +142,7 @@ _CSR_BIAS_BASE = 0x080  # [7:0]=word offset for bias reads
 
 # CMA buffer sizing upper bounds — cover any single-layer load for LeNet-5 / MNIST-MLP.
 # LeNet-5 Conv2 packed weight is the largest: col_len=150*16=2400 chunks; headroom 4×.
-_DMA_BUF_WEIGHTS = 20000  # 32-bit words (up to ~80 KB)
+_DMA_BUF_WEIGHTS = 80000  # 32-bit words (up to ~80 KB)
 _DMA_BUF_INPUT = (MAX_IN_DIM + 15) // 4  # packed UINT8 → uint32 words
 _DMA_BUF_BIAS = MAX_OUT_DIM
 _DMA_BUF_RESULT = (MAX_OUT_DIM + 3) // 4  # packed INT8 → uint32 words

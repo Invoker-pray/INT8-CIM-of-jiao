@@ -209,12 +209,10 @@ module tb_par_ob_sweep;
     $fsdbDumpvars(0, tb_par_ob_sweep, "+all");
 `endif
 
-    // ---- compile-time guard: PAR_OB must divide N_OB ----
+    // C4: partial OB pass support — PAR_OB no longer must divide N_OB.
+    // The core handles the final pass with fewer tiles automatically.
     if ((N_OB % PAR_OB) != 0) begin
-      $display("SWEEP_RESULT PAR_OB=%0d IN=%0d OUT=%0d CYCLES=0 MACS=0 ERRORS=999",
-               PAR_OB, IN_DIM, OUT_DIM);
-      $display(">>> FATAL: PAR_OB=%0d does NOT divide N_OB=%0d. Pick OUT_DIM so N_OB is divisible by PAR_OB (and widen counters/MAX_OUT_DIM if PAR_OB>16). Aborting. <<<", PAR_OB, N_OB);
-      $finish;
+      $display("NOTE: PAR_OB=%0d does NOT divide N_OB=%0d. Core will use partial final pass (supported since C4).", PAR_OB, N_OB);
     end
 
     err_cnt = 0; rst_n = 0; start = 0; soft_rst = 0;

@@ -1,0 +1,66 @@
+{
+  "model": "lenet5",
+  "n_images": 200,
+  "n_runs": 30,
+  "accuracy_pct": 100.0,
+  "correct": 200,
+  "hw_freq_mhz": 75,
+  "hw_freq_source": "user-specified (75 MHz)",
+  "hw_cycles": 207322,
+  "hw_cycles_source": "live measurement (cim_soc_75mhz.xsa)",
+  "hw_compute_cycles": 207322,
+  "hw_compute_us": 2764.293333333333,
+  "sw_per_image_us": {
+    "sequential": {
+      "mean_us": 621445.2641973457,
+      "median_us": 606398.4447500843,
+      "min_us": 604813.3375006728,
+      "max_us": 644163.8269989198
+    },
+    "batched": {
+      "mean_us": 39919.20574253527,
+      "median_us": 39786.64125133946,
+      "min_us": 39669.215000685654,
+      "max_us": 41700.66700135067
+    }
+  },
+  "speedups": {
+    "pure_compute": {
+      "sequential": {
+        "sw_compute_us": 621445.2641973457,
+        "hw_compute_us": 2764.293333333333,
+        "speedup_hw_over_sw": 224.81162064229042
+      },
+      "batched": {
+        "sw_compute_us": 39919.20574253527,
+        "hw_compute_us": 2764.293333333333,
+        "speedup_hw_over_sw": 14.44101653799474
+      }
+    },
+    "end_to_end": {
+      "sequential": {
+        "sw_compute_us": 621445.2641973457,
+        "hw_endtoend_us": 30120.0,
+        "hw_endtoend_ms": 30.12,
+        "hw_csv": "results/arm_dma_batch_lenet5_data_41.csv",
+        "ratio_sw_over_hw": 20.63231288835809,
+        "ratio_hw_over_sw": 0.04846766358241184
+      },
+      "batched": {
+        "sw_compute_us": 39919.20574253527,
+        "hw_endtoend_us": 30120.0,
+        "hw_endtoend_ms": 30.12,
+        "hw_csv": "results/arm_dma_batch_lenet5_data_41.csv",
+        "ratio_sw_over_hw": 1.325338836073548,
+        "ratio_hw_over_sw": 0.754524030219021
+      }
+    },
+    "accuracy_match": {
+      "sw_accuracy_pct": 100.0,
+      "hw_csv_accuracy_pct": 100.0,
+      "match": true
+    }
+  },
+  "run_time": "2025-05-04 11:00:25",
+  "hw_csv": "arm_dma_batch_lenet5_data_41"
+}

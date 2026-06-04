@@ -1,16 +1,18 @@
 ## ============================================================================
 ## cim_rv32_pynq.xdc — Constraints for PicoRV32 + CIM SoC (Hybrid PS+PL)
-## ============================================================================
-## PS provides FCLK_CLK0 (100 MHz), configured in vivado_build.tcl.
-## Phase A (C1): TILE_SPLIT_FACTOR=4, 100MHz target.
-## ============================================================================
+## ===========================================================================
+## PS provides FCLK_CLK0, frequency configured in vivado_build_*.tcl via
+## PCW_FPGA0_PERIPHERAL_FREQMHZ. Vivado auto-generates clock constraints
+## from the Block Design. No manual create_clock needed — it would conflict
+## with BD-generated constraints. Use vivado_build_<freq>.{sh,tcl}.
+## ===========================================================================
 
-## ============================================================================
-## 1. TIMING CONSTRAINT — FCLK_CLK0
-## ============================================================================
-## FCLK_CLK0 = 100 MHz -> period = 10.000 ns
-create_clock -name fclk0 -period 10.000 \
-    [get_pins -quiet system_i/ps7/inst/PS7_i/FCLKCLK[0]]
+## ===========================================================================
+## 1. TIMING CONSTRAINT — PS7 auto-generated, no manual create_clock
+## ===========================================================================
+## Legacy create_clock (commented — PS7 BD provides clock):
+## create_clock -name fclk0 -period 10.000 \
+##     [get_pins -quiet system_i/ps7/inst/PS7_i/FCLKCLK[0]]
 
 ## ============================================================================
 ## 2. UART TX (PMOD-A pin 1)
@@ -38,3 +40,7 @@ set_property MAX_FANOUT 16 [get_cells -hierarchical -filter {NAME =~ *x_eff_reg*
 ## ============================================================================
 set_property BITSTREAM.GENERAL.COMPRESS TRUE [current_design]
 set_property BITSTREAM.CONFIG.UNUSEDPIN PULLDOWN [current_design]
+
+## C4: limit fanout on phase-latched signals driving DSP48 inputs
+set_property MAX_FANOUT 32 [get_cells -hier -filter {NAME =~ *x_eff_latched_reg*}]
+set_property MAX_FANOUT 48 [get_cells -hier -filter {NAME =~ *w_tile_latched_reg*}]

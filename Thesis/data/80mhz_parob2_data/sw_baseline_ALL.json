@@ -1,0 +1,68 @@
+[
+  {
+    "model": "lenet5",
+    "n_images": 200,
+    "n_runs": 30,
+    "accuracy_pct": 99.0,
+    "correct": 198,
+    "hw_freq_mhz": 80,
+    "hw_freq_source": "user-specified (80 MHz)",
+    "hw_cycles": 207322,
+    "hw_cycles_source": "live measurement (cim_soc_80mhz.xsa)",
+    "hw_compute_cycles": 207322,
+    "hw_compute_us": 2591.525,
+    "sw_per_image_us": {
+      "sequential": {
+        "mean_us": 626989.7543625211,
+        "median_us": 622749.5622515562,
+        "min_us": 608043.820499006,
+        "max_us": 648214.7984988842
+      },
+      "batched": {
+        "mean_us": 40501.42996497925,
+        "median_us": 39998.39375137526,
+        "min_us": 39866.79100125912,
+        "max_us": 41970.326001319336
+      }
+    },
+    "speedups": {
+      "pure_compute": {
+        "sequential": {
+          "sw_compute_us": 626989.7543625211,
+          "hw_compute_us": 2591.525,
+          "speedup_hw_over_sw": 241.93853208536328
+        },
+        "batched": {
+          "sw_compute_us": 40501.42996497925,
+          "hw_compute_us": 2591.525,
+          "speedup_hw_over_sw": 15.628415687666239
+        }
+      },
+      "end_to_end": {
+        "sequential": {
+          "sw_compute_us": 626989.7543625211,
+          "hw_endtoend_us": 29750.0,
+          "hw_endtoend_ms": 29.75,
+          "hw_csv": "results/arm_dma_batch_lenet5_data_42.csv",
+          "ratio_sw_over_hw": 21.075285860925078,
+          "ratio_hw_over_sw": 0.047448941219538264
+        },
+        "batched": {
+          "sw_compute_us": 40501.42996497925,
+          "hw_endtoend_us": 29750.0,
+          "hw_endtoend_ms": 29.75,
+          "hw_csv": "results/arm_dma_batch_lenet5_data_42.csv",
+          "ratio_sw_over_hw": 1.3613926038648487,
+          "ratio_hw_over_sw": 0.7345419661904335
+        }
+      },
+      "accuracy_match": {
+        "sw_accuracy_pct": 99.0,
+        "hw_csv_accuracy_pct": 99.0,
+        "match": true
+      }
+    },
+    "run_time": "2025-05-04 23:07:35",
+    "hw_csv": "arm_dma_batch_lenet5_data_42"
+  }
+]

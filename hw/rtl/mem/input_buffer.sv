@@ -14,6 +14,12 @@
 // Read: rd_tile_idx → 1-cycle latency → rd_word, then registered x_tile/x_eff
 // C1: Added output pipeline register to break BRAM→x_eff combinational path
 //      for 100 MHz timing closure (was ~10.35ns critical path).
+//
+// C4 fix: x_eff is now SIGNED. The previous implementation clamped
+//         (x_uint8 - input_zp) to [0, 511], which silently broke standard
+//         affine UINT8 zero-points when x < zp. This version computes a
+//         signed 10-bit effective activation and only saturates if software
+//         programs an out-of-range zero-point.
 // ============================================================================
 
 module input_buffer
@@ -36,12 +42,16 @@ module input_buffer
     input logic        [clog2_safe(MAX_LEN/TILE_COLS)-1:0] rd_tile_idx,
     input logic signed [                             31:0] input_zp,
 
-    output logic [INPUT_W-1:0] x_tile[TILE_COLS],
-    output logic [X_EFF_W-1:0] x_eff [TILE_COLS]
+    output logic        [INPUT_W-1:0] x_tile[TILE_COLS],
+    output logic signed [X_EFF_W-1:0] x_eff [TILE_COLS]
 );
 
   localparam int TILE_W = TILE_COLS * INPUT_W;  // 128 bits
   localparam int DEPTH = (MAX_LEN + TILE_COLS - 1) / TILE_COLS;  // 49
+  localparam int signed XEFF_MIN = -(1 <<< (X_EFF_W-1));
+  localparam int signed XEFF_MAX =  (1 <<< (X_EFF_W-1)) - 1;
+  localparam logic signed [X_EFF_W-1:0] XEFF_MIN_VAL = XEFF_MIN;
+  localparam logic signed [X_EFF_W-1:0] XEFF_MAX_VAL = XEFF_MAX;
 
   // BRAM: dual-bank
   (* ram_style = "block" *)
@@ -73,20 +83,20 @@ module input_buffer
     end
   endgenerate
 
-  // Zero-point subtraction (combinational)
+  // Signed zero-point subtraction (combinational)
   logic signed [31:0] x_full[TILE_COLS];
-  logic [X_EFF_W-1:0] x_eff_comb[TILE_COLS];
+  logic signed [X_EFF_W-1:0] x_eff_comb[TILE_COLS];
   genvar gx;
   generate
     for (gx = 0; gx < TILE_COLS; gx++) begin : GEN_XEFF
       assign x_full[gx] = $signed({1'b0, x_tile_comb[gx]}) - input_zp;
-      assign x_eff_comb[gx] = (x_full[gx] < 0)               ? {X_EFF_W{1'b0}} :
-                               (x_full[gx] > (2**X_EFF_W - 1)) ? {X_EFF_W{1'b1}} :
-                                                                   x_full[gx][X_EFF_W-1:0];
+      assign x_eff_comb[gx] = (x_full[gx] < XEFF_MIN) ? XEFF_MIN_VAL :
+                              (x_full[gx] > XEFF_MAX) ? XEFF_MAX_VAL :
+                                                         x_full[gx][X_EFF_W-1:0];
     end
   endgenerate
 
-  // C1: Output pipeline register to break BRAM→core timing path
+  // Output pipeline register
   always_ff @(posedge clk) begin
     for (int c = 0; c < TILE_COLS; c++) begin
       x_tile[c] <= x_tile_comb[c];

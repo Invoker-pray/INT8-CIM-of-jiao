@@ -191,7 +191,7 @@ def full_ptq(model, device="cpu"):
 # Bit-accurate INT8 inference
 # ============================================================================
 def hw_mvm(x_u8, w_i8, b_i32, zp, mult, shift, relu):
-    x_eff = np.clip(x_u8.astype(np.int32) - zp, 0, 511)
+    x_eff = np.clip(x_u8.astype(np.int32) - zp, -512, 511)
     acc = w_i8.astype(np.int32) @ x_eff.astype(np.int32) + b_i32.astype(np.int32)
     if relu:
         acc = np.maximum(acc, 0)
