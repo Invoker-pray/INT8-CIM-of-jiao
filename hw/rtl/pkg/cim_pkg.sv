@@ -84,7 +84,7 @@ package cim_pkg;
   // partial last passes (fewer tiles than PAR_OB) via tiles_this_pass runtime
   // computation. PAR_OB=3 now works for N_OB=8 (processes 3+3+2 tiles).
 
-  parameter int PAR_OB = 2;  // with TILE_MAC_REUSE=1: ~64 DSP (29% of 220) (87% of 220, max safe)
+  parameter int PAR_OB = 1;  // with TILE_MAC_REUSE=1: ~64 DSP (29% of 220) (87% of 220, max safe)
 
   // ==========================================================================
   // 3. Data Widths
