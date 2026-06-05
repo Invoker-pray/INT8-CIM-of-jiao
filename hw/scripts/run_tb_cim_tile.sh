@@ -6,6 +6,9 @@
 # Output: sim/tb_cim_tile/
 # ============================================================================
 
+# Unset proxy to prevent VCS hang
+unset http_proxy https_proxy all_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY
+
 set -e
 
 TB_NAME="tb_cim_tile"

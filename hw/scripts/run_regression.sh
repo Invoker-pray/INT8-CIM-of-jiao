@@ -8,6 +8,9 @@
 #   1. tb_cim_tile          — CIM tile unit test (103 random vectors)
 #   2. tb_cim_accel_core    — System MVM + edge cases (random + boundary)
 #   3. tb_cim_stream_sink   — AXI4-Stream sink unit test (8 cases)
+
+# Unset proxy to prevent VCS hang (inherited by sub-scripts too)
+unset http_proxy https_proxy all_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY
 #   4. tb_mnist_e2e         — Full MNIST 784→128→10 end-to-end
 #
 # Output: PASS/FAIL per test + overall summary

@@ -8,6 +8,9 @@
 #   bash ../scripts/run_tb_rv32.sh
 # ============================================================================
 
+# Unset proxy to prevent VCS hang
+unset http_proxy https_proxy all_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY
+
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

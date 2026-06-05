@@ -24,6 +24,9 @@
 # SRAM widening; see notes at bottom. {1,2,4,8,16} is the honest, supported range.
 # -------------------------------------------------------------------------
 
+# Unset proxy to prevent VCS hang
+unset http_proxy https_proxy all_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HW_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 PKG="${HW_DIR}/rtl/pkg/cim_pkg.sv"

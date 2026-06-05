@@ -7,6 +7,9 @@
 #   2. cd hw/ && bash scripts/run_tb_mnist_e2e.sh
 # ============================================================================
 
+# Unset proxy to prevent VCS hang
+unset http_proxy https_proxy all_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY
+
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
