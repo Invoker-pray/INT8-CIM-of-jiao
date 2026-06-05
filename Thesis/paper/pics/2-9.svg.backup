@@ -373,7 +373,7 @@
      x="505"
      y="485"
      class="anno-text"
-     id="text27">10-bit signed x_eff = pixel - zp</text>
+     id="text27">9-bit x_eff = pixel + 128</text>
   <path
      d="M 500 540 L 500 560"
      class="path-ctrl"

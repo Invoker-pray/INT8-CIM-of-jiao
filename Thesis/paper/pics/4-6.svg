@@ -1,80 +1,59 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg
-   width="100%"
-   viewBox="0 0 760 540"
-   role="img"
-   style=""
-   version="1.1"
-   id="svg55"
-   sodipodi:docname="4-6.svg"
-   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:svg="http://www.w3.org/2000/svg">
-  <sodipodi:namedview
-     id="namedview55"
-     pagecolor="#ffffff"
-     bordercolor="#000000"
-     borderopacity="0.25"
-     inkscape:showpageshadow="2"
-     inkscape:pageopacity="0.0"
-     inkscape:pagecheckerboard="0"
-     inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="1.0908391"
-     inkscape:cx="380"
-     inkscape:cy="270.membership"
-     inkscape:current-layer="svg55" />
-  <title id="title1">LeNet-5 End-to-End Latency Breakdown Donut Chart</title>
-  <desc id="desc1">Donut chart showing latency breakdown for LeNet-5 inference on 200 MNIST images at 100 MHz. MVM ping-pong wall time dominates at 87.5% (26.36 ms). Total: 30.13 ms/image at 33.2 fps.</desc>
-  <rect width="760" height="540" fill="#ffffff" id="rect1" />
-  <text x="380" y="34" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="17" font-weight="bold" fill="#1a1a1a" id="text1">LeNet-5 End-to-End Latency Breakdown — 200 MNIST Images @ 100 MHz</text>
-  <g id="donut" transform="translate(250,300)">
-    <path d="M 0,-160 A 160,160 0 1 1 -117.395,108.724 L -69.703,64.555 A 95,95 0 1 0 0,-95 Z" fill="#3B6EA5" stroke="#ffffff" stroke-width="2" id="slice1" />
-    <path d="M -117.395,108.724 A 160,160 0 0 1 -135.586,84.906 L -80.504,50.413 A 95,95 0 0 0 -69.703,64.555 Z" fill="#7BA7D7" stroke="#ffffff" stroke-width="2" id="slice2" />
-    <path d="M -135.586,84.906 A 160,160 0 0 1 -147.518,57.671 L -87.589,34.242 A 95,95 0 0 0 -80.504,50.413 Z" fill="#A9C7E8" stroke="#ffffff" stroke-width="2" id="slice3" />
-    <path d="M -147.518,57.671 A 160,160 0 0 1 -153.137,39.412 L -90.925,23.399 A 95,95 0 0 0 -87.589,34.242 Z" fill="#C6995C" stroke="#ffffff" stroke-width="2" id="slice4" />
-    <path d="M -153.137,39.412 A 160,160 0 0 1 -156.810,23.115 L -93.106,13.724 A 95,95 0 0 0 -90.925,23.399 Z" fill="#D9B381" stroke="#ffffff" stroke-width="2" id="slice5" />
-    <path d="M -156.810,23.115 A 160,160 0 0 1 -157.704,16.755 L -93.357,9.948 A 95,95 0 0 0 -93.106,13.724 Z" fill="#E8D4B0" stroke="#ffffff" stroke-width="2" id="slice6" />
-  </g>
-  <text x="250" y="292" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="30" font-weight="bold" fill="#1a1a1a" id="text41">30.13 ms</text>
-  <text x="250" y="314" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="14" fill="#666666" id="text42">/ image</text>
-  <text x="250" y="334" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="14" fill="#3B6EA5" font-weight="bold" id="text43">33.2 fps</text>
-  <text x="250" y="172" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="15" font-weight="bold" fill="#ffffff" id="text44">MVM ping-pong</text>
-  <text x="250" y="190" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="13" fill="#ffffff" id="text45">26.36 ms · 87.5%</text>
-  <line x1="115.586" y1="215.094" x2="150" y2="245" stroke="#888888" stroke-width="1" transform="translate(250,300)" id="line46l" style="display:none" />
-  <text x="118" y="420" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="13" font-weight="bold" fill="#333333" id="text46">im2col</text>
-  <text x="118" y="436" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="12" fill="#666666" id="text47">1.23 ms · 4.1%</text>
-  <text x="103" y="378" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="13" font-weight="bold" fill="#333333" id="text48">MaxPool</text>
-  <text x="103" y="394" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="12" fill="#666666" id="text49">1.31 ms · 4.4%</text>
-  <text x="93" y="336" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="13" font-weight="bold" fill="#333333" id="text50">SQ-mapping</text>
-  <text x="93" y="352" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="12" fill="#666666" id="text51">0.62 ms · 2.1%</text>
-  <text x="88" y="300" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="13" font-weight="bold" fill="#333333" id="text52">Setup</text>
-  <text x="88" y="316" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="12" fill="#666666" id="text53">0.55 ms · 1.8%</text>
-  <text x="86" y="262" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="13" font-weight="bold" fill="#333333" id="text54">argmax/final</text>
-  <text x="86" y="278" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="12" fill="#666666" id="text55">0.05 ms · 0.2%</text>
-  <text x="500" y="170" font-family="'Times New Roman', Times, serif" font-size="15" font-weight="bold" fill="#1a1a1a" id="text56">Legend</text>
-  <rect x="500" y="182" width="16" height="16" fill="#3B6EA5" id="rect57" />
-  <text x="524" y="195" font-family="'Times New Roman', Times, serif" font-size="13" fill="#333333" id="text57">MVM ping-pong wall time</text>
-  <text x="524" y="211" font-family="'Times New Roman', Times, serif" font-size="12" fill="#888888" id="text58">26.36 ms  (87.5%)</text>
-  <rect x="500" y="224" width="16" height="16" fill="#7BA7D7" id="rect59" />
-  <text x="524" y="237" font-family="'Times New Roman', Times, serif" font-size="13" fill="#333333" id="text59">im2col (vectorized)</text>
-  <text x="524" y="253" font-family="'Times New Roman', Times, serif" font-size="12" fill="#888888" id="text60">1.23 ms  (4.1%)</text>
-  <rect x="500" y="266" width="16" height="16" fill="#A9C7E8" id="rect61" />
-  <text x="524" y="279" font-family="'Times New Roman', Times, serif" font-size="13" fill="#333333" id="text61">MaxPool (vectorized)</text>
-  <text x="524" y="295" font-family="'Times New Roman', Times, serif" font-size="12" fill="#888888" id="text62">1.31 ms  (4.4%)</text>
-  <rect x="500" y="308" width="16" height="16" fill="#C6995C" id="rect63" />
-  <text x="524" y="321" font-family="'Times New Roman', Times, serif" font-size="13" fill="#333333" id="text63">SQ-mapping pack</text>
-  <text x="524" y="337" font-family="'Times New Roman', Times, serif" font-size="12" fill="#888888" id="text64">0.62 ms  (2.1%)</text>
-  <rect x="500" y="350" width="16" height="16" fill="#D9B381" id="rect65" />
-  <text x="524" y="363" font-family="'Times New Roman', Times, serif" font-size="13" fill="#333333" id="text65">Setup (amortized)</text>
-  <text x="524" y="379" font-family="'Times New Roman', Times, serif" font-size="12" fill="#888888" id="text66">0.55 ms  (1.8%)</text>
-  <rect x="500" y="392" width="16" height="16" fill="#E8D4B0" id="rect67" />
-  <text x="524" y="405" font-family="'Times New Roman', Times, serif" font-size="13" fill="#333333" id="text67">argmax / final</text>
-  <text x="524" y="421" font-family="'Times New Roman', Times, serif" font-size="12" fill="#888888" id="text68">0.05 ms  (0.2%)</text>
-  <line x1="500" y1="436" x2="710" y2="436" stroke="#cccccc" stroke-width="1" id="line69" />
-  <text x="500" y="454" font-family="'Times New Roman', Times, serif" font-size="14" font-weight="bold" fill="#1a1a1a" id="text69">Total</text>
-  <text x="710" y="454" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="14" font-weight="bold" fill="#1a1a1a" id="text70">30.13 ms / image</text>
-  <path d="m 228.47424,110.57981 69.0586,-19.792495" fill="none" stroke="none" id="path70" />
-  <text x="380" y="500" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="13" font-style="italic" fill="#555555" id="text71">Hardware compute time dominates; Python overhead &lt; 13%</text>
+<svg width="100%" viewBox="0 0 760 540" role="img" version="1.1" xmlns="http://www.w3.org/2000/svg">
+<title>LeNet-5 End-to-End Latency Breakdown Donut Chart</title>
+<desc>Donut chart showing latency breakdown for LeNet-5 inference on 200 MNIST images at 64 MHz. MVM ping-pong wall time dominates at 87.0% (26.0 ms). Total: 29.88 ms/image at 33.5 fps.</desc>
+<rect width="760" height="540" fill="#ffffff"/>
+<text x="380" y="34" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="17" font-weight="bold" fill="#1a1a1a">LeNet-5 End-to-End Latency Breakdown — 200 MNIST Images @ 64 MHz</text>
+<g id="donut" transform="translate(250,300)">
+  <!-- MVM ping-pong: 26.0/29.88 = 87.0%, angle = 0.870*360 = 313.2° -->
+  <path d="M 0,-160 A 160,160 0 1 1 -119.36,106.72 L -70.84,63.34 A 95,95 0 1 0 0,-95 Z" fill="#3B6EA5" stroke="#ffffff" stroke-width="2"/>
+  <!-- im2col: 2.1/29.88 = 7.0%, angle = 0.070*360 = 25.2° -->
+  <path d="M -119.36,106.72 A 160,160 0 0 1 -137.86,82.53 L -81.85,48.99 A 95,95 0 0 0 -70.84,63.34 Z" fill="#7BA7D7" stroke="#ffffff" stroke-width="2"/>
+  <!-- pool: 0.9/29.88 = 3.0%, angle = 0.030*360 = 10.8° -->
+  <path d="M -137.86,82.53 A 160,160 0 0 1 -149.10,57.14 L -88.53,33.92 A 95,95 0 0 0 -81.85,48.99 Z" fill="#A9C7E8" stroke="#ffffff" stroke-width="2"/>
+  <!-- pack: 0.4/29.88 = 1.3%, angle = 0.013*360 = 4.68° -->
+  <path d="M -149.10,57.14 A 160,160 0 0 1 -153.49,38.55 L-91.08,22.88 A 95,95 0 0 0 -88.53,33.92 Z" fill="#C6995C" stroke="#ffffff" stroke-width="2"/>
+  <!-- setup: 0.3/29.88 = 1.0%, angle = 0.010*360 = 3.6° -->
+  <path d="M -153.49,38.55 A 160,160 0 0 1 -157.28,22.39 L-93.32,13.29 A 95,95 0 0 0 -91.08,22.88 Z" fill="#D9B381" stroke="#ffffff" stroke-width="2"/>
+  <!-- final: 0.2/29.88 = 0.7%, angle = 0.007*360 = 2.52° -->
+  <path d="M -157.28,22.39 A 160,160 0 0 1 -158.99,16.06 L-94.34,9.54 A 95,95 0 0 0 -93.32,13.29 Z" fill="#E8D4B0" stroke="#ffffff" stroke-width="2"/>
+</g>
+<text x="250" y="292" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="30" font-weight="bold" fill="#1a1a1a">29.88 ms</text>
+<text x="250" y="314" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="14" fill="#666666">/ image</text>
+<text x="250" y="334" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="14" fill="#3B6EA5" font-weight="bold">33.5 fps</text>
+<text x="250" y="172" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="15" font-weight="bold" fill="#ffffff">MVM ping-pong</text>
+<text x="250" y="190" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="13" fill="#ffffff">26.0 ms · 87.0%</text>
+<text x="118" y="420" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="13" font-weight="bold" fill="#333333">im2col</text>
+<text x="118" y="436" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="12" fill="#666666">2.1 ms · 7.0%</text>
+<text x="103" y="378" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="13" font-weight="bold" fill="#333333">pool</text>
+<text x="103" y="394" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="12" fill="#666666">0.9 ms · 3.0%</text>
+<text x="93" y="336" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="13" font-weight="bold" fill="#333333">pack</text>
+<text x="93" y="352" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="12" fill="#666666">0.4 ms · 1.3%</text>
+<text x="88" y="300" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="13" font-weight="bold" fill="#333333">setup</text>
+<text x="88" y="316" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="12" fill="#666666">0.3 ms · 1.0%</text>
+<text x="86" y="262" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="13" font-weight="bold" fill="#333333">final</text>
+<text x="86" y="278" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="12" fill="#666666">0.2 ms · 0.7%</text>
+<text x="500" y="170" font-family="'Times New Roman', Times, serif" font-size="15" font-weight="bold" fill="#1a1a1a">Legend</text>
+<rect x="500" y="182" width="16" height="16" fill="#3B6EA5"/>
+<text x="524" y="195" font-family="'Times New Roman', Times, serif" font-size="13" fill="#333333">MVM ping-pong wall time</text>
+<text x="524" y="211" font-family="'Times New Roman', Times, serif" font-size="12" fill="#888888">26.0 ms  (87.0%)</text>
+<rect x="500" y="224" width="16" height="16" fill="#7BA7D7"/>
+<text x="524" y="237" font-family="'Times New Roman', Times, serif" font-size="13" fill="#333333">im2col (vectorized)</text>
+<text x="524" y="253" font-family="'Times New Roman', Times, serif" font-size="12" fill="#888888">2.1 ms  (7.0%)</text>
+<rect x="500" y="266" width="16" height="16" fill="#A9C7E8"/>
+<text x="524" y="279" font-family="'Times New Roman', Times, serif" font-size="13" fill="#333333">pool (vectorized)</text>
+<text x="524" y="295" font-family="'Times New Roman', Times, serif" font-size="12" fill="#888888">0.9 ms  (3.0%)</text>
+<rect x="500" y="308" width="16" height="16" fill="#C6995C"/>
+<text x="524" y="321" font-family="'Times New Roman', Times, serif" font-size="13" fill="#333333">pack (pre-packing)</text>
+<text x="524" y="337" font-family="'Times New Roman', Times, serif" font-size="12" fill="#888888">0.4 ms  (1.3%)</text>
+<rect x="500" y="350" width="16" height="16" fill="#D9B381"/>
+<text x="524" y="363" font-family="'Times New Roman', Times, serif" font-size="13" fill="#333333">setup (amortized)</text>
+<text x="524" y="379" font-family="'Times New Roman', Times, serif" font-size="12" fill="#888888">0.3 ms  (1.0%)</text>
+<rect x="500" y="392" width="16" height="16" fill="#E8D4B0"/>
+<text x="524" y="405" font-family="'Times New Roman', Times, serif" font-size="13" fill="#333333">final (argmax)</text>
+<text x="524" y="421" font-family="'Times New Roman', Times, serif" font-size="12" fill="#888888">0.2 ms  (0.7%)</text>
+<line x1="500" y1="436" x2="710" y2="436" stroke="#cccccc" stroke-width="1"/>
+<text x="500" y="454" font-family="'Times New Roman', Times, serif" font-size="14" font-weight="bold" fill="#1a1a1a">Total</text>
+<text x="710" y="454" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="14" font-weight="bold" fill="#1a1a1a">29.88 ms / image</text>
+<text x="380" y="500" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="13" font-style="italic" fill="#555555">MVM ping-pong wall time dominates (87%); Python overhead &lt; 13%</text>
 </svg>

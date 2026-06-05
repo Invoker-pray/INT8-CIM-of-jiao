@@ -1,107 +1,141 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg width="100%" viewBox="0 0 690 510" role="img" version="1.1" xmlns="http://www.w3.org/2000/svg">
+<svg width="100%" viewBox="0 0 880 510" role="img" version="1.1" xmlns="http://www.w3.org/2000/svg">
 <title>Grouped bar chart: SW vs HW accelerator latency (compute-only)</title>
-<desc>Log-scale grouped bar chart comparing ARM Cortex-A9 NumPy/BLAS software compute time versus CIM hardware compute-core latency across MLP, LeNet-5 Sequential, and LeNet-5 Batched BLAS. Compute-core speedups 135.0x, 818x, 53.9x.</desc>
-<rect width="690" height="510" fill="white"/>
-<text x="345" y="28" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="14" font-weight="700" fill="#111111">Inference Latency: Software Baseline vs. Hardware Accelerator (compute-only)</text>
-<line x1="90" y1="380.0" x2="640" y2="380.0" stroke="#999999" stroke-width="0.75"/>
+<desc>Log-scale grouped bar chart comparing ARM Cortex-A9 NumPy/BLAS software compute time versus CIM hardware compute-core latency across MLP, small_mlp, LeNet-5 Sequential, and LeNet-5 Batched BLAS. Compute-core speedups 65.4×, 149.7×, 191.1×, 12.4× (MLP, small_mlp, LeNet-5 Sequential, LeNet-5 Batched).</desc>
+<rect width="880" height="510" fill="white"/>
+<text x="440" y="28" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="14" font-weight="700" fill="#111111">Inference Latency: Software Baseline vs. Hardware Accelerator (compute-only)</text>
+<!-- Y-axis grid and labels -->
+<line x1="90" y1="380.0" x2="820" y2="380.0" stroke="#999999" stroke-width="0.75"/>
 <line x1="90" y1="380.0" x2="86" y2="380.0" stroke="#333333" stroke-width="0.75"/>
 <text x="84" y="384.0" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="11" fill="#333333">1</text>
-<line x1="90" y1="324.7" x2="640" y2="324.7" stroke="#999999" stroke-width="0.75"/>
+<line x1="90" y1="324.7" x2="820" y2="324.7" stroke="#999999" stroke-width="0.75"/>
 <line x1="90" y1="324.7" x2="86" y2="324.7" stroke="#333333" stroke-width="0.75"/>
 <text x="84" y="328.7" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="11" fill="#333333">10</text>
-<line x1="90" y1="269.3" x2="640" y2="269.3" stroke="#999999" stroke-width="0.75"/>
+<line x1="90" y1="269.3" x2="820" y2="269.3" stroke="#999999" stroke-width="0.75"/>
 <line x1="90" y1="269.3" x2="86" y2="269.3" stroke="#333333" stroke-width="0.75"/>
 <text x="84" y="273.3" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="11" fill="#333333">100</text>
-<line x1="90" y1="214.0" x2="640" y2="214.0" stroke="#999999" stroke-width="0.75"/>
+<line x1="90" y1="214.0" x2="820" y2="214.0" stroke="#999999" stroke-width="0.75"/>
 <line x1="90" y1="214.0" x2="86" y2="214.0" stroke="#333333" stroke-width="0.75"/>
 <text x="84" y="218.0" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="11" fill="#333333">1,000</text>
-<line x1="90" y1="158.7" x2="640" y2="158.7" stroke="#999999" stroke-width="0.75"/>
+<line x1="90" y1="158.7" x2="820" y2="158.7" stroke="#999999" stroke-width="0.75"/>
 <line x1="90" y1="158.7" x2="86" y2="158.7" stroke="#333333" stroke-width="0.75"/>
 <text x="84" y="162.7" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="11" fill="#333333">10,000</text>
-<line x1="90" y1="103.3" x2="640" y2="103.3" stroke="#999999" stroke-width="0.75"/>
+<line x1="90" y1="103.3" x2="820" y2="103.3" stroke="#999999" stroke-width="0.75"/>
 <line x1="90" y1="103.3" x2="86" y2="103.3" stroke="#333333" stroke-width="0.75"/>
 <text x="84" y="107.3" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="11" fill="#333333">100,000</text>
-<line x1="90" y1="48.0" x2="640" y2="48.0" stroke="#999999" stroke-width="0.75"/>
+<line x1="90" y1="48.0" x2="820" y2="48.0" stroke="#999999" stroke-width="0.75"/>
 <line x1="90" y1="48.0" x2="86" y2="48.0" stroke="#333333" stroke-width="0.75"/>
 <text x="84" y="52.0" text-anchor="end" font-family="'Times New Roman', Times, serif" font-size="11" fill="#333333">1,000,000</text>
-<line x1="90" y1="363.3" x2="640" y2="363.3" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="353.6" x2="640" y2="353.6" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="346.7" x2="640" y2="346.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="341.4" x2="640" y2="341.4" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="337.0" x2="640" y2="337.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="333.4" x2="640" y2="333.4" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="330.2" x2="640" y2="330.2" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="327.4" x2="640" y2="327.4" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="308.0" x2="640" y2="308.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="298.3" x2="640" y2="298.3" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="291.4" x2="640" y2="291.4" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="286.0" x2="640" y2="286.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="281.7" x2="640" y2="281.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="278.0" x2="640" y2="278.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="274.9" x2="640" y2="274.9" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="272.0" x2="640" y2="272.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="252.7" x2="640" y2="252.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="243.0" x2="640" y2="243.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="236.0" x2="640" y2="236.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="230.7" x2="640" y2="230.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="226.3" x2="640" y2="226.3" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="222.7" x2="640" y2="222.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="219.5" x2="640" y2="219.5" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="216.7" x2="640" y2="216.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="197.4" x2="640" y2="197.4" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="187.6" x2="640" y2="187.6" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="180.7" x2="640" y2="180.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="175.4" x2="640" y2="175.4" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="171.0" x2="640" y2="171.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="167.4" x2="640" y2="167.4" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="164.2" x2="640" y2="164.2" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="161.4" x2="640" y2="161.4" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="142.0" x2="640" y2="142.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="132.3" x2="640" y2="132.3" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="125.4" x2="640" y2="125.4" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="120.0" x2="640" y2="120.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="115.7" x2="640" y2="115.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="112.0" x2="640" y2="112.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="108.9" x2="640" y2="108.9" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="106.0" x2="640" y2="106.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="86.7" x2="640" y2="86.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="77.0" x2="640" y2="77.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="70.0" x2="640" y2="70.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="64.7" x2="640" y2="64.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="60.3" x2="640" y2="60.3" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="56.7" x2="640" y2="56.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="53.5" x2="640" y2="53.5" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
-<line x1="90" y1="50.7" x2="640" y2="50.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<!-- Minor grid lines -->
+<line x1="90" y1="363.3" x2="820" y2="363.3" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="353.6" x2="820" y2="353.6" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="346.7" x2="820" y2="346.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="341.4" x2="820" y2="341.4" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="337.0" x2="820" y2="337.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="333.4" x2="820" y2="333.4" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="330.2" x2="820" y2="330.2" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="327.4" x2="820" y2="327.4" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="308.0" x2="820" y2="308.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="298.3" x2="820" y2="298.3" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="291.4" x2="820" y2="291.4" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="286.0" x2="820" y2="286.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="281.7" x2="820" y2="281.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="278.0" x2="820" y2="278.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="274.9" x2="820" y2="274.9" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="272.0" x2="820" y2="272.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="252.7" x2="820" y2="252.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="243.0" x2="820" y2="243.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="236.0" x2="820" y2="236.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="230.7" x2="820" y2="230.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="226.3" x2="820" y2="226.3" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="222.7" x2="820" y2="222.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="219.5" x2="820" y2="219.5" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="216.7" x2="820" y2="216.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="197.4" x2="820" y2="197.4" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="187.6" x2="820" y2="187.6" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="180.7" x2="820" y2="180.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="175.4" x2="820" y2="175.4" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="171.0" x2="820" y2="171.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="167.4" x2="820" y2="167.4" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="164.2" x2="820" y2="164.2" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="161.4" x2="820" y2="161.4" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="142.0" x2="820" y2="142.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="132.3" x2="820" y2="132.3" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="125.4" x2="820" y2="125.4" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="120.0" x2="820" y2="120.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="115.7" x2="820" y2="115.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="112.0" x2="820" y2="112.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="108.9" x2="820" y2="108.9" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="106.0" x2="820" y2="106.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="86.7" x2="820" y2="86.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="77.0" x2="820" y2="77.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="70.0" x2="820" y2="70.0" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="64.7" x2="820" y2="64.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="60.3" x2="820" y2="60.3" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="56.7" x2="820" y2="56.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="53.5" x2="820" y2="53.5" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<line x1="90" y1="50.7" x2="820" y2="50.7" stroke="#DDDDDD" stroke-width="0.5" stroke-dasharray="3,3"/>
+<!-- Axes -->
 <line x1="90" y1="48" x2="90" y2="380" stroke="#333333" stroke-width="1"/>
-<line x1="90" y1="380" x2="640" y2="380" stroke="#333333" stroke-width="1"/>
+<line x1="90" y1="380" x2="820" y2="380" stroke="#333333" stroke-width="1"/>
 <text x="14" y="214" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="12" font-weight="400" fill="#111111" transform="rotate(-90,14,214)">Latency (μs)</text>
-<rect x="155" y="178.2" width="38" height="201.8" fill="#A8D5E2" stroke="#2E5C8A" stroke-width="1"/>
-<text x="174.0" y="175.2" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="10" font-weight="400" fill="#1A3A55">4430.8</text>
-<rect x="197" y="296.1" width="38" height="83.9" fill="#F5B461" stroke="#B86B1F" stroke-width="1"/>
-<text x="216.0" y="293.1" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="10" font-weight="400" fill="#6B3D0E">32.8</text>
-<text x="195" y="162.2" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="13" font-weight="700" fill="#C0392B">135.0×</text>
-<text x="195" y="396" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="11" font-weight="400" fill="#111111">MLP</text>
-<text x="195" y="409" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="10" font-weight="400" fill="#444444">(784→128→10)</text>
-<rect x="325" y="59.4" width="38" height="320.6" fill="#A8D5E2" stroke="#2E5C8A" stroke-width="1"/>
-<text x="344.0" y="56.4" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="10" font-weight="400" fill="#1A3A55">621633</text>
-<rect x="367" y="220.6" width="38" height="159.4" fill="#F5B461" stroke="#B86B1F" stroke-width="1"/>
-<text x="386.0" y="217.6" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="10" font-weight="400" fill="#6B3D0E">760.3</text>
-<text x="365" y="43.4" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="13" font-weight="700" fill="#C0392B">818×</text>
-<text x="365" y="396" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="11" font-weight="400" fill="#111111">LeNet-5</text>
-<text x="365" y="409" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="10" font-weight="400" fill="#444444">(Sequential SW)</text>
-<rect x="495" y="124.8" width="38" height="255.2" fill="#A8D5E2" stroke="#2E5C8A" stroke-width="1"/>
-<text x="514.0" y="121.8" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="10" font-weight="400" fill="#1A3A55">40985.4</text>
-<rect x="537" y="220.6" width="38" height="159.4" fill="#F5B461" stroke="#B86B1F" stroke-width="1"/>
-<text x="556.0" y="217.6" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="10" font-weight="400" fill="#6B3D0E">760.3</text>
-<text x="535" y="108.8" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="13" font-weight="700" fill="#C0392B">53.9×</text>
-<text x="535" y="396" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="11" font-weight="400" fill="#111111">LeNet-5</text>
-<text x="535" y="409" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="10" font-weight="400" fill="#444444">(Batched BLAS SW)</text>
-<text x="365" y="427" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="12" font-weight="400" fill="#111111">Workload</text>
-<rect x="150" y="448" width="14" height="14" fill="#A8D5E2" stroke="#2E5C8A" stroke-width="1"/>
-<text x="170" y="460" text-anchor="start" font-family="'Times New Roman', Times, serif" font-size="11" font-weight="400" fill="#111111">SW on ARM Cortex-A9 (NumPy/BLAS)</text>
-<rect x="402" y="448" width="14" height="14" fill="#F5B461" stroke="#B86B1F" stroke-width="1"/>
-<text x="420" y="460" text-anchor="start" font-family="'Times New Roman', Times, serif" font-size="11" font-weight="400" fill="#111111">HW on CIM @ 100 MHz</text>
-<text x="150" y="478" text-anchor="start" font-family="'Times New Roman', Times, serif" font-size="11" font-weight="700" fill="#C0392B">N×</text>
-<text x="170" y="478" text-anchor="start" font-family="'Times New Roman', Times, serif" font-size="11" font-weight="400" fill="#111111">Compute-core speedup (SW / HW compute time)</text>
+<!-- Group 1: MLP (784→128→10), SW=4357.2, HW=66.66, speedup=65.4× -->
+<!-- log10(4357.2) = 3.639, log10(66.66) = 1.824 -->
+<!-- y_scale: 1 -> 380, 10^6 -> 48, so log10(val) maps to 380 - (log10(val) - 0) * (380-48)/(6-0) = 380 - log10(val)*55.33 -->
+<!-- SW: 380 - 3.639*55.33 = 178.7 -->
+<!-- HW: 380 - 1.824*55.33 = 279.1 -->
+<rect x="140" y="178.7" width="38" height="201.3" fill="#A8D5E2" stroke="#2E5C8A" stroke-width="1"/>
+<text x="159.0" y="175.7" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="10" font-weight="400" fill="#1A3A55">4357.2</text>
+<rect x="182" y="279.1" width="38" height="100.9" fill="#F5B461" stroke="#B86B1F" stroke-width="1"/>
+<text x="201.0" y="276.1" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="10" font-weight="400" fill="#6B3D0E">66.66</text>
+<text x="180" y="162.7" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="13" font-weight="700" fill="#C0392B">65.4×</text>
+<text x="180" y="396" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="11" font-weight="400" fill="#111111">MLP</text>
+<text x="180" y="409" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="10" font-weight="400" fill="#444444">(784→128→10)</text>
+
+<!-- Group 2: small_mlp (784→16→10), SW=2175.2, HW=14.53, speedup=149.7× -->
+<!-- log10(2175.2) = 3.337, log10(14.53) = 1.162 -->
+<!-- SW: 380 - 3.337*55.33 = 195.4 -->
+<!-- HW: 380 - 1.162*55.33 = 315.7 -->
+<rect x="310" y="195.4" width="38" height="184.6" fill="#A8D5E2" stroke="#2E5C8A" stroke-width="1"/>
+<text x="329.0" y="192.4" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="10" font-weight="400" fill="#1A3A55">2175.2</text>
+<rect x="352" y="315.7" width="38" height="64.3" fill="#F5B461" stroke="#B86B1F" stroke-width="1"/>
+<text x="371.0" y="312.7" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="10" font-weight="400" fill="#6B3D0E">14.53</text>
+<text x="350" y="179.4" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="13" font-weight="700" fill="#C0392B">149.7×</text>
+<text x="350" y="396" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="11" font-weight="400" fill="#111111">small_mlp</text>
+<text x="350" y="409" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="10" font-weight="400" fill="#444444">(784→16→10)</text>
+
+<!-- Group 3: LeNet-5 Sequential, SW=619070.8, HW=3239.4, speedup=191.1× -->
+<!-- log10(619070.8) = 5.792, log10(3239.4) = 3.510 -->
+<!-- SW: 380 - 5.792*55.33 = 59.5 -->
+<!-- HW: 380 - 3.510*55.33 = 185.8 -->
+<rect x="480" y="59.5" width="38" height="320.5" fill="#A8D5E2" stroke="#2E5C8A" stroke-width="1"/>
+<text x="499.0" y="56.5" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="10" font-weight="400" fill="#1A3A55">619070.8</text>
+<rect x="522" y="185.8" width="38" height="194.2" fill="#F5B461" stroke="#B86B1F" stroke-width="1"/>
+<text x="541.0" y="182.8" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="10" font-weight="400" fill="#6B3D0E">3239.4</text>
+<text x="520" y="43.5" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="13" font-weight="700" fill="#C0392B">191.1×</text>
+<text x="520" y="396" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="11" font-weight="400" fill="#111111">LeNet-5</text>
+<text x="520" y="409" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="10" font-weight="400" fill="#444444">(Sequential SW)</text>
+
+<!-- Group 4: LeNet-5 Batched, SW=40078.7, HW=3239.4, speedup=12.4× -->
+<!-- log10(40078.7) = 4.603, log10(3239.4) = 3.510 -->
+<!-- SW: 380 - 4.603*55.33 = 125.3 -->
+<!-- HW: 380 - 3.510*55.33 = 185.8 -->
+<rect x="650" y="125.3" width="38" height="254.7" fill="#A8D5E2" stroke="#2E5C8A" stroke-width="1"/>
+<text x="669.0" y="122.3" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="10" font-weight="400" fill="#1A3A55">40078.7</text>
+<rect x="692" y="185.8" width="38" height="194.2" fill="#F5B461" stroke="#B86B1F" stroke-width="1"/>
+<text x="711.0" y="182.8" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="10" font-weight="400" fill="#6B3D0E">3239.4</text>
+<text x="690" y="109.3" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="13" font-weight="700" fill="#C0392B">12.4×</text>
+<text x="690" y="396" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="11" font-weight="400" fill="#111111">LeNet-5</text>
+<text x="690" y="409" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="10" font-weight="400" fill="#444444">(Batched BLAS SW)</text>
+
+<!-- X-axis label -->
+<text x="455" y="427" text-anchor="middle" font-family="'Times New Roman', Times, serif" font-size="12" font-weight="400" fill="#111111">Workload</text>
+
+<!-- Legend -->
+<rect x="200" y="448" width="14" height="14" fill="#A8D5E2" stroke="#2E5C8A" stroke-width="1"/>
+<text x="220" y="460" text-anchor="start" font-family="'Times New Roman', Times, serif" font-size="11" font-weight="400" fill="#111111">SW on ARM Cortex-A9 (NumPy/BLAS)</text>
+<rect x="482" y="448" width="14" height="14" fill="#F5B461" stroke="#B86B1F" stroke-width="1"/>
+<text x="500" y="460" text-anchor="start" font-family="'Times New Roman', Times, serif" font-size="11" font-weight="400" fill="#111111">HW on CIM @ 64 MHz</text>
+<text x="200" y="478" text-anchor="start" font-family="'Times New Roman', Times, serif" font-size="11" font-weight="700" fill="#C0392B">N×</text>
+<text x="220" y="478" text-anchor="start" font-family="'Times New Roman', Times, serif" font-size="11" font-weight="400" fill="#111111">Compute-core speedup (SW / HW compute time)</text>
 </svg>

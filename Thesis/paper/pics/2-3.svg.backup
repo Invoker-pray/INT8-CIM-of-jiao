@@ -58,8 +58,8 @@
 <circle cx="782.5" cy="147" r="4" fill="#000000" stroke="none" stroke-width="0"/>
 <circle cx="802.5" cy="147" r="4" fill="#000000" stroke="none" stroke-width="0"/>
 <text x="140" y="515" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >Each x_eff[r]</text>
-<text x="140" y="540" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >is 10-bit</text>
-<text x="140" y="565" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >signed [-512, 511]</text>
+<text x="140" y="540" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >is 9-bit</text>
+<text x="140" y="565" font-family="Times New Roman, Times, serif" font-size="18" font-weight="normal" text-anchor="middle" >unsigned</text>
 <line x1="240" y1="306.0" x2="300" y2="306.0" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
 <text x="222" y="311.0" font-family="Times New Roman, Times, serif" font-size="17" font-weight="normal" text-anchor="end" font-style="italic">x_eff[0]</text>
 <line x1="240" y1="396.0" x2="300" y2="396.0" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
@@ -342,7 +342,7 @@
 <circle cx="1365" cy="552.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
 <circle cx="1365" cy="571.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
 <circle cx="1365" cy="590.0" r="4" fill="#000000" stroke="none" stroke-width="0"/>
-<text x="800.0" y="905" font-family="Times New Roman, Times, serif" font-size="22" font-weight="normal" text-anchor="middle" >Logical 16×16 array — 256 MAC/cycle at TILE_SPLIT_FACTOR=1; board default TILE_SPLIT_FACTOR=4: 4 multipliers/row (64/Tile), 256 MAC over 4 cycles</text>
+<text x="800.0" y="905" font-family="Times New Roman, Times, serif" font-size="22" font-weight="normal" text-anchor="middle" >256 MACs / cycle (when TILE_SPLIT_FACTOR=1)</text>
 <text x="800.0" y="982" font-family="Times New Roman, Times, serif" font-size="26" font-weight="bold" text-anchor="middle" >(b) Timing when TILE_SPLIT_FACTOR = 4</text>
 <line x1="80" y1="1097" x2="1510" y2="1097" stroke="#000000" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-linecap="butt" />
 <text x="1530" y="1122" font-family="Times New Roman, Times, serif" font-size="20" font-weight="normal" text-anchor="end" >Time</text>

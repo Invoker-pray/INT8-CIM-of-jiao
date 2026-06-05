@@ -44,10 +44,15 @@ CHUNKS_PER_TILE = (TILE_ROWS * TILE_COLS) // ELEMS_PER_CHUNK  # 64
 
 
 def apply_zero_point(x_uint8: np.ndarray, zero_point: int) -> np.ndarray:
-    """Subtract zero point from UINT8 input, clamp to [0, 511]."""
+    """Zero-extend UINT8 input, subtract signed zero point, saturate to signed 10-bit [-512, 511].
+
+    Matches RTL input_buffer: X_EFF_W=10, signed. For all shipped models (zp=0 or zp=-128)
+    x_eff is non-negative, so the lower clamp at -512 is never exercised; it is kept so
+    the reference matches the signed datapath for any input zero point.
+    """
     x_eff = x_uint8.astype(np.int32) - zero_point
-    x_eff = np.clip(x_eff, 0, 511)
-    return x_eff.astype(np.uint16)
+    x_eff = np.clip(x_eff, -512, 511)
+    return x_eff.astype(np.int32)
 
 
 def cim_mvm(x_eff: np.ndarray, weight_int8: np.ndarray) -> np.ndarray:
@@ -254,7 +259,7 @@ def generate_mnist_e2e(output_dir, seed=None):
         return mult, shift
 
     # Calibrate FC1
-    x_eff_cal = np.clip(img.astype(np.int32) - (-128), 0, 511).astype(np.int32)
+    x_eff_cal = np.clip(img.astype(np.int32) - (-128), -512, 511).astype(np.int32)
     acc1_cal = w1.astype(np.int32) @ x_eff_cal + b1.astype(np.int32)
     relu1_cal = np.maximum(acc1_cal, 0)
     fc1_mult, fc1_shift = calibrate_requant(relu1_cal, shift=16)
@@ -271,7 +276,7 @@ def generate_mnist_e2e(output_dir, seed=None):
 
     # Calibrate FC2
     fc2_in_cal = fc1_out_cal.view(np.uint8)
-    x_eff2_cal = np.clip(fc2_in_cal.astype(np.int32) - 0, 0, 511).astype(np.int32)
+    x_eff2_cal = np.clip(fc2_in_cal.astype(np.int32) - 0, -512, 511).astype(np.int32)
     acc2_cal = w2.astype(np.int32) @ x_eff2_cal + b2.astype(np.int32)
     fc2_mult, fc2_shift = calibrate_requant(acc2_cal, shift=16)
 
@@ -344,7 +349,7 @@ def generate_mnist_e2e(output_dir, seed=None):
     )
 
     # ---- Verification: sanity check layer 1 manually ----
-    x_eff = np.clip(img.astype(np.int32) - (-128), 0, 511)
+    x_eff = np.clip(img.astype(np.int32) - (-128), -512, 511)
     manual_acc0 = np.sum(x_eff * w1[0].astype(np.int32)) + b1[0]
     assert mlp_result["layers"][0]["acc_bias"][0] == manual_acc0, (
         f"Manual check failed: {mlp_result['layers'][0]['acc_bias'][0]} != {manual_acc0}"
@@ -657,7 +662,7 @@ def self_test(seed=None):
     print(f"Output (all):     {result['output']}")
     print(f"Pred class:       {result['pred_class']}")
 
-    x_eff = np.clip(x.astype(np.int32) - ZP, 0, 511)
+    x_eff = np.clip(x.astype(np.int32) - ZP, -512, 511)
     manual_acc = np.sum(x_eff * weight[0].astype(np.int32)) + bias[0]
     assert result["acc_bias"][0] == manual_acc, "ACC mismatch!"
     print("Manual check: PASS")

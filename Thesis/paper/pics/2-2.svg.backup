@@ -444,7 +444,7 @@
      text-anchor="middle"
      font-family="'Times New Roman',Times,serif"
      font-size="8"
-     fill="#5a2a00">256 MAC / 4 cyc (64 mult, 时分复用)</text>
+     fill="#5a2a00">256 MACs/cycle</text>
   <text
      id="lbl-tile-4"
      x="312"

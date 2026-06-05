@@ -86,7 +86,7 @@
 \RequirePackage{longtable}
 \RequirePackage{booktabs}
 \RequirePackage{subfig}
-\RequirePackage[numbers,super,square,sort&compress]{natbib}
+\RequirePackage[numbers,square,sort&compress]{natbib}
 \RequirePackage{setspace}
 \RequirePackage[shortlabels]{enumitem}
 \setenumerate[1]{1),fullwidth,itemindent=\parindent,listparindent=\parindent,itemsep=0.05\baselineskip,partopsep=0pt,parsep=0ex,topsep=0.1\baselineskip}
