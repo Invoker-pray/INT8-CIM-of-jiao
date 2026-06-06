@@ -96,6 +96,28 @@
 \RequirePackage{xcolor}
 \RequirePackage{gbt7714}
 
+% ===== 引用格式：GB/T 7714 顺序编码制——右上角小号上标方括号 [x] =====
+% 仅改 \cite 的渲染形式（如 [1]、[1-3]、[1,5]），不影响参考文献表及其它任何格式。
+% 关键：彻底消除“数字一大一小 / 先小后大 / 大小混乱”。
+% 根因——gbt7714 在 natbib 之上对引用内部（数字或分隔符）会再套一层 \textsuperscript；
+%       若外面再包一次 \textsuperscript，方括号被缩放一次、内部数字被缩放两次，
+%       于是出现“括号大、数字小”的错位。
+% 解法——外层只用【一次】\textsuperscript 负责整体缩放与上抬；进入其内部后立刻把
+%       \textsuperscript 临时置为恒等（\@firstofone），令 \citenum 内部任何嵌套上标
+%       失效、不再二次缩放。这样“方括号 + 数字”整体只被缩放一次，尺寸必然一致，
+%       同时仍是标准上标字号；\citenum 仍走 natbib 超链接钩子，hyperref 链接保持有效，
+%       sort&compress 的区间合并（如 [1-3]）也照常生效。
+% 置于 \AtBeginDocument，确保最终覆盖 gbt7714 与 hyperref 的设置。
+\renewcommand{\cite}[1]{%
+    \leavevmode
+    \raisebox{0.5ex}{%
+      \fontsize{7.5bp}{0bp}\selectfont
+      \let\textsuperscript\@firstofone
+      \let\citenumfont\@firstofone
+      [\citenum{#1}]%
+    }%
+  }%
+
 % Add spacing before a table
 \RequirePackage{etoolbox}
 \AtBeginEnvironment{table}{\vspace{10pt}}
