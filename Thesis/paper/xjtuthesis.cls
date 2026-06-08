@@ -223,8 +223,8 @@
 \renewcommand\normalsize{%
   %下面这一行必须以百分号结尾，否则header会有一个向右的微小偏移。
   \@setfontsize\normalsize{12bp}{15.6bp}%
-  \abovedisplayskip=10bp \@plus 2bp \@minus 2bp
-  \abovedisplayshortskip=10bp \@plus 2bp \@minus 2bp
+  \abovedisplayskip=3bp \@plus 1bp \@minus 1bp
+  \abovedisplayshortskip=3bp \@plus 1bp \@minus 1bp
   \belowdisplayskip=\abovedisplayskip
   \belowdisplayshortskip=\abovedisplayshortskip}
 \DeclareCaptionFont{wuhao}{\wuhao}\captionsetup{font=wuhao,labelsep=quad} % thanks to @wanderxjtu
@@ -575,21 +575,21 @@
                 \textbf{ \hfill  \xjtu@ctitle \hfill}
             }
             \vskip 5.2cm
-            \begin{center}{{\sanhao
+            \begin{center}{{\xiaosan
                 \begin{tabular}{r@{： }l}%设置信息表格按冒号左右对齐
                     %加入长空行保证表格按分隔符居中
-                    \multicolumn{1}{r}{\qquad\qquad\qquad\qquad\qquad\qquad\qquad}  
-                    &\multicolumn{1}{l}{\qquad\qquad\qquad\qquad\qquad\qquad\qquad} \\ 
+                    \multicolumn{1}{r}{\qquad\qquad\qquad\qquad\qquad\qquad\qquad}
+                    &\multicolumn{1}{l}{\qquad\qquad\qquad\qquad\qquad\qquad\qquad} \\
                     学院（部、中心）& {\xjtu@ccollege} \\ [0.5em]
                     专\qquad 业& {\xjtu@cmajor} \\ [0.5em]
                     班\qquad 级& {\xjtu@cclass} \\ [0.5em]
                     学生姓名& {\xjtu@cauthor} \\ [0.5em]
                     学\qquad 号& {\xjtu@stunum} \\ [0.5em]
-                    指导教师& {\xjtu@csupervisor} \\ [0.5em]
+                    指导教师& {\xjtu@csupervisor} \\ [1.2em]
+                    \multicolumn{1}{r}{\makebox[0pt][c]{\xjtu@cproddate}\hspace{0.7em}} &
                 \end{tabular}
             }}
             \end{center}
-            \sanhao \center {\xjtu@cproddate}
             
 
         \end{center}
