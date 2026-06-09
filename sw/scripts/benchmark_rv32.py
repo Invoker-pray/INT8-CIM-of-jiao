@@ -243,17 +243,21 @@ def main():
     wrong_list = []
     timings = []
 
-    # Initial setup: hold CPU, load firmware + first image
+    # Pre-load all images before timing (align with ARM benchmark methodology)
+    all_inputs = []
+    for img_path in img_files:
+        name = os.path.basename(img_path).replace(".hex", "")
+        img_u8 = np.array(read_hex_u8(img_path), dtype=np.uint8)
+        label = int(open(os.path.join(img_dir, f"{name}_label.txt")).read().strip())
+        all_inputs.append((name, img_u8, label))
+
+    # Initial setup: hold CPU, load firmware
     drv.cpu_hold()
     drv.load_firmware(fw_words)
 
     t_start = time.time()
 
-    for idx, img_path in enumerate(img_files):
-        name = os.path.basename(img_path).replace(".hex", "")
-        img_u8 = np.array(read_hex_u8(img_path), dtype=np.uint8)
-        label = int(open(os.path.join(img_dir, f"{name}_label.txt")).read().strip())
-
+    for idx, (name, img_u8, label) in enumerate(all_inputs):
         t0 = time.perf_counter()
 
         # Load image + signal go
