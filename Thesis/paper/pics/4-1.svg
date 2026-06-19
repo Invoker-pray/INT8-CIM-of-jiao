@@ -1,150 +1,984 @@
-<svg width="100%" viewBox="0 0 719.98 900" role="img" xmlns="http://www.w3.org/2000/svg" style="">
-  <title style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">Three-Level Verification Methodology</title>
-  <desc style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">Vertical flowchart showing three verification layers: Python Golden Model, VCS RTL Simulation, and PYNQ-Z2 Board Verification, connected by arrows and a bit-exact comparison indicator.</desc>
-
-  <defs>
-    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="100%"
+   viewBox="0 0 719.98 900"
+   role="img"
+   version="1.1"
+   id="svg68"
+   sodipodi:docname="4-1.svg"
+   style=""
+   inkscape:export-filename="4-1.png"
+   inkscape:export-xdpi="400"
+   inkscape:export-ydpi="400"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview68"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="1.7088889"
+     inkscape:cx="369.24578"
+     inkscape:cy="712.74384"
+     inkscape:window-width="1908"
+     inkscape:window-height="1035"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg68" />
+  <title
+     id="title1"
+     style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">Three-Level Verification Methodology</title>
+  <desc
+     id="desc1"
+     style="fill:rgb(0, 0, 0);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">Vertical flowchart showing three verification layers: Python Golden Model, VCS RTL Simulation, and PYNQ-Z2 Board Verification, connected by arrows and a bit-exact comparison indicator.</desc>
+  <defs
+     id="defs31">
+    <marker
+       id="arrow"
+       viewBox="0 0 10 10"
+       refX="8"
+       refY="5"
+       markerWidth="6"
+       markerHeight="6"
+       orient="auto-start-reverse">
+      <path
+         d="M2 1L8 5L2 9"
+         fill="none"
+         stroke="context-stroke"
+         stroke-width="1.5"
+         stroke-linecap="round"
+         stroke-linejoin="round"
+         id="path1" />
     </marker>
-    <marker id="arrow-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M2 1L8 5L2 9" fill="none" stroke="#C0392B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <marker
+       id="arrow-red"
+       viewBox="0 0 10 10"
+       refX="8"
+       refY="5"
+       markerWidth="6"
+       markerHeight="6"
+       orient="auto-start-reverse">
+      <path
+         d="M2 1L8 5L2 9"
+         fill="none"
+         stroke="#C0392B"
+         stroke-width="1.5"
+         stroke-linecap="round"
+         stroke-linejoin="round"
+         id="path2" />
     </marker>
-  <mask id="imagine-text-gaps-gytfem" maskUnits="userSpaceOnUse"><rect x="0" y="0" width="719.98" height="900" fill="white"/><rect x="36" y="24.855743408203125" width="178.2626495361328" height="18.288514137268066" fill="black" rx="2"/><rect x="177.5170440673828" y="58.855743408203125" width="94.96589660644531" height="18.288514137268066" fill="black" rx="2"/><rect x="170.89317321777344" y="81.64955139160156" width="108.2136459350586" height="16.700901985168457" fill="black" rx="2"/><rect x="501.15289306640625" y="55.05527114868164" width="67.69424057006836" height="15.907094955444336" fill="black" rx="2"/><rect x="497.8277282714844" y="71.0552749633789" width="74.34457397460938" height="15.907094955444336" fill="black" rx="2"/><rect x="495.6138610839844" y="87.0552749633789" width="78.77224731445312" height="15.907094955444336" fill="black" rx="2"/><rect x="228" y="126.05526733398438" width="131.957275390625" height="15.907094955444336" fill="black" rx="2"/><rect x="36" y="158.85574340820312" width="175.86358642578125" height="18.288514137268066" fill="black" rx="2"/><rect x="100.13288879394531" y="194.05526733398438" width="55.734222412109375" height="15.907094955444336" fill="black" rx="2"/><rect x="84.30085754394531" y="210.05526733398438" width="87.39827728271484" height="15.907094955444336" fill="black" rx="2"/><rect x="276.68011474609375" y="190.05526733398438" width="86.63975524902344" height="15.907094955444336" fill="black" rx="2"/><rect x="274.1487731933594" y="206.05526733398438" width="91.70247650146484" height="15.907094955444336" fill="black" rx="2"/><rect x="479.6787414550781" y="190.05526733398438" width="64.64249420166016" height="15.907094955444336" fill="black" rx="2"/><rect x="458.3165283203125" y="206.05526733398438" width="107.36691284179688" height="15.907094955444336" fill="black" rx="2"/><rect x="274.1487731933594" y="323.6495361328125" width="91.70247650146484" height="16.700901985168457" fill="black" rx="2"/><rect x="294.62896728515625" y="342.0552673339844" width="50.7420654296875" height="15.907094955444336" fill="black" rx="2"/><rect x="324" y="374.0552673339844" width="149.80909729003906" height="15.907094955444336" fill="black" rx="2"/><rect x="36" y="408.8557434082031" width="215.8008575439453" height="18.288514137268066" fill="black" rx="2"/><rect x="200.7099151611328" y="443.6495361328125" width="268.5801696777344" height="16.700901985168457" fill="black" rx="2"/><rect x="209.02723693847656" y="462.0552673339844" width="251.94552612304688" height="15.907094955444336" fill="black" rx="2"/><rect x="113.8955307006836" y="518.0552978515625" width="30.208938598632812" height="15.907094955444336" fill="black" rx="2"/><rect x="89.74617767333984" y="534.0552978515625" width="78.50764465332031" height="15.907094955444336" fill="black" rx="2"/><rect x="303.7832336425781" y="518.0552978515625" width="42.433555603027344" height="15.907094955444336" fill="black" rx="2"/><rect x="285.7461853027344" y="534.0552978515625" width="78.50764465332031" height="15.907094955444336" fill="black" rx="2"/><rect x="505.8141784667969" y="518.0552978515625" width="50.371620178222656" height="15.907094955444336" fill="black" rx="2"/><rect x="491.7461853027344" y="534.0552978515625" width="78.50764465332031" height="15.907094955444336" fill="black" rx="2"/><rect x="656" y="212.05526733398438" width="45.203060150146484" height="15.907094955444336" fill="black" rx="2"/><rect x="656" y="226.05526733398438" width="57.97452163696289" height="15.907094955444336" fill="black" rx="2"/><rect x="176.41061401367188" y="593.6495361328125" width="317.17877197265625" height="16.700901985168457" fill="black" rx="2"/></mask></defs>
-
+    <mask
+       id="imagine-text-gaps-gytfem"
+       maskUnits="userSpaceOnUse">
+      <rect
+         x="0"
+         y="0"
+         width="719.98"
+         height="900"
+         fill="white"
+         id="rect2" />
+      <rect
+         x="36"
+         y="24.855743408203125"
+         width="178.2626495361328"
+         height="18.288514137268066"
+         fill="black"
+         rx="2"
+         id="rect3" />
+      <rect
+         x="177.5170440673828"
+         y="58.855743408203125"
+         width="94.96589660644531"
+         height="18.288514137268066"
+         fill="black"
+         rx="2"
+         id="rect4" />
+      <rect
+         x="170.89317321777344"
+         y="81.64955139160156"
+         width="108.2136459350586"
+         height="16.700901985168457"
+         fill="black"
+         rx="2"
+         id="rect5" />
+      <rect
+         x="501.15289306640625"
+         y="55.05527114868164"
+         width="67.69424057006836"
+         height="15.907094955444336"
+         fill="black"
+         rx="2"
+         id="rect6" />
+      <rect
+         x="497.8277282714844"
+         y="71.0552749633789"
+         width="74.34457397460938"
+         height="15.907094955444336"
+         fill="black"
+         rx="2"
+         id="rect7" />
+      <rect
+         x="495.6138610839844"
+         y="87.0552749633789"
+         width="78.77224731445312"
+         height="15.907094955444336"
+         fill="black"
+         rx="2"
+         id="rect8" />
+      <rect
+         x="228"
+         y="126.05526733398438"
+         width="131.957275390625"
+         height="15.907094955444336"
+         fill="black"
+         rx="2"
+         id="rect9" />
+      <rect
+         x="36"
+         y="158.85574340820312"
+         width="175.86358642578125"
+         height="18.288514137268066"
+         fill="black"
+         rx="2"
+         id="rect10" />
+      <rect
+         x="100.13288879394531"
+         y="194.05526733398438"
+         width="55.734222412109375"
+         height="15.907094955444336"
+         fill="black"
+         rx="2"
+         id="rect11" />
+      <rect
+         x="84.30085754394531"
+         y="210.05526733398438"
+         width="87.39827728271484"
+         height="15.907094955444336"
+         fill="black"
+         rx="2"
+         id="rect12" />
+      <rect
+         x="276.68011474609375"
+         y="190.05526733398438"
+         width="86.63975524902344"
+         height="15.907094955444336"
+         fill="black"
+         rx="2"
+         id="rect13" />
+      <rect
+         x="274.1487731933594"
+         y="206.05526733398438"
+         width="91.70247650146484"
+         height="15.907094955444336"
+         fill="black"
+         rx="2"
+         id="rect14" />
+      <rect
+         x="479.6787414550781"
+         y="190.05526733398438"
+         width="64.64249420166016"
+         height="15.907094955444336"
+         fill="black"
+         rx="2"
+         id="rect15" />
+      <rect
+         x="458.3165283203125"
+         y="206.05526733398438"
+         width="107.36691284179688"
+         height="15.907094955444336"
+         fill="black"
+         rx="2"
+         id="rect16" />
+      <rect
+         x="274.1487731933594"
+         y="323.6495361328125"
+         width="91.70247650146484"
+         height="16.700901985168457"
+         fill="black"
+         rx="2"
+         id="rect17" />
+      <rect
+         x="294.62896728515625"
+         y="342.0552673339844"
+         width="50.7420654296875"
+         height="15.907094955444336"
+         fill="black"
+         rx="2"
+         id="rect18" />
+      <rect
+         x="324"
+         y="374.0552673339844"
+         width="149.80909729003906"
+         height="15.907094955444336"
+         fill="black"
+         rx="2"
+         id="rect19" />
+      <rect
+         x="36"
+         y="408.8557434082031"
+         width="215.8008575439453"
+         height="18.288514137268066"
+         fill="black"
+         rx="2"
+         id="rect20" />
+      <rect
+         x="200.7099151611328"
+         y="443.6495361328125"
+         width="268.5801696777344"
+         height="16.700901985168457"
+         fill="black"
+         rx="2"
+         id="rect21" />
+      <rect
+         x="209.02723693847656"
+         y="462.0552673339844"
+         width="251.94552612304688"
+         height="15.907094955444336"
+         fill="black"
+         rx="2"
+         id="rect22" />
+      <rect
+         x="113.8955307006836"
+         y="518.0552978515625"
+         width="30.208938598632812"
+         height="15.907094955444336"
+         fill="black"
+         rx="2"
+         id="rect23" />
+      <rect
+         x="89.74617767333984"
+         y="534.0552978515625"
+         width="78.50764465332031"
+         height="15.907094955444336"
+         fill="black"
+         rx="2"
+         id="rect24" />
+      <rect
+         x="303.7832336425781"
+         y="518.0552978515625"
+         width="42.433555603027344"
+         height="15.907094955444336"
+         fill="black"
+         rx="2"
+         id="rect25" />
+      <rect
+         x="285.7461853027344"
+         y="534.0552978515625"
+         width="78.50764465332031"
+         height="15.907094955444336"
+         fill="black"
+         rx="2"
+         id="rect26" />
+      <rect
+         x="505.8141784667969"
+         y="518.0552978515625"
+         width="50.371620178222656"
+         height="15.907094955444336"
+         fill="black"
+         rx="2"
+         id="rect27" />
+      <rect
+         x="491.7461853027344"
+         y="534.0552978515625"
+         width="78.50764465332031"
+         height="15.907094955444336"
+         fill="black"
+         rx="2"
+         id="rect28" />
+      <rect
+         x="656"
+         y="212.05526733398438"
+         width="45.203060150146484"
+         height="15.907094955444336"
+         fill="black"
+         rx="2"
+         id="rect29" />
+      <rect
+         x="656"
+         y="226.05526733398438"
+         width="57.97452163696289"
+         height="15.907094955444336"
+         fill="black"
+         rx="2"
+         id="rect30" />
+      <rect
+         x="176.41061401367188"
+         y="593.6495361328125"
+         width="317.17877197265625"
+         height="16.700901985168457"
+         fill="black"
+         rx="2"
+         id="rect31" />
+    </mask>
+  </defs>
   <!-- ═══════════════════════════════════════════════ -->
   <!-- LAYER 1: Python Golden Model                   -->
   <!-- ═══════════════════════════════════════════════ -->
-
   <!-- Layer header label -->
-  <text font-family="'Times New Roman', Georgia, serif" font-size="12" font-weight="700" fill="#333333" x="40" y="34" dominant-baseline="central" style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:12px;font-weight:700;text-anchor:start;dominant-baseline:central">Layer 1 — Python Golden Model</text>
-
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="12"
+     font-weight="700"
+     fill="#333333"
+     x="40"
+     y="34"
+     dominant-baseline="central"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:12px;font-weight:700;text-anchor:start;dominant-baseline:central"
+     id="text31">Layer 1 — Python Golden Model</text>
   <!-- Main green box -->
-  <rect x="40" y="48" width="370" height="64" rx="4" fill="#B5D99C" stroke="#4A7A2E" stroke-width="0.75" style="fill:rgb(181, 217, 156);stroke:rgb(74, 122, 46);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="12" font-weight="700" fill="#2A4A1A" x="225" y="68" text-anchor="middle" dominant-baseline="central" style="fill:rgb(42, 74, 26);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:12px;font-weight:700;text-anchor:middle;dominant-baseline:central">golden_model.py</text>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#3A5A20" x="225" y="90" text-anchor="middle" dominant-baseline="central" style="fill:rgb(58, 90, 32);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:11px;font-weight:400;text-anchor:middle;dominant-baseline:central">pure integer arithmetic</text>
-
+  <rect
+     x="40"
+     y="48"
+     width="370"
+     height="64"
+     rx="4"
+     fill="#B5D99C"
+     stroke="#4A7A2E"
+     stroke-width="0.75"
+     style="fill:rgb(181, 217, 156);stroke:rgb(74, 122, 46);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect32" />
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="12"
+     font-weight="700"
+     fill="#2A4A1A"
+     x="225"
+     y="68"
+     text-anchor="middle"
+     dominant-baseline="central"
+     style="fill:rgb(42, 74, 26);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:12px;font-weight:700;text-anchor:middle;dominant-baseline:central"
+     id="text32">golden_model.py</text>
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#3A5A20"
+     x="225"
+     y="90"
+     text-anchor="middle"
+     dominant-baseline="central"
+     style="fill:rgb(58, 90, 32);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:11px;font-weight:400;text-anchor:middle;dominant-baseline:central"
+     id="text33">pure integer arithmetic</text>
   <!-- Side artifact box (grey) -->
-  <rect x="430" y="48" width="210" height="64" rx="4" fill="#D8D8D8" stroke="#555555" stroke-width="0.75" style="fill:rgb(216, 216, 216);stroke:rgb(85, 85, 85);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="10" fill="#333333" x="535" y="63" text-anchor="middle" dominant-baseline="central" style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:central">hex testvectors</text>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="10" fill="#333333" x="535" y="79" text-anchor="middle" dominant-baseline="central" style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:central">(weights, inputs,</text>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="10" fill="#333333" x="535" y="95" text-anchor="middle" dominant-baseline="central" style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:central">expected outputs)</text>
-
+  <rect
+     x="430"
+     y="48"
+     width="210"
+     height="64"
+     rx="4"
+     fill="#D8D8D8"
+     stroke="#555555"
+     stroke-width="0.75"
+     style="fill:rgb(216, 216, 216);stroke:rgb(85, 85, 85);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect33" />
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     fill="#333333"
+     x="535"
+     y="63"
+     text-anchor="middle"
+     dominant-baseline="central"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:central"
+     id="text34">hex testvectors</text>
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     fill="#333333"
+     x="535"
+     y="79"
+     text-anchor="middle"
+     dominant-baseline="central"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:central"
+     id="text35">(weights, inputs,</text>
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     fill="#333333"
+     x="535"
+     y="95"
+     text-anchor="middle"
+     dominant-baseline="central"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:central"
+     id="text36">expected outputs)</text>
   <!-- Arrow from main box to side artifact -->
-  <line x1="410" y1="80" x2="428" y2="80" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)" fill="none" style="fill:none;stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-
+  <line
+     x1="410"
+     y1="80"
+     x2="428"
+     y2="80"
+     stroke="#333333"
+     stroke-width="1.5"
+     marker-end="url(#arrow)"
+     fill="none"
+     style="fill:none;stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line36" />
   <!-- ═══════════════════════════════════════════════ -->
   <!-- Arrow Layer 1 → Layer 2                        -->
   <!-- ═══════════════════════════════════════════════ -->
-
-  <line x1="225" y1="112" x2="225" y2="148" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)" fill="none" style="fill:none;stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="10" font-style="italic" fill="#333333" x="232" y="134" dominant-baseline="central" style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;font-style:italic;text-anchor:start;dominant-baseline:central">Testvectors / Reference outputs</text>
-
+  <line
+     x1="225"
+     y1="112"
+     x2="225"
+     y2="148"
+     stroke="#333333"
+     stroke-width="1.5"
+     marker-end="url(#arrow)"
+     fill="none"
+     style="fill:none;stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line37" />
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     font-style="italic"
+     fill="#333333"
+     x="232"
+     y="134"
+     dominant-baseline="central"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;font-style:italic;text-anchor:start;dominant-baseline:central"
+     id="text37">Testvectors / Reference outputs</text>
   <!-- ═══════════════════════════════════════════════ -->
   <!-- LAYER 2: VCS RTL Simulation                    -->
   <!-- ═══════════════════════════════════════════════ -->
-
-  <text font-family="'Times New Roman', Georgia, serif" font-size="12" font-weight="700" fill="#333333" x="40" y="168" dominant-baseline="central" style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:12px;font-weight:700;text-anchor:start;dominant-baseline:central">Layer 2 — VCS RTL Simulation</text>
-
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="12"
+     font-weight="700"
+     fill="#333333"
+     x="40"
+     y="168"
+     dominant-baseline="central"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:12px;font-weight:700;text-anchor:start;dominant-baseline:central"
+     id="text38">Layer 2 — VCS RTL Simulation</text>
   <!-- Three parallel blue testbench boxes -->
   <!-- Box 1 -->
-  <rect x="40" y="182" width="176" height="72" rx="4" fill="#A8D5E2" stroke="#2E5C8A" stroke-width="0.75" style="fill:rgb(168, 213, 226);stroke:rgb(46, 92, 138);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="10" font-weight="700" fill="#1A3A5C" x="128" y="202" text-anchor="middle" dominant-baseline="central" style="fill:rgb(26, 58, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:700;text-anchor:middle;dominant-baseline:central">tb_cim_tile</text>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="10" fill="#1A3A5C" x="128" y="218" text-anchor="middle" dominant-baseline="central" style="fill:rgb(26, 58, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:central">103 random vectors</text>
-
+  <rect
+     x="40"
+     y="182"
+     width="176"
+     height="72"
+     rx="4"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     stroke-width="0.75"
+     style="fill:rgb(168, 213, 226);stroke:rgb(46, 92, 138);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect38" />
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     font-weight="700"
+     fill="#1A3A5C"
+     x="128"
+     y="202"
+     text-anchor="middle"
+     dominant-baseline="central"
+     style="fill:rgb(26, 58, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:700;text-anchor:middle;dominant-baseline:central"
+     id="text39">tb_cim_tile</text>
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     fill="#1A3A5C"
+     x="128"
+     y="218"
+     text-anchor="middle"
+     dominant-baseline="central"
+     style="fill:rgb(26, 58, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:central"
+     id="text40">103 random vectors</text>
   <!-- Box 2 -->
-  <rect x="232" y="182" width="176" height="72" rx="4" fill="#A8D5E2" stroke="#2E5C8A" stroke-width="0.75" style="fill:rgb(168, 213, 226);stroke:rgb(46, 92, 138);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="10" font-weight="700" fill="#1A3A5C" x="320" y="198" text-anchor="middle" dominant-baseline="central" style="fill:rgb(26, 58, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:700;text-anchor:middle;dominant-baseline:central">tb_cim_accel_core</text>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="10" fill="#1A3A5C" x="320" y="214" text-anchor="middle" dominant-baseline="central" style="fill:rgb(26, 58, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:central">random + edge cases</text>
-
+  <rect
+     x="232"
+     y="182"
+     width="176"
+     height="72"
+     rx="4"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     stroke-width="0.75"
+     style="fill:rgb(168, 213, 226);stroke:rgb(46, 92, 138);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect40" />
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     font-weight="700"
+     fill="#1A3A5C"
+     x="320"
+     y="198"
+     text-anchor="middle"
+     dominant-baseline="central"
+     style="fill:rgb(26, 58, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:700;text-anchor:middle;dominant-baseline:central"
+     id="text41">tb_cim_accel_core</text>
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     fill="#1A3A5C"
+     x="320"
+     y="214"
+     text-anchor="middle"
+     dominant-baseline="central"
+     style="fill:rgb(26, 58, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:central"
+     id="text42">random + edge cases</text>
   <!-- Box 3 -->
-  <rect x="424" y="182" width="176" height="72" rx="4" fill="#A8D5E2" stroke="#2E5C8A" stroke-width="0.75" style="fill:rgb(168, 213, 226);stroke:rgb(46, 92, 138);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="10" font-weight="700" fill="#1A3A5C" x="512" y="198" text-anchor="middle" dominant-baseline="central" style="fill:rgb(26, 58, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:700;text-anchor:middle;dominant-baseline:central">tb_mnist_e2e</text>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="10" fill="#1A3A5C" x="512" y="214" text-anchor="middle" dominant-baseline="central" style="fill:rgb(26, 58, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:central">full MLP 784→128→10</text>
-
+  <rect
+     x="424"
+     y="182"
+     width="176"
+     height="72"
+     rx="4"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     stroke-width="0.75"
+     style="fill:rgb(168, 213, 226);stroke:rgb(46, 92, 138);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect42" />
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     font-weight="700"
+     fill="#1A3A5C"
+     x="512"
+     y="198"
+     text-anchor="middle"
+     dominant-baseline="central"
+     style="fill:rgb(26, 58, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:700;text-anchor:middle;dominant-baseline:central"
+     id="text43">tb_mnist_e2e</text>
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     fill="#1A3A5C"
+     x="512"
+     y="214"
+     text-anchor="middle"
+     dominant-baseline="central"
+     style="fill:rgb(26, 58, 92);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:central"
+     id="text44">full MLP 784→128→10</text>
   <!-- run_regression.sh aggregator (grey), right side -->
   <!-- arrows from each box to aggregator, then aggregator box -->
   <!-- Aggregator positioned below and to the right, connected via vertical + horizontal paths -->
-
   <!-- Arrow from box1 to aggregator line (converging into a single horizontal) -->
   <!-- We'll draw three lines converging to a common y=294, then a horizontal to aggregator -->
-  <line x1="128" y1="254" x2="128" y2="290" stroke="#333333" stroke-width="1" fill="none" style="fill:none;stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <line x1="320" y1="254" x2="320" y2="290" stroke="#333333" stroke-width="1" fill="none" style="fill:none;stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <line x1="512" y1="254" x2="512" y2="290" stroke="#333333" stroke-width="1" fill="none" style="fill:none;stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <line
+     x1="128"
+     y1="254"
+     x2="128"
+     y2="290"
+     stroke="#333333"
+     stroke-width="1"
+     fill="none"
+     style="fill:none;stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line44" />
+  <line
+     x1="320"
+     y1="254"
+     x2="320"
+     y2="290"
+     stroke="#333333"
+     stroke-width="1"
+     fill="none"
+     style="fill:none;stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line45" />
+  <line
+     x1="512"
+     y1="254"
+     x2="512"
+     y2="290"
+     stroke="#333333"
+     stroke-width="1"
+     fill="none"
+     style="fill:none;stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line46" />
   <!-- Horizontal connector line across all three -->
-  <line x1="128" y1="290" x2="512" y2="290" stroke="#333333" stroke-width="1" fill="none" style="fill:none;stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <line
+     x1="128"
+     y1="290"
+     x2="512"
+     y2="290"
+     stroke="#333333"
+     stroke-width="1"
+     fill="none"
+     style="fill:none;stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line47" />
   <!-- Vertical drop to aggregator -->
-  <line x1="320" y1="290" x2="320" y2="312" stroke="#333333" stroke-width="1" marker-end="url(#arrow)" fill="none" style="fill:none;stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-
+  <line
+     x1="320"
+     y1="290"
+     x2="320"
+     y2="312"
+     stroke="#333333"
+     stroke-width="1"
+     marker-end="url(#arrow)"
+     fill="none"
+     style="fill:none;stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line48" />
   <!-- run_regression.sh box (grey), centered -->
-  <rect x="196" y="312" width="248" height="48" rx="4" fill="#D8D8D8" stroke="#555555" stroke-width="0.75" style="fill:rgb(216, 216, 216);stroke:rgb(85, 85, 85);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="11" font-weight="700" fill="#333333" x="320" y="332" text-anchor="middle" dominant-baseline="central" style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:11px;font-weight:700;text-anchor:middle;dominant-baseline:central">run_regression.sh</text>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="10" fill="#555555" x="320" y="350" text-anchor="middle" dominant-baseline="central" style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:central">aggregator</text>
-
+  <rect
+     x="196"
+     y="312"
+     width="248"
+     height="48"
+     rx="4"
+     fill="#D8D8D8"
+     stroke="#555555"
+     stroke-width="0.75"
+     style="fill:rgb(216, 216, 216);stroke:rgb(85, 85, 85);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect48" />
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     font-weight="700"
+     fill="#333333"
+     x="320"
+     y="332"
+     text-anchor="middle"
+     dominant-baseline="central"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:11px;font-weight:700;text-anchor:middle;dominant-baseline:central"
+     id="text48">run_regression.sh</text>
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     fill="#555555"
+     x="320"
+     y="350"
+     text-anchor="middle"
+     dominant-baseline="central"
+     style="fill:rgb(85, 85, 85);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:central"
+     id="text49">aggregator</text>
   <!-- ═══════════════════════════════════════════════ -->
   <!-- Arrow Layer 2 → Layer 3                        -->
   <!-- ═══════════════════════════════════════════════ -->
-
-  <line x1="320" y1="360" x2="320" y2="400" stroke="#333333" stroke-width="1.5" marker-end="url(#arrow)" fill="none" style="fill:none;stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="10" font-style="italic" fill="#333333" x="328" y="382" dominant-baseline="central" style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;font-style:italic;text-anchor:start;dominant-baseline:central">Verified RTL → bitstream synthesis</text>
-
+  <line
+     x1="320"
+     y1="360"
+     x2="320"
+     y2="400"
+     stroke="#333333"
+     stroke-width="1.5"
+     marker-end="url(#arrow)"
+     fill="none"
+     style="fill:none;stroke:rgb(51, 51, 51);color:rgb(251, 251, 254);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line49" />
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     font-style="italic"
+     fill="#333333"
+     x="328"
+     y="382"
+     dominant-baseline="central"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;font-style:italic;text-anchor:start;dominant-baseline:central"
+     id="text50">Verified RTL → bitstream synthesis</text>
   <!-- ═══════════════════════════════════════════════ -->
   <!-- LAYER 3: PYNQ-Z2 Board Verification            -->
   <!-- ═══════════════════════════════════════════════ -->
-
-  <text font-family="'Times New Roman', Georgia, serif" font-size="12" font-weight="700" fill="#333333" x="40" y="418" dominant-baseline="central" style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:12px;font-weight:700;text-anchor:start;dominant-baseline:central">Layer 3 — PYNQ-Z2 Board Verification</text>
-
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="12"
+     font-weight="700"
+     fill="#333333"
+     x="40"
+     y="418"
+     dominant-baseline="central"
+     style="fill:rgb(51, 51, 51);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:12px;font-weight:700;text-anchor:start;dominant-baseline:central"
+     id="text51">Layer 3 — PYNQ-Z2 Board Verification</text>
   <!-- Main orange box -->
-  <rect x="40" y="432" width="590" height="56" rx="4" fill="#F5B461" stroke="#B86B1F" stroke-width="0.75" style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="11" font-weight="700" fill="#6B3A0A" x="335" y="452" text-anchor="middle" dominant-baseline="central" style="fill:rgb(107, 58, 10);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:11px;font-weight:700;text-anchor:middle;dominant-baseline:central">PYNQ-Z2 hardware + cim_driver.py (CIMModel class)</text>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="10" fill="#8A4A10" x="335" y="470" text-anchor="middle" dominant-baseline="central" style="fill:rgb(138, 74, 16);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:central">Embedded Python driver for hardware-in-the-loop validation</text>
-
+  <rect
+     x="40"
+     y="432"
+     width="590"
+     height="56"
+     rx="4"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect51" />
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     font-weight="700"
+     fill="#6B3A0A"
+     x="335"
+     y="452"
+     text-anchor="middle"
+     dominant-baseline="central"
+     style="fill:rgb(107, 58, 10);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:11px;font-weight:700;text-anchor:middle;dominant-baseline:central"
+     id="text52">PYNQ-Z2 hardware + cim_driver.py (CIMModel class)</text>
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     fill="#8A4A10"
+     x="335"
+     y="470"
+     text-anchor="middle"
+     dominant-baseline="central"
+     style="fill:rgb(138, 74, 16);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:central"
+     id="text53">Embedded Python driver for hardware-in-the-loop validation</text>
   <!-- Three sub-blocks below -->
-  <rect x="40" y="506" width="178" height="52" rx="4" fill="#F5B461" stroke="#B86B1F" stroke-width="0.75" style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="10" font-weight="700" fill="#6B3A0A" x="129" y="526" text-anchor="middle" dominant-baseline="central" style="fill:rgb(107, 58, 10);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:700;text-anchor:middle;dominant-baseline:central">MLP</text>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="10" fill="#6B3A0A" x="129" y="542" text-anchor="middle" dominant-baseline="central" style="fill:rgb(107, 58, 10);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:central">200 imgs / 99.5%</text>
-
-  <rect x="236" y="506" width="178" height="52" rx="4" fill="#F5B461" stroke="#B86B1F" stroke-width="0.75" style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="10" font-weight="700" fill="#6B3A0A" x="325" y="526" text-anchor="middle" dominant-baseline="central" style="fill:rgb(107, 58, 10);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:700;text-anchor:middle;dominant-baseline:central">LeNet-5</text>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="10" fill="#6B3A0A" x="325" y="542" text-anchor="middle" dominant-baseline="central" style="fill:rgb(107, 58, 10);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:central">200 imgs / 99.5%</text>
-
-  <rect x="432" y="506" width="198" height="52" rx="4" fill="#F5B461" stroke="#B86B1F" stroke-width="0.75" style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="10" font-weight="700" fill="#6B3A0A" x="531" y="526" text-anchor="middle" dominant-baseline="central" style="fill:rgb(107, 58, 10);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:700;text-anchor:middle;dominant-baseline:central">PicoRV32</text>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="10" fill="#6B3A0A" x="531" y="542" text-anchor="middle" dominant-baseline="central" style="fill:rgb(107, 58, 10);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:central">200 imgs / 96.5%</text>
-
+  <rect
+     x="40"
+     y="506"
+     width="178"
+     height="52"
+     rx="4"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect53" />
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     font-weight="700"
+     fill="#6B3A0A"
+     x="129"
+     y="526"
+     text-anchor="middle"
+     dominant-baseline="central"
+     style="fill:rgb(107, 58, 10);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:700;text-anchor:middle;dominant-baseline:central"
+     id="text54">MLP</text>
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     fill="#6B3A0A"
+     x="129"
+     y="542"
+     text-anchor="middle"
+     dominant-baseline="central"
+     style="fill:rgb(107, 58, 10);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:central"
+     id="text55">200 imgs / 99.5%</text>
+  <rect
+     x="236"
+     y="506"
+     width="178"
+     height="52"
+     rx="4"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect55" />
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     font-weight="700"
+     fill="#6B3A0A"
+     x="325"
+     y="526"
+     text-anchor="middle"
+     dominant-baseline="central"
+     style="fill:rgb(107, 58, 10);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:700;text-anchor:middle;dominant-baseline:central"
+     id="text56">LeNet-5</text>
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     fill="#6B3A0A"
+     x="325"
+     y="542"
+     text-anchor="middle"
+     dominant-baseline="central"
+     style="fill:rgb(107, 58, 10);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:central"
+     id="text57">200 imgs / 99.5%</text>
+  <rect
+     x="432"
+     y="506"
+     width="198"
+     height="52"
+     rx="4"
+     fill="#F5B461"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     style="fill:rgb(245, 180, 97);stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect57" />
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     font-weight="700"
+     fill="#6B3A0A"
+     x="531"
+     y="526"
+     text-anchor="middle"
+     dominant-baseline="central"
+     style="fill:rgb(107, 58, 10);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:700;text-anchor:middle;dominant-baseline:central"
+     id="text58">PicoRV32</text>
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     fill="#6B3A0A"
+     x="531"
+     y="542"
+     text-anchor="middle"
+     dominant-baseline="central"
+     style="fill:rgb(107, 58, 10);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:400;text-anchor:middle;dominant-baseline:central"
+     id="text59">200 imgs / 96.5%</text>
   <!-- Connecting lines from main orange box to sub-blocks -->
-  <line x1="129" y1="488" x2="129" y2="505" stroke="#B86B1F" stroke-width="0.75" fill="none" style="fill:none;stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <line x1="325" y1="488" x2="325" y2="505" stroke="#B86B1F" stroke-width="0.75" fill="none" style="fill:none;stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <line x1="531" y1="488" x2="531" y2="505" stroke="#B86B1F" stroke-width="0.75" fill="none" style="fill:none;stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-
+  <line
+     x1="129"
+     y1="488"
+     x2="129"
+     y2="505"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     fill="none"
+     style="fill:none;stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line59" />
+  <line
+     x1="325"
+     y1="488"
+     x2="325"
+     y2="505"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     fill="none"
+     style="fill:none;stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line60" />
+  <line
+     x1="531"
+     y1="488"
+     x2="531"
+     y2="505"
+     stroke="#B86B1F"
+     stroke-width="0.75"
+     fill="none"
+     style="fill:none;stroke:rgb(184, 107, 31);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line61" />
   <!-- ═══════════════════════════════════════════════ -->
   <!-- Red vertical "bit-exact comparison" indicator  -->
   <!-- Right side, spanning all three layers          -->
   <!-- ═══════════════════════════════════════════════ -->
-
   <!-- Vertical red bracket / line spanning Layer1 top to Layer3 bottom -->
   <!-- Layer 1 center y ≈ 80, Layer 3 sub-block bottom ≈ 558 -->
   <!-- Place at x=644, outside main content -->
-
   <!-- Vertical red line -->
-  <line x1="648" y1="80" x2="648" y2="532" stroke="#C0392B" stroke-width="1.5" fill="none" style="fill:none;stroke:rgb(192, 57, 43);color:rgb(251, 251, 254);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <line
+     x1="648"
+     y1="80"
+     x2="648"
+     y2="532"
+     stroke="#C0392B"
+     stroke-width="1.5"
+     fill="none"
+     style="fill:none;stroke:rgb(192, 57, 43);color:rgb(251, 251, 254);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line62" />
   <!-- Tick marks at each layer center -->
-  <line x1="642" y1="80" x2="654" y2="80" stroke="#C0392B" stroke-width="1.5" fill="none" style="fill:none;stroke:rgb(192, 57, 43);color:rgb(251, 251, 254);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <line x1="642" y1="218" x2="654" y2="218" stroke="#C0392B" stroke-width="1.5" fill="none" style="fill:none;stroke:rgb(192, 57, 43);color:rgb(251, 251, 254);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <line x1="642" y1="532" x2="654" y2="532" stroke="#C0392B" stroke-width="1.5" fill="none" style="fill:none;stroke:rgb(192, 57, 43);color:rgb(251, 251, 254);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-
+  <line
+     x1="642"
+     y1="80"
+     x2="654"
+     y2="80"
+     stroke="#C0392B"
+     stroke-width="1.5"
+     fill="none"
+     style="fill:none;stroke:rgb(192, 57, 43);color:rgb(251, 251, 254);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line63" />
+  <line
+     x1="642"
+     y1="218"
+     x2="654"
+     y2="218"
+     stroke="#C0392B"
+     stroke-width="1.5"
+     fill="none"
+     style="fill:none;stroke:rgb(192, 57, 43);color:rgb(251, 251, 254);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line64" />
+  <line
+     x1="642"
+     y1="532"
+     x2="654"
+     y2="532"
+     stroke="#C0392B"
+     stroke-width="1.5"
+     fill="none"
+     style="fill:none;stroke:rgb(192, 57, 43);color:rgb(251, 251, 254);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line65" />
   <!-- Red label, rotated sideways — use tspans for vertical stacking instead -->
-  <text font-family="'Times New Roman', Georgia, serif" font-size="10" font-weight="700" fill="#C0392B" x="660" y="220" dominant-baseline="central" style="fill:rgb(192, 57, 43);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:700;text-anchor:start;dominant-baseline:central">bit-exact</text>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="10" font-weight="700" fill="#C0392B" x="660" y="234" dominant-baseline="central" style="fill:rgb(192, 57, 43);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:700;text-anchor:start;dominant-baseline:central">comparison</text>
-
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     font-weight="700"
+     fill="#C0392B"
+     x="660"
+     y="220"
+     dominant-baseline="central"
+     style="fill:rgb(192, 57, 43);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:700;text-anchor:start;dominant-baseline:central"
+     id="text65">bit-exact</text>
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10"
+     font-weight="700"
+     fill="#C0392B"
+     x="660"
+     y="234"
+     dominant-baseline="central"
+     style="fill:rgb(192, 57, 43);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:10px;font-weight:700;text-anchor:start;dominant-baseline:central"
+     id="text66">comparison</text>
   <!-- Small horizontal dashed feedback arrows from right side of each layer toward the red line -->
-  <line x1="412" y1="80" x2="640" y2="80" stroke="#C0392B" stroke-width="1" stroke-dasharray="4 3" fill="none" marker-end="url(#arrow-red)" mask="url(#imagine-text-gaps-gytfem)" style="fill:none;stroke:rgb(192, 57, 43);color:rgb(251, 251, 254);stroke-width:1px;stroke-dasharray:4px, 3px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <line x1="412" y1="218" x2="640" y2="218" stroke="#C0392B" stroke-width="1" stroke-dasharray="4 3" fill="none" marker-end="url(#arrow-red)" mask="url(#imagine-text-gaps-gytfem)" style="fill:none;stroke:rgb(192, 57, 43);color:rgb(251, 251, 254);stroke-width:1px;stroke-dasharray:4px, 3px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <line x1="412" y1="532" x2="640" y2="532" stroke="#C0392B" stroke-width="1" stroke-dasharray="4 3" fill="none" marker-end="url(#arrow-red)" mask="url(#imagine-text-gaps-gytfem)" style="fill:none;stroke:rgb(192, 57, 43);color:rgb(251, 251, 254);stroke-width:1px;stroke-dasharray:4px, 3px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-
+  <line
+     x1="412"
+     y1="80"
+     x2="640"
+     y2="80"
+     stroke="#C0392B"
+     stroke-width="1"
+     stroke-dasharray="4 3"
+     fill="none"
+     marker-end="url(#arrow-red)"
+     mask="url(#imagine-text-gaps-gytfem)"
+     style="fill:none;stroke:rgb(192, 57, 43);color:rgb(251, 251, 254);stroke-width:1px;stroke-dasharray:4px, 3px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line66" />
+  <line
+     x1="412"
+     y1="218"
+     x2="640"
+     y2="218"
+     stroke="#C0392B"
+     stroke-width="1"
+     stroke-dasharray="4 3"
+     fill="none"
+     marker-end="url(#arrow-red)"
+     mask="url(#imagine-text-gaps-gytfem)"
+     style="fill:none;stroke:rgb(192, 57, 43);color:rgb(251, 251, 254);stroke-width:1px;stroke-dasharray:4px, 3px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line67" />
+  <line
+     x1="412"
+     y1="532"
+     x2="640"
+     y2="532"
+     stroke="#C0392B"
+     stroke-width="1"
+     stroke-dasharray="4 3"
+     fill="none"
+     marker-end="url(#arrow-red)"
+     mask="url(#imagine-text-gaps-gytfem)"
+     style="fill:none;stroke:rgb(192, 57, 43);color:rgb(251, 251, 254);stroke-width:1px;stroke-dasharray:4px, 3px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="line68" />
   <!-- ═══════════════════════════════════════════════ -->
   <!-- Bottom banner                                   -->
   <!-- ═══════════════════════════════════════════════ -->
-
-  <rect x="40" y="582" width="590" height="40" rx="4" fill="#F0F0F0" stroke="#888888" stroke-width="0.75" style="fill:rgb(240, 240, 240);stroke:rgb(136, 136, 136);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <text font-family="'Times New Roman', Georgia, serif" font-size="11" font-style="italic" fill="#222222" x="335" y="602" text-anchor="middle" dominant-baseline="central" style="fill:rgb(34, 34, 34);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:11px;font-weight:400;font-style:italic;text-anchor:middle;dominant-baseline:central">Same INT8 arithmetic → bit-exact agreement at every layer boundary</text>
+  <rect
+     x="40"
+     y="582"
+     width="590"
+     height="40"
+     rx="4"
+     fill="#F0F0F0"
+     stroke="#888888"
+     stroke-width="0.75"
+     style="fill:rgb(240, 240, 240);stroke:rgb(136, 136, 136);color:rgb(251, 251, 254);stroke-width:0.75px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"
+     id="rect68" />
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     font-style="italic"
+     fill="#222222"
+     x="335"
+     y="602"
+     text-anchor="middle"
+     dominant-baseline="central"
+     style="fill:rgb(34, 34, 34);stroke:none;color:rgb(251, 251, 254);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Times New Roman&quot;, Georgia, serif;font-size:11px;font-weight:400;font-style:italic;text-anchor:middle;dominant-baseline:central"
+     id="text68">Same INT8 arithmetic → bit-exact agreement at every layer boundary</text>
 </svg>

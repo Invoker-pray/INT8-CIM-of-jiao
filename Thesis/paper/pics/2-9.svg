@@ -6,6 +6,9 @@
    id="svg41"
    sodipodi:docname="2-9.svg"
    inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   inkscape:export-filename="2-9.png"
+   inkscape:export-xdpi="400"
+   inkscape:export-ydpi="400"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -19,9 +22,9 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="1.5893936"
-     inkscape:cx="481.63024"
-     inkscape:cy="1255.8249"
+     inkscape:zoom="3.1787872"
+     inkscape:cx="523.47008"
+     inkscape:cy="1438.599"
      inkscape:window-width="1908"
      inkscape:window-height="1035"
      inkscape:window-x="0"
@@ -38,7 +41,7 @@
        refY="4"
        orient="auto">
       <path
-         d="M0,0 L8,4 L0,8 z"
+         d="M 0,0 8,4 0,8 Z"
          fill="#000000"
          id="path1" />
     </marker>
@@ -50,8 +53,8 @@
        refY="4"
        orient="auto">
       <path
-         d="M0,0 L8,4 L0,8 z"
-         fill="#E67E22"
+         d="M 0,0 8,4 0,8 Z"
+         fill="#e67e22"
          id="path2" />
     </marker>
     <marker
@@ -62,8 +65,8 @@
        refY="4"
        orient="auto">
       <path
-         d="M0,0 L8,4 L0,8 z"
-         fill="#2E5C8A"
+         d="M 0,0 8,4 0,8 Z"
+         fill="#2e5c8a"
          id="path3" />
     </marker>
   </defs>
@@ -88,7 +91,9 @@
      width="100%"
      height="100%"
      fill="#ffffff"
-     id="rect3" />
+     id="rect3"
+     x="0"
+     y="0" />
   <text
      x="500"
      y="30"
@@ -105,7 +110,7 @@
      x="310"
      y="205"
      class="loop-label"
-     fill="#2E5C8A"
+     fill="#2e5c8a"
      id="text4">Per output block (OB loop)</text>
   <rect
      x="330"
@@ -133,13 +138,13 @@
      class="state-text"
      id="text6">ST_IDLE</text>
   <path
-     d="m 434.97991,66.567164 q -25,-25 10,-30"
+     d="m 438.44035,77.263067 q -25,-25 10,-30"
      class="path-ctrl"
      marker-end="url(#arrow-black)"
      id="path6" />
   <text
-     x="405"
-     y="20"
+     x="389.58533"
+     y="59.323174"
      class="label-text"
      id="text7">start=0</text>
   <ellipse
@@ -335,7 +340,7 @@
      class="state-text"
      id="text23">ST_DONE</text>
   <path
-     d="M 500 95 L 500 125"
+     d="m 500,95 v 30"
      class="path-ctrl"
      marker-end="url(#arrow-black)"
      id="path23" />
@@ -345,7 +350,7 @@
      class="label-text"
      id="text24">start=1</text>
   <path
-     d="M 500 175 L 500 255"
+     d="m 500,175 v 80"
      class="path-ctrl"
      marker-end="url(#arrow-black)"
      id="path24" />
@@ -355,17 +360,17 @@
      class="anno-text"
      id="text25">BRAM addr issued</text>
   <path
-     d="M 500 305 L 500 335"
+     d="m 500,305 v 30"
      class="path-ctrl"
      marker-end="url(#arrow-black)"
      id="path25" />
   <path
-     d="M 500 385 L 500 415"
+     d="m 500,385 v 30"
      class="path-ctrl"
      marker-end="url(#arrow-black)"
      id="path26" />
   <path
-     d="M 500 465 L 500 500"
+     d="m 500,465 v 35"
      class="path-ctrl"
      marker-end="url(#arrow-black)"
      id="path27" />
@@ -375,22 +380,22 @@
      class="anno-text"
      id="text27">10-bit signed x_eff = pixel - zp</text>
   <path
-     d="M 500 540 L 500 560"
+     d="m 500,540 v 20"
      class="path-ctrl"
      marker-end="url(#arrow-black)"
      id="path28" />
   <path
-     d="M 500 600 L 500 620"
+     d="m 500,600 v 20"
      class="path-ctrl"
      marker-end="url(#arrow-black)"
      id="path29" />
   <path
-     d="M 500 660 L 500 680"
+     d="m 500,660 v 20"
      class="path-ctrl"
      marker-end="url(#arrow-black)"
      id="path30" />
   <path
-     d="M 500 720 L 500 755"
+     d="m 500,720 v 35"
      class="path-ctrl"
      marker-end="url(#arrow-black)"
      id="path31" />
@@ -400,7 +405,7 @@
      class="anno-text"
      id="text31">256 MACs / 4 cycles</text>
   <path
-     d="M 435 780 L 380 780 L 380 280 L 440 280"
+     d="M 435,780 H 380 V 280 h 60"
      class="path-inner"
      marker-end="url(#arrow-orange)"
      id="path32" />
@@ -411,7 +416,7 @@
      fill="#E67E22"
      id="text32">ib &lt; N_IB</text>
   <path
-     d="M 500 805 L 500 855"
+     d="m 500,805 v 50"
      class="path-ctrl"
      marker-end="url(#arrow-black)"
      id="path33" />
@@ -421,17 +426,17 @@
      class="label-text"
      id="text33">ib == N_IB</text>
   <path
-     d="M 500 905 L 500 935"
+     d="m 500,905 v 30"
      class="path-ctrl"
      marker-end="url(#arrow-black)"
      id="path34" />
   <path
-     d="M 500 985 L 500 1015"
+     d="m 500,985 v 30"
      class="path-ctrl"
      marker-end="url(#arrow-black)"
      id="path35" />
   <path
-     d="M 500 1065 L 500 1115"
+     d="m 500,1065 v 50"
      class="path-ctrl"
      marker-end="url(#arrow-black)"
      id="path36" />
@@ -441,17 +446,17 @@
      class="anno-text"
      id="text36">INT32 → INT8 with rounding</text>
   <path
-     d="M 500 1145 L 500 1175"
+     d="m 500,1145 v 30"
      class="path-ctrl"
      marker-end="url(#arrow-black)"
      id="path37" />
   <path
-     d="M 500 1225 L 500 1255"
+     d="m 500,1225 v 30"
      class="path-ctrl"
      marker-end="url(#arrow-black)"
      id="path38" />
   <path
-     d="M 435 1280 L 320 1280 L 320 280 L 440 280"
+     d="M 435,1280 H 320 V 280 h 120"
      class="path-outer"
      marker-end="url(#arrow-blue)"
      id="path39" />
@@ -462,7 +467,7 @@
      fill="#2E5C8A"
      id="text39">ob_block &lt; N_OB-1</text>
   <path
-     d="M 500 1305 L 500 1375"
+     d="m 500,1305 v 70"
      class="path-ctrl"
      marker-end="url(#arrow-black)"
      id="path40" />
@@ -472,14 +477,14 @@
      class="label-text"
      id="text40">ob_block == N_OB-1</text>
   <path
-     d="M 560 1400 L 750 1400 L 750 70 L 560 70"
+     d="M 560,1400 H 750 V 70 H 560"
      class="path-ctrl"
      marker-end="url(#arrow-black)"
      id="path41" />
   <text
-     x="755"
-     y="730"
+     x="730"
+     y="-755"
      class="label-text"
-     transform="rotate(90 755 730)"
+     transform="rotate(90)"
      id="text41">ack</text>
 </svg>

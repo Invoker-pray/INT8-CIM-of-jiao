@@ -1,91 +1,659 @@
-<svg width="100%" viewBox="0 0 870 570" role="img" xmlns="http://www.w3.org/2000/svg">
-<title>Optimization Journey: Latency Reduction and Cumulative Speedup</title>
-<desc>Three-stage waterfall (64 MHz): latency bars (log scale) 3193.52 -> 168.01 -> 29.88 ms/image; cumulative speedup line 1.0x -> 19.0x -> 107x.</desc>
-<rect x="0" y="0" width="870" height="570" fill="white"/>
-<text x="430" y="28" text-anchor="middle" font-family="'Times New Roman', Georgia, serif" font-size="14" font-weight="700" fill="#111">Optimization Journey: Latency Reduction and Cumulative Speedup</text>
-<text x="90" y="48" text-anchor="middle" font-family="'Times New Roman', Georgia, serif" font-size="9.5" font-style="italic" fill="#555">log₁₀</text>
-<line x1="90" y1="420.0" x2="730" y2="420.0" stroke="#ccc" stroke-width="0.75"/>
-<text x="82" y="424.0" text-anchor="end" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#333">10</text>
-<line x1="90" y1="379.3" x2="730" y2="379.3" stroke="#ccc" stroke-width="0.75"/>
-<text x="82" y="383.3" text-anchor="end" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#333">20</text>
-<line x1="90" y1="325.5" x2="730" y2="325.5" stroke="#ccc" stroke-width="0.75"/>
-<text x="82" y="329.5" text-anchor="end" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#333">50</text>
-<line x1="90" y1="284.8" x2="730" y2="284.8" stroke="#ccc" stroke-width="0.75"/>
-<text x="82" y="288.8" text-anchor="end" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#333">100</text>
-<line x1="90" y1="244.1" x2="730" y2="244.1" stroke="#ccc" stroke-width="0.75"/>
-<text x="82" y="248.1" text-anchor="end" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#333">200</text>
-<line x1="90" y1="190.2" x2="730" y2="190.2" stroke="#ccc" stroke-width="0.75"/>
-<text x="82" y="194.2" text-anchor="end" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#333">500</text>
-<line x1="90" y1="149.5" x2="730" y2="149.5" stroke="#ccc" stroke-width="0.75"/>
-<text x="82" y="153.5" text-anchor="end" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#333">1k</text>
-<line x1="90" y1="108.8" x2="730" y2="108.8" stroke="#ccc" stroke-width="0.75"/>
-<text x="82" y="112.8" text-anchor="end" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#333">2k</text>
-<line x1="90" y1="55.0" x2="730" y2="55.0" stroke="#ccc" stroke-width="0.75"/>
-<text x="82" y="59.0" text-anchor="end" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#333">5k</text>
-<!-- 33.5 fps threshold line (1000/33.5 = 29.85 ms ≈ 30 ms) -->
-<line x1="90" y1="349.3" x2="730" y2="349.3" stroke="#C0392B" stroke-width="1.2" stroke-dasharray="6,4"/>
-<text x="733" y="353.3" font-family="'Times New Roman', Georgia, serif" font-size="9.5" font-style="italic" fill="#C0392B">33 ms (30 fps)</text>
-<!-- Bar 1: 3193.52 ms, log10(3193.52) = 3.504, y = 420 - (3.504-1)*135.7 = 78.3 -->
-<rect x="141.7" y="78.3" width="110" height="341.7" fill="#A8D5E2" stroke="#2E5C8A" stroke-width="0.8"/>
-<text x="196.7" y="72.3" text-anchor="middle" font-family="'Times New Roman', Georgia, serif" font-size="11.5" font-weight="700" fill="#2E5C8A">3193.52</text>
-<!-- Bar 2: 168.01 ms, log10(168.01) = 2.225, y = 420 - (2.225-1)*135.7 = 253.7 -->
-<rect x="355.0" y="253.7" width="110" height="166.3" fill="#A8D5E2" stroke="#2E5C8A" stroke-width="0.8"/>
-<text x="410.0" y="247.7" text-anchor="middle" font-family="'Times New Roman', Georgia, serif" font-size="11.5" font-weight="700" fill="#2E5C8A">168.01</text>
-<!-- Bar 3: 29.88 ms, log10(29.88) = 1.475, y = 420 - (1.475-1)*135.7 = 355.5 -->
-<rect x="568.3" y="355.5" width="110" height="64.5" fill="#2E5C8A" stroke="#2E5C8A" stroke-width="0.8"/>
-<text x="623.3" y="349.5" text-anchor="middle" font-family="'Times New Roman', Georgia, serif" font-size="11.5" font-weight="700" fill="#2E5C8A">29.88</text>
-<!-- Axes -->
-<line x1="90" y1="55" x2="90" y2="420" stroke="#333" stroke-width="1"/>
-<line x1="90" y1="420" x2="730" y2="420" stroke="#333" stroke-width="1"/>
-<!-- Speedup line: 1.0x at (196.7, 420), 19.0x at (410.0, y2), 107x at (623.3, y3) -->
-<!-- Right axis: 0x at 420, 120x at 55, scale = (420-55)/(120-0) = 3.042 per 1x -->
-<!-- 19.0x: y = 420 - 19.0*3.042 = 362.2 -->
-<!-- 107x: y = 420 - 107*3.042 = 94.5 -->
-<polyline points="196.7,420.0 410.0,362.2 623.3,94.5" fill="none" stroke="#C0392B" stroke-width="1.8"/>
-<circle cx="196.7" cy="420.0" r="3.7" fill="white" stroke="#C0392B" stroke-width="1.8"/>
-<text x="196.7" y="410.0" text-anchor="middle" font-family="'Times New Roman', Georgia, serif" font-size="11.5" font-weight="700" fill="white" stroke="white" stroke-width="3.5">1.0×</text>
-<text x="196.7" y="410.0" text-anchor="middle" font-family="'Times New Roman', Georgia, serif" font-size="11.5" font-weight="700" fill="#C0392B">1.0×</text>
-<circle cx="410.0" cy="362.2" r="3.7" fill="white" stroke="#C0392B" stroke-width="1.8"/>
-<text x="410.0" y="352.2" text-anchor="middle" font-family="'Times New Roman', Georgia, serif" font-size="11.5" font-weight="700" fill="white" stroke="white" stroke-width="3.5">19.0×</text>
-<text x="410.0" y="352.2" text-anchor="middle" font-family="'Times New Roman', Georgia, serif" font-size="11.5" font-weight="700" fill="#C0392B">19.0×</text>
-<circle cx="623.3" cy="94.5" r="3.7" fill="white" stroke="#C0392B" stroke-width="1.8"/>
-<text x="623.3" y="84.5" text-anchor="middle" font-family="'Times New Roman', Georgia, serif" font-size="11.5" font-weight="700" fill="white" stroke="white" stroke-width="3.5">107×</text>
-<text x="623.3" y="84.5" text-anchor="middle" font-family="'Times New Roman', Georgia, serif" font-size="11.5" font-weight="700" fill="#C0392B">107×</text>
-<!-- Right axis labels for speedup -->
-<line x1="730" y1="420.0" x2="735" y2="420.0" stroke="#C0392B" stroke-width="0.75"/>
-<text x="738" y="424.0" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#C0392B">0×</text>
-<line x1="730" y1="359.2" x2="735" y2="359.2" stroke="#C0392B" stroke-width="0.75"/>
-<text x="738" y="363.2" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#C0392B">20×</text>
-<line x1="730" y1="298.3" x2="735" y2="298.3" stroke="#C0392B" stroke-width="0.75"/>
-<text x="738" y="302.3" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#C0392B">40×</text>
-<line x1="730" y1="237.5" x2="735" y2="237.5" stroke="#C0392B" stroke-width="0.75"/>
-<text x="738" y="241.5" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#C0392B">60×</text>
-<line x1="730" y1="176.7" x2="735" y2="176.7" stroke="#C0392B" stroke-width="0.75"/>
-<text x="738" y="180.7" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#C0392B">80×</text>
-<line x1="730" y1="115.8" x2="735" y2="115.8" stroke="#C0392B" stroke-width="0.75"/>
-<text x="738" y="119.8" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#C0392B">100×</text>
-<line x1="730" y1="55.0" x2="735" y2="55.0" stroke="#C0392B" stroke-width="0.75"/>
-<text x="738" y="59.0" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#C0392B">120×</text>
-<!-- Axis labels -->
-<text font-family="'Times New Roman', Georgia, serif" font-size="12" font-weight="700" fill="#2E5C8A" text-anchor="middle" transform="translate(20,237) rotate(-90)">Latency (ms/image, log scale)</text>
-<text font-family="'Times New Roman', Georgia, serif" font-size="12" font-weight="700" fill="#C0392B" text-anchor="middle" transform="translate(852,237) rotate(90)">Cumulative Speedup vs. Baseline (×)</text>
-<!-- X-axis labels -->
-<text x="196.7" y="437" text-anchor="middle" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#333">AXI4-Lite</text>
-<text x="196.7" y="450" text-anchor="middle" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#333">MMIO Baseline</text>
-<text x="196.7" y="464" text-anchor="middle" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#666">(1)</text>
-<text x="410.0" y="437" text-anchor="middle" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#333">+ AXI4-Stream</text>
-<text x="410.0" y="450" text-anchor="middle" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#333">DMA</text>
-<text x="410.0" y="464" text-anchor="middle" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#666">(2)</text>
-<text x="623.3" y="437" text-anchor="middle" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#333">+ Double-Buffer,</text>
-<text x="623.3" y="450" text-anchor="middle" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#333">Fusion &amp; Batch</text>
-<text x="623.3" y="464" text-anchor="middle" font-family="'Times New Roman', Georgia, serif" font-size="11" fill="#666">(3)</text>
-<!-- Legend -->
-<rect x="150" y="478" width="16" height="11" fill="#A8D5E2" stroke="#2E5C8A" stroke-width="0.8"/>
-<text x="170" y="488" font-family="'Times New Roman', Georgia, serif" font-size="10.5" fill="#333">Latency (ms/image)</text>
-<rect x="320" y="478" width="16" height="11" fill="#2E5C8A" stroke="#1a3a5c" stroke-width="0.8"/>
-<text x="340" y="488" font-family="'Times New Roman', Georgia, serif" font-size="10.5" fill="#333">Final config</text>
-<line x1="445" y1="483" x2="461" y2="483" stroke="#C0392B" stroke-width="1.8"/>
-<circle cx="453" cy="483" r="3.5" fill="white" stroke="#C0392B" stroke-width="1.8"/>
-<text x="467" y="488" font-family="'Times New Roman', Georgia, serif" font-size="10.5" fill="#333">Cumulative speedup (×)</text>
-<text x="430" y="508" text-anchor="middle" font-family="'Times New Roman', Georgia, serif" font-size="10.5" font-style="italic" fill="#333">Cumulative speedup 107×, all stages at 64 MHz · outputs bit-exact with golden model (100%); final classification accuracy 99%–100%</text>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="100%"
+   viewBox="0 0 870 570"
+   role="img"
+   version="1.1"
+   id="svg43"
+   sodipodi:docname="4-7.svg"
+   inkscape:export-filename="4-7.png"
+   inkscape:export-xdpi="400"
+   inkscape:export-ydpi="400"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs43" />
+  <sodipodi:namedview
+     id="namedview43"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="2.0229885"
+     inkscape:cx="372.22159"
+     inkscape:cy="517.05682"
+     inkscape:window-width="1908"
+     inkscape:window-height="1035"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg43" />
+  <title
+     id="title1">Optimization Journey: Latency Reduction and Cumulative Speedup</title>
+  <desc
+     id="desc1">Three-stage waterfall (64 MHz): latency bars (log scale) 3193.52 -&gt; 168.01 -&gt; 29.88 ms/image; cumulative speedup line 1.0x -&gt; 19.0x -&gt; 107x.</desc>
+  <rect
+     x="0"
+     y="0"
+     width="870"
+     height="570"
+     fill="white"
+     id="rect1" />
+  <text
+     x="430"
+     y="28"
+     text-anchor="middle"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="14"
+     font-weight="700"
+     fill="#111"
+     id="text1">Optimization Journey: Latency Reduction and Cumulative Speedup</text>
+  <text
+     x="90"
+     y="48"
+     text-anchor="middle"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="9.5"
+     font-style="italic"
+     fill="#555"
+     id="text2">log₁₀</text>
+  <line
+     x1="90"
+     y1="420.0"
+     x2="730"
+     y2="420.0"
+     stroke="#ccc"
+     stroke-width="0.75"
+     id="line2" />
+  <text
+     x="82"
+     y="424.0"
+     text-anchor="end"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#333"
+     id="text3">10</text>
+  <line
+     x1="90"
+     y1="379.3"
+     x2="730"
+     y2="379.3"
+     stroke="#ccc"
+     stroke-width="0.75"
+     id="line3" />
+  <text
+     x="82"
+     y="383.3"
+     text-anchor="end"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#333"
+     id="text4">20</text>
+  <line
+     x1="90"
+     y1="325.5"
+     x2="730"
+     y2="325.5"
+     stroke="#ccc"
+     stroke-width="0.75"
+     id="line4" />
+  <text
+     x="82"
+     y="329.5"
+     text-anchor="end"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#333"
+     id="text5">50</text>
+  <line
+     x1="90"
+     y1="284.8"
+     x2="730"
+     y2="284.8"
+     stroke="#ccc"
+     stroke-width="0.75"
+     id="line5" />
+  <text
+     x="82"
+     y="288.8"
+     text-anchor="end"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#333"
+     id="text6">100</text>
+  <line
+     x1="90"
+     y1="244.1"
+     x2="730"
+     y2="244.1"
+     stroke="#ccc"
+     stroke-width="0.75"
+     id="line6" />
+  <text
+     x="82"
+     y="248.1"
+     text-anchor="end"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#333"
+     id="text7">200</text>
+  <line
+     x1="90"
+     y1="190.2"
+     x2="730"
+     y2="190.2"
+     stroke="#ccc"
+     stroke-width="0.75"
+     id="line7" />
+  <text
+     x="82"
+     y="194.2"
+     text-anchor="end"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#333"
+     id="text8">500</text>
+  <line
+     x1="90"
+     y1="149.5"
+     x2="730"
+     y2="149.5"
+     stroke="#ccc"
+     stroke-width="0.75"
+     id="line8" />
+  <text
+     x="82"
+     y="153.5"
+     text-anchor="end"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#333"
+     id="text9">1k</text>
+  <line
+     x1="90"
+     y1="108.8"
+     x2="730"
+     y2="108.8"
+     stroke="#ccc"
+     stroke-width="0.75"
+     id="line9" />
+  <text
+     x="82"
+     y="112.8"
+     text-anchor="end"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#333"
+     id="text10">2k</text>
+  <line
+     x1="90"
+     y1="55.0"
+     x2="730"
+     y2="55.0"
+     stroke="#ccc"
+     stroke-width="0.75"
+     id="line10" />
+  <text
+     x="82"
+     y="59.0"
+     text-anchor="end"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#333"
+     id="text11">5k</text>
+  <!-- 33.5 fps threshold line (1000/33.5 = 29.85 ms ≈ 30 ms) -->
+  <line
+     x1="90"
+     y1="349.3"
+     x2="730"
+     y2="349.3"
+     stroke="#C0392B"
+     stroke-width="1.2"
+     stroke-dasharray="6,4"
+     id="line11" />
+  <text
+     x="733"
+     y="353.3"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="9.5"
+     font-style="italic"
+     fill="#C0392B"
+     id="text12">33 ms (30 fps)</text>
+  <!-- Bar 1: 3193.52 ms, log10(3193.52) = 3.504, y = 420 - (3.504-1)*135.7 = 78.3 -->
+  <rect
+     x="141.7"
+     y="78.3"
+     width="110"
+     height="341.7"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     stroke-width="0.8"
+     id="rect12" />
+  <text
+     x="196.7"
+     y="72.3"
+     text-anchor="middle"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11.5"
+     font-weight="700"
+     fill="#2E5C8A"
+     id="text13">3193.52</text>
+  <!-- Bar 2: 168.01 ms, log10(168.01) = 2.225, y = 420 - (2.225-1)*135.7 = 253.7 -->
+  <rect
+     x="355.0"
+     y="253.7"
+     width="110"
+     height="166.3"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     stroke-width="0.8"
+     id="rect13" />
+  <text
+     x="410.0"
+     y="247.7"
+     text-anchor="middle"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11.5"
+     font-weight="700"
+     fill="#2E5C8A"
+     id="text14">168.01</text>
+  <!-- Bar 3: 29.88 ms, log10(29.88) = 1.475, y = 420 - (1.475-1)*135.7 = 355.5 -->
+  <rect
+     x="568.3"
+     y="355.5"
+     width="110"
+     height="64.5"
+     fill="#2E5C8A"
+     stroke="#2E5C8A"
+     stroke-width="0.8"
+     id="rect14" />
+  <text
+     x="623.3"
+     y="349.5"
+     text-anchor="middle"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11.5"
+     font-weight="700"
+     fill="#2E5C8A"
+     id="text15">29.88</text>
+  <!-- Axes -->
+  <line
+     x1="90"
+     y1="55"
+     x2="90"
+     y2="420"
+     stroke="#333"
+     stroke-width="1"
+     id="line15" />
+  <line
+     x1="90"
+     y1="420"
+     x2="730"
+     y2="420"
+     stroke="#333"
+     stroke-width="1"
+     id="line16" />
+  <!-- Speedup line: 1.0x at (196.7, 420), 19.0x at (410.0, y2), 107x at (623.3, y3) -->
+  <!-- Right axis: 0x at 420, 120x at 55, scale = (420-55)/(120-0) = 3.042 per 1x -->
+  <!-- 19.0x: y = 420 - 19.0*3.042 = 362.2 -->
+  <!-- 107x: y = 420 - 107*3.042 = 94.5 -->
+  <polyline
+     points="196.7,420.0 410.0,362.2 623.3,94.5"
+     fill="none"
+     stroke="#C0392B"
+     stroke-width="1.8"
+     id="polyline16" />
+  <circle
+     cx="196.7"
+     cy="420.0"
+     r="3.7"
+     fill="white"
+     stroke="#C0392B"
+     stroke-width="1.8"
+     id="circle16" />
+  <text
+     x="196.7"
+     y="410.0"
+     text-anchor="middle"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11.5"
+     font-weight="700"
+     fill="white"
+     stroke="white"
+     stroke-width="3.5"
+     id="text16">1.0×</text>
+  <text
+     x="196.7"
+     y="410.0"
+     text-anchor="middle"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11.5"
+     font-weight="700"
+     fill="#C0392B"
+     id="text17">1.0×</text>
+  <circle
+     cx="410.0"
+     cy="362.2"
+     r="3.7"
+     fill="white"
+     stroke="#C0392B"
+     stroke-width="1.8"
+     id="circle17" />
+  <text
+     x="410.0"
+     y="352.2"
+     text-anchor="middle"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11.5"
+     font-weight="700"
+     fill="white"
+     stroke="white"
+     stroke-width="3.5"
+     id="text18">19.0×</text>
+  <text
+     x="410.0"
+     y="352.2"
+     text-anchor="middle"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11.5"
+     font-weight="700"
+     fill="#C0392B"
+     id="text19">19.0×</text>
+  <circle
+     cx="623.3"
+     cy="94.5"
+     r="3.7"
+     fill="white"
+     stroke="#C0392B"
+     stroke-width="1.8"
+     id="circle19" />
+  <text
+     x="623.3"
+     y="84.5"
+     text-anchor="middle"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11.5"
+     font-weight="700"
+     fill="white"
+     stroke="white"
+     stroke-width="3.5"
+     id="text20">107×</text>
+  <text
+     x="623.3"
+     y="84.5"
+     text-anchor="middle"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11.5"
+     font-weight="700"
+     fill="#C0392B"
+     id="text21">107×</text>
+  <!-- Right axis labels for speedup -->
+  <line
+     x1="730"
+     y1="420.0"
+     x2="735"
+     y2="420.0"
+     stroke="#C0392B"
+     stroke-width="0.75"
+     id="line21" />
+  <text
+     x="738"
+     y="424.0"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#C0392B"
+     id="text22">0×</text>
+  <line
+     x1="730"
+     y1="359.2"
+     x2="735"
+     y2="359.2"
+     stroke="#C0392B"
+     stroke-width="0.75"
+     id="line22" />
+  <text
+     x="738"
+     y="363.2"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#C0392B"
+     id="text23">20×</text>
+  <line
+     x1="730"
+     y1="298.3"
+     x2="735"
+     y2="298.3"
+     stroke="#C0392B"
+     stroke-width="0.75"
+     id="line23" />
+  <text
+     x="738"
+     y="302.3"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#C0392B"
+     id="text24">40×</text>
+  <line
+     x1="730"
+     y1="237.5"
+     x2="735"
+     y2="237.5"
+     stroke="#C0392B"
+     stroke-width="0.75"
+     id="line24" />
+  <text
+     x="738"
+     y="241.5"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#C0392B"
+     id="text25">60×</text>
+  <line
+     x1="730"
+     y1="176.7"
+     x2="735"
+     y2="176.7"
+     stroke="#C0392B"
+     stroke-width="0.75"
+     id="line25" />
+  <text
+     x="738"
+     y="180.7"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#C0392B"
+     id="text26">80×</text>
+  <line
+     x1="730"
+     y1="115.8"
+     x2="735"
+     y2="115.8"
+     stroke="#C0392B"
+     stroke-width="0.75"
+     id="line26" />
+  <text
+     x="738"
+     y="119.8"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#C0392B"
+     id="text27">100×</text>
+  <line
+     x1="730"
+     y1="55.0"
+     x2="735"
+     y2="55.0"
+     stroke="#C0392B"
+     stroke-width="0.75"
+     id="line27" />
+  <text
+     x="738"
+     y="59.0"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#C0392B"
+     id="text28">120×</text>
+  <!-- Axis labels -->
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="12"
+     font-weight="700"
+     fill="#2E5C8A"
+     text-anchor="middle"
+     transform="translate(20,237) rotate(-90)"
+     id="text29">Latency (ms/image, log scale)</text>
+  <text
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="12px"
+     font-weight="700"
+     fill="#c0392b"
+     text-anchor="middle"
+     transform="rotate(90)"
+     id="text30"
+     x="240.95454"
+     y="-836.67615">Cumulative Speedup vs. Baseline (×)</text>
+  <!-- X-axis labels -->
+  <text
+     x="196.7"
+     y="437"
+     text-anchor="middle"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#333"
+     id="text31">AXI4-Lite</text>
+  <text
+     x="196.7"
+     y="450"
+     text-anchor="middle"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#333"
+     id="text32">MMIO Baseline</text>
+  <text
+     x="196.7"
+     y="464"
+     text-anchor="middle"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#666"
+     id="text33">(1)</text>
+  <text
+     x="410.0"
+     y="437"
+     text-anchor="middle"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#333"
+     id="text34">+ AXI4-Stream</text>
+  <text
+     x="410.0"
+     y="450"
+     text-anchor="middle"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#333"
+     id="text35">DMA</text>
+  <text
+     x="410.0"
+     y="464"
+     text-anchor="middle"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#666"
+     id="text36">(2)</text>
+  <text
+     x="623.3"
+     y="437"
+     text-anchor="middle"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#333"
+     id="text37">+ Double-Buffer,</text>
+  <text
+     x="623.3"
+     y="450"
+     text-anchor="middle"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#333"
+     id="text38">Fusion &amp; Batch</text>
+  <text
+     x="623.3"
+     y="464"
+     text-anchor="middle"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="11"
+     fill="#666"
+     id="text39">(3)</text>
+  <!-- Legend -->
+  <rect
+     x="150"
+     y="478"
+     width="16"
+     height="11"
+     fill="#A8D5E2"
+     stroke="#2E5C8A"
+     stroke-width="0.8"
+     id="rect39" />
+  <text
+     x="170"
+     y="488"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10.5"
+     fill="#333"
+     id="text40">Latency (ms/image)</text>
+  <rect
+     x="320"
+     y="478"
+     width="16"
+     height="11"
+     fill="#2E5C8A"
+     stroke="#1a3a5c"
+     stroke-width="0.8"
+     id="rect40" />
+  <text
+     x="340"
+     y="488"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10.5"
+     fill="#333"
+     id="text41">Final config</text>
+  <line
+     x1="445"
+     y1="483"
+     x2="461"
+     y2="483"
+     stroke="#C0392B"
+     stroke-width="1.8"
+     id="line41" />
+  <circle
+     cx="453"
+     cy="483"
+     r="3.5"
+     fill="white"
+     stroke="#C0392B"
+     stroke-width="1.8"
+     id="circle41" />
+  <text
+     x="467"
+     y="488"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10.5"
+     fill="#333"
+     id="text42">Cumulative speedup (×)</text>
+  <text
+     x="430"
+     y="508"
+     text-anchor="middle"
+     font-family="'Times New Roman', Georgia, serif"
+     font-size="10.5"
+     font-style="italic"
+     fill="#333"
+     id="text43">Cumulative speedup 107×, all stages at 64 MHz · outputs bit-exact with golden model (100%); final classification accuracy 99%–100%</text>
 </svg>
